@@ -6,8 +6,8 @@ STATE_FILE="$WORKSPACE/.kilo/state/review-state.json"
 LOCK_FILE="$WORKSPACE/.kilo/state/agent-lock"
 LOG_FILE="$WORKSPACE/.kilo/state/audit-cycle.log"
 MODEL_ROTATOR="$WORKSPACE/.kilo/scripts/model-rotator.sh"
+GIT_COMMIT_SCRIPT="$WORKSPACE/.kilo/scripts/git-auto-commit.sh"
 
-# Ensure directories exist
 mkdir -p "$WORKSPACE/.kilo/state" "$WORKSPACE/.kilo/scripts"
 
 log() {
@@ -64,6 +64,21 @@ check_todos() {
   echo "$count"
 }
 
+# Auto-commit and push changes
+git_auto_commit() {
+  if [ ! -x "$GIT_COMMIT_SCRIPT" ]; then
+    log "Git auto-commit script not found or not executable: $GIT_COMMIT_SCRIPT"
+    return 0
+  fi
+
+  log "Running git auto-commit..."
+  if "$GIT_COMMIT_SCRIPT"; then
+    log "Git auto-commit completed successfully"
+  else
+    log "Git auto-commit failed (non-critical)"
+  fi
+}
+
 # Main audit cycle
 audit_cycle() {
   log "=== Starting audit cycle ==="
@@ -96,11 +111,12 @@ audit_cycle() {
        "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
   fi
 
-  # Report status
+  # Auto-commit and push if all checks pass
   if [ "$clippy_errors" -eq 0 ] && [ "$test_failures" -eq 0 ]; then
-    log "✅ Cycle complete: All checks passing"
+    log "✅ All checks passing. Running git auto-commit..."
+    git_auto_commit
   else
-    log "⚠️  Issues found: $clippy_errors clippy errors, $test_failures test failures"
+    log "⚠️  Issues found: $clippy_errors clippy errors, $test_failures test failures. Skipping git push."
   fi
 
   release_lock
