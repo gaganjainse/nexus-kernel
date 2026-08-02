@@ -1,9 +1,11 @@
-use crate::message::{RpcRequest, RpcResponse};
-use serde_json::json;
-use nexusaos_wps::broker::Broker;
-use nexusaos_waveobj::store::WaveStore;
 use std::sync::Arc;
+
+use nexusaos_waveobj::store::WaveStore;
+use nexusaos_wps::broker::Broker;
+use serde_json::json;
 use tokio::net::UnixStream;
+
+use crate::message::{RpcRequest, RpcResponse};
 
 pub struct RpcHandler {
     broker: Arc<Broker>,
@@ -26,19 +28,16 @@ impl RpcHandler {
     }
 
     pub async fn process_request(&self, req: RpcRequest) -> RpcResponse {
-        RpcResponse {
-            jsonrpc: "2.0".into(),
-            result: Some(json!("pong")),
-            error: None,
-            id: req.id,
-        }
+        RpcResponse { jsonrpc: "2.0".into(), result: Some(json!("pong")), error: None, id: req.id }
     }
 
     /// Handle a single Unix socket connection.
     /// Reads JSON-RPC 2.0 frames and writes responses.
     pub async fn handle_connection(&self, stream: UnixStream) -> Result<(), std::io::Error> {
-        use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-        use tokio::time::{timeout, Duration};
+        use tokio::{
+            io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+            time::{timeout, Duration},
+        };
 
         let (reader, mut writer) = tokio::io::split(stream);
         let mut reader = BufReader::new(reader);
@@ -96,9 +95,9 @@ impl RpcHandler {
 
 #[cfg(test)]
 mod tests {
+    use tokio::{io::AsyncWriteExt, net::UnixStream};
+
     use super::*;
-    use tokio::io::AsyncWriteExt;
-    use tokio::net::UnixStream;
 
     #[tokio::test]
     async fn test_process_request() {
@@ -145,12 +144,8 @@ mod tests {
         let broker = Broker::new(10);
         let store = Arc::new(WaveStore::open_in_memory().unwrap());
         let handler = RpcHandler::new(broker, store);
-        let req = RpcRequest {
-            jsonrpc: "2.0".into(),
-            method: "notify".into(),
-            params: None,
-            id: None,
-        };
+        let req =
+            RpcRequest { jsonrpc: "2.0".into(), method: "notify".into(), params: None, id: None };
         let resp = handler.process_request(req).await;
         assert!(resp.id.is_none());
         assert_eq!(resp.result.unwrap(), json!("pong"));
@@ -199,7 +194,8 @@ mod tests {
 
         let (stream1, mut stream2) = UnixStream::pair().unwrap();
         // Write a valid JSON-RPC request and half-close to signal EOF
-        let _ = stream2.write_all(b"{\"jsonrpc\":\"2.0\",\"method\":\"ping\",\"id\":\"1\"}\n").await;
+        let _ =
+            stream2.write_all(b"{\"jsonrpc\":\"2.0\",\"method\":\"ping\",\"id\":\"1\"}\n").await;
         let _ = stream2.shutdown().await;
         let result = handler.handle_connection(stream1).await;
         assert!(result.is_ok());

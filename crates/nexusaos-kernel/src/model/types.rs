@@ -103,11 +103,7 @@ mod tests {
 
     #[test]
     fn test_chat_message_construction() {
-        let msg = ChatMessage {
-            role: ChatRole::User,
-            content: "hello".into(),
-            images: None,
-        };
+        let msg = ChatMessage { role: ChatRole::User, content: "hello".into(), images: None };
         assert_eq!(msg.role, ChatRole::User);
         assert_eq!(msg.content, "hello");
         assert!(msg.images.is_none());
@@ -126,11 +122,8 @@ mod tests {
 
     #[test]
     fn test_chat_message_serde() {
-        let msg = ChatMessage {
-            role: ChatRole::Assistant,
-            content: "response".into(),
-            images: None,
-        };
+        let msg =
+            ChatMessage { role: ChatRole::Assistant, content: "response".into(), images: None };
         let json = serde_json::to_string(&msg).unwrap();
         let back: ChatMessage = serde_json::from_str(&json).unwrap();
         assert_eq!(msg.role, back.role);
@@ -152,7 +145,11 @@ mod tests {
 
     #[test]
     fn test_completion_request_serde() {
-        let req = CompletionRequest::new(vec![ChatMessage { role: ChatRole::User, content: "hi".into(), images: None }], "gpt-4", 50);
+        let req = CompletionRequest::new(
+            vec![ChatMessage { role: ChatRole::User, content: "hi".into(), images: None }],
+            "gpt-4",
+            50,
+        );
         let json = serde_json::to_string(&req).unwrap();
         let back: CompletionRequest = serde_json::from_str(&json).unwrap();
         assert_eq!(req.model, back.model);
@@ -199,22 +196,14 @@ mod tests {
 
     #[test]
     fn test_token_usage_construction() {
-        let usage = TokenUsage {
-            prompt_tokens: 100,
-            completion_tokens: 50,
-            total_tokens: 150,
-        };
+        let usage = TokenUsage { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 };
         assert_eq!(usage.prompt_tokens, 100);
         assert_eq!(usage.total_tokens, 150);
     }
 
     #[test]
     fn test_token_usage_serde() {
-        let usage = TokenUsage {
-            prompt_tokens: 10,
-            completion_tokens: 20,
-            total_tokens: 30,
-        };
+        let usage = TokenUsage { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 };
         let json = serde_json::to_string(&usage).unwrap();
         let back: TokenUsage = serde_json::from_str(&json).unwrap();
         assert_eq!(usage.total_tokens, back.total_tokens);
@@ -242,8 +231,20 @@ mod tests {
 
     #[test]
     fn test_completion_response_fields() {
-        let r1 = CompletionResponse { content: "a".into(), finish_reason: None, prompt_tokens: None, completion_tokens: None, model: "m".into() };
-        let r2 = CompletionResponse { content: "a".into(), finish_reason: None, prompt_tokens: None, completion_tokens: None, model: "m".into() };
+        let r1 = CompletionResponse {
+            content: "a".into(),
+            finish_reason: None,
+            prompt_tokens: None,
+            completion_tokens: None,
+            model: "m".into(),
+        };
+        let r2 = CompletionResponse {
+            content: "a".into(),
+            finish_reason: None,
+            prompt_tokens: None,
+            completion_tokens: None,
+            model: "m".into(),
+        };
         assert_eq!(r1.content, r2.content);
         assert_eq!(r1.model, r2.model);
     }

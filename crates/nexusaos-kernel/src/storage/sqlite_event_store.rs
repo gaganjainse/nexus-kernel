@@ -1,5 +1,6 @@
-use async_trait::async_trait;
 use std::path::PathBuf;
+
+use async_trait::async_trait;
 
 use crate::{
     error::{NexusError, StorageError},
@@ -34,9 +35,7 @@ impl SqliteEventStore {
         })
         .await
         .map_err(|e| {
-            NexusError::Storage(StorageError::Io(std::io::Error::other(
-                e.to_string(),
-            )))
+            NexusError::Storage(StorageError::Io(std::io::Error::other(e.to_string())))
         })??;
         Ok(Self { db_path })
     }
@@ -51,18 +50,24 @@ impl SqliteEventStore {
                 .query_map([], |row| {
                     let data: String = row.get(0)?;
                     serde_json::from_str(&data).map_err(|e| {
-                        rusqlite::Error::FromSqlConversionFailure(0, rusqlite::types::Type::Text, Box::new(e))
+                        rusqlite::Error::FromSqlConversionFailure(
+                            0,
+                            rusqlite::types::Type::Text,
+                            Box::new(e),
+                        )
                     })
                 })
                 .map_err(StorageError::Database)?;
-            rows.collect::<Result<Vec<_>, _>>()
-                .map_err(StorageError::Database)
+            rows.collect::<Result<Vec<_>, _>>().map_err(StorageError::Database)
         })
         .await
     }
 
     /// Read events for a specific task.
-    pub async fn read_for_task(&self, task_id: &crate::task::TaskId) -> Result<Vec<Event>, StorageError> {
+    pub async fn read_for_task(
+        &self,
+        task_id: &crate::task::TaskId,
+    ) -> Result<Vec<Event>, StorageError> {
         let task_id_str = task_id.0.to_string();
         self.spawn_query(move |conn| {
             let mut stmt = conn
@@ -72,12 +77,15 @@ impl SqliteEventStore {
                 .query_map([&task_id_str], |row| {
                     let data: String = row.get(0)?;
                     serde_json::from_str(&data).map_err(|e| {
-                        rusqlite::Error::FromSqlConversionFailure(0, rusqlite::types::Type::Text, Box::new(e))
+                        rusqlite::Error::FromSqlConversionFailure(
+                            0,
+                            rusqlite::types::Type::Text,
+                            Box::new(e),
+                        )
                     })
                 })
                 .map_err(StorageError::Database)?;
-            rows.collect::<Result<Vec<_>, _>>()
-                .map_err(StorageError::Database)
+            rows.collect::<Result<Vec<_>, _>>().map_err(StorageError::Database)
         })
         .await
     }
@@ -92,12 +100,15 @@ impl SqliteEventStore {
                 .query_map([&sequence], |row| {
                     let data: String = row.get(0)?;
                     serde_json::from_str(&data).map_err(|e| {
-                        rusqlite::Error::FromSqlConversionFailure(0, rusqlite::types::Type::Text, Box::new(e))
+                        rusqlite::Error::FromSqlConversionFailure(
+                            0,
+                            rusqlite::types::Type::Text,
+                            Box::new(e),
+                        )
                     })
                 })
                 .map_err(StorageError::Database)?;
-            rows.collect::<Result<Vec<_>, _>>()
-                .map_err(StorageError::Database)
+            rows.collect::<Result<Vec<_>, _>>().map_err(StorageError::Database)
         })
         .await
     }
@@ -105,10 +116,10 @@ impl SqliteEventStore {
     /// Get total event count.
     pub async fn count(&self) -> Result<u64, StorageError> {
         self.spawn_query(move |conn| {
-            let mut stmt = conn
-                .prepare("SELECT COUNT(*) FROM events")
-                .map_err(StorageError::Database)?;
-            let count: i64 = stmt.query_row([], |row| row.get(0)).map_err(StorageError::Database)?;
+            let mut stmt =
+                conn.prepare("SELECT COUNT(*) FROM events").map_err(StorageError::Database)?;
+            let count: i64 =
+                stmt.query_row([], |row| row.get(0)).map_err(StorageError::Database)?;
             Ok(count as u64)
         })
         .await
@@ -157,7 +168,10 @@ impl EventStore for SqliteEventStore {
         Self::read_all(self).await.map_err(NexusError::Storage)
     }
 
-    async fn get_task_events(&self, task_id: &crate::task::TaskId) -> Result<Vec<Event>, NexusError> {
+    async fn get_task_events(
+        &self,
+        task_id: &crate::task::TaskId,
+    ) -> Result<Vec<Event>, NexusError> {
         Self::read_for_task(self, task_id).await.map_err(NexusError::Storage)
     }
 
@@ -171,8 +185,10 @@ mod tests {
     use tempfile::TempDir;
 
     use super::*;
-    use crate::events::{EventKind, EventPayload, SequenceNumber};
-    use crate::task::TaskId;
+    use crate::{
+        events::{EventKind, EventPayload, SequenceNumber},
+        task::TaskId,
+    };
 
     #[tokio::test]
     async fn test_open() {

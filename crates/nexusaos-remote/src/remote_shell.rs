@@ -1,9 +1,11 @@
-use async_trait::async_trait;
-use nexusaos_blockctl::controller::{Controller, ControllerError, ControllerStatus, BlockInput};
-use russh::client::Handle;
-use crate::ssh_client::ClientHandler;
-use tokio::sync::Mutex;
 use std::sync::Arc;
+
+use async_trait::async_trait;
+use nexusaos_blockctl::controller::{BlockInput, Controller, ControllerError, ControllerStatus};
+use russh::client::Handle;
+use tokio::sync::Mutex;
+
+use crate::ssh_client::ClientHandler;
 
 pub struct RemoteShellController {
     session: Arc<Mutex<Handle<ClientHandler>>>,
@@ -12,7 +14,11 @@ pub struct RemoteShellController {
 }
 
 impl RemoteShellController {
-    pub fn new(session: Arc<Mutex<Handle<ClientHandler>>>, block_id: String, conn_name: String) -> Self {
+    pub fn new(
+        session: Arc<Mutex<Handle<ClientHandler>>>,
+        block_id: String,
+        conn_name: String,
+    ) -> Self {
         Self { session, block_id, conn_name }
     }
 

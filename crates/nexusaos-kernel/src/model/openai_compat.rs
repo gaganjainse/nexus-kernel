@@ -53,7 +53,6 @@ impl OpenAiCompatProvider {
             client,
         })
     }
-
 }
 
 #[derive(Deserialize)]
@@ -484,7 +483,12 @@ mod tests {
 
     #[test]
     fn test_all_roles() {
-        let roles = vec![("planner", ModelRole::Planner), ("coder", ModelRole::Coder), ("vision", ModelRole::Vision), ("reviewer", ModelRole::Reviewer)];
+        let roles = vec![
+            ("planner", ModelRole::Planner),
+            ("coder", ModelRole::Coder),
+            ("vision", ModelRole::Vision),
+            ("reviewer", ModelRole::Reviewer),
+        ];
         for (role_str, expected) in roles {
             let config = ModelProviderConfig {
                 name: "test".to_string(),

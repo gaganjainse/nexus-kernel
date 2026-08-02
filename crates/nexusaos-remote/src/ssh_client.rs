@@ -1,5 +1,5 @@
-use russh::client::Handler;
 use async_trait::async_trait;
+use russh::client::Handler;
 
 #[derive(Clone, Debug)]
 pub struct ClientHandler {}

@@ -35,11 +35,7 @@ pub struct AiSettings {
 
 impl Default for AiSettings {
     fn default() -> Self {
-        Self {
-            model: Some("gpt-4".to_string()),
-            max_tokens: None,
-            base_url: None,
-        }
+        Self { model: Some("gpt-4".to_string()), max_tokens: None, base_url: None }
     }
 }
 
@@ -53,10 +49,7 @@ pub struct EditorSettings {
 
 impl Default for EditorSettings {
     fn default() -> Self {
-        Self {
-            minimap: Some(true),
-            word_wrap: Some(false),
-        }
+        Self { minimap: Some(true), word_wrap: Some(false) }
     }
 }
 
@@ -68,7 +61,7 @@ pub struct GlobalSettings {
     pub ai: AiSettings,
     #[serde(flatten)]
     pub editor: EditorSettings,
-    
+
     #[serde(flatten)]
     pub extras: std::collections::HashMap<String, serde_json::Value>,
 }
@@ -79,25 +72,43 @@ pub trait MergeSettings {
 
 impl MergeSettings for TermSettings {
     fn merge(&mut self, other: Self) {
-        if other.font_size.is_some() { self.font_size = other.font_size; }
-        if other.font_family.is_some() { self.font_family = other.font_family; }
-        if other.theme.is_some() { self.theme = other.theme; }
-        if other.scrollback.is_some() { self.scrollback = other.scrollback; }
+        if other.font_size.is_some() {
+            self.font_size = other.font_size;
+        }
+        if other.font_family.is_some() {
+            self.font_family = other.font_family;
+        }
+        if other.theme.is_some() {
+            self.theme = other.theme;
+        }
+        if other.scrollback.is_some() {
+            self.scrollback = other.scrollback;
+        }
     }
 }
 
 impl MergeSettings for AiSettings {
     fn merge(&mut self, other: Self) {
-        if other.model.is_some() { self.model = other.model; }
-        if other.max_tokens.is_some() { self.max_tokens = other.max_tokens; }
-        if other.base_url.is_some() { self.base_url = other.base_url; }
+        if other.model.is_some() {
+            self.model = other.model;
+        }
+        if other.max_tokens.is_some() {
+            self.max_tokens = other.max_tokens;
+        }
+        if other.base_url.is_some() {
+            self.base_url = other.base_url;
+        }
     }
 }
 
 impl MergeSettings for EditorSettings {
     fn merge(&mut self, other: Self) {
-        if other.minimap.is_some() { self.minimap = other.minimap; }
-        if other.word_wrap.is_some() { self.word_wrap = other.word_wrap; }
+        if other.minimap.is_some() {
+            self.minimap = other.minimap;
+        }
+        if other.word_wrap.is_some() {
+            self.word_wrap = other.word_wrap;
+        }
     }
 }
 
@@ -114,8 +125,9 @@ impl MergeSettings for GlobalSettings {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::collections::HashMap;
+
+    use super::*;
 
     #[test]
     fn test_defaults() {
@@ -156,9 +168,9 @@ mod tests {
             "ai:model": "claude-3-opus"
         }"#;
         let overrides: GlobalSettings = serde_json::from_str(override_json).unwrap();
-        
+
         base.merge(overrides);
-        
+
         assert_eq!(base.term.theme, Some("light".to_string()));
         assert_eq!(base.term.font_size, Some(14.0)); // From default
         assert_eq!(base.ai.model, Some("claude-3-opus".to_string()));
@@ -219,12 +231,8 @@ mod tests {
             theme: Some("light".to_string()),
             scrollback: Some(5000),
         };
-        let override_settings = TermSettings {
-            font_size: None,
-            font_family: None,
-            theme: None,
-            scrollback: None,
-        };
+        let override_settings =
+            TermSettings { font_size: None, font_family: None, theme: None, scrollback: None };
         base.merge(override_settings);
         assert_eq!(base.font_size, Some(16.0));
         assert_eq!(base.font_family, Some("Fira Code".to_string()));
@@ -249,10 +257,7 @@ mod tests {
     #[test]
     fn test_editor_settings_merge_preserves_some_values() {
         let mut base = EditorSettings::default();
-        let override_settings = EditorSettings {
-            minimap: Some(false),
-            word_wrap: None,
-        };
+        let override_settings = EditorSettings { minimap: Some(false), word_wrap: None };
         base.merge(override_settings);
         assert_eq!(base.minimap, Some(false));
         assert_eq!(base.word_wrap, Some(false)); // preserved from default
@@ -316,10 +321,7 @@ mod tests {
 
     #[test]
     fn test_editor_settings_serialization_roundtrip() {
-        let editor = EditorSettings {
-            minimap: Some(false),
-            word_wrap: Some(true),
-        };
+        let editor = EditorSettings { minimap: Some(false), word_wrap: Some(true) };
         let json = serde_json::to_string(&editor).unwrap();
         let decoded: EditorSettings = serde_json::from_str(&json).unwrap();
         assert_eq!(decoded.minimap, editor.minimap);
@@ -335,15 +337,8 @@ mod tests {
                 theme: Some("dark".to_string()),
                 scrollback: Some(10000),
             },
-            ai: AiSettings {
-                model: Some("gpt-4".to_string()),
-                max_tokens: None,
-                base_url: None,
-            },
-            editor: EditorSettings {
-                minimap: Some(true),
-                word_wrap: Some(false),
-            },
+            ai: AiSettings { model: Some("gpt-4".to_string()), max_tokens: None, base_url: None },
+            editor: EditorSettings { minimap: Some(true), word_wrap: Some(false) },
             extras: HashMap::new(),
         };
         let json = serde_json::to_string(&global).unwrap();

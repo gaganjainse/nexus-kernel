@@ -1,10 +1,10 @@
-use crate::provider::{AiError, ChatRequest, ModelProvider};
 use async_trait::async_trait;
-use futures::stream::BoxStream;
-use futures::StreamExt;
+use futures::{stream::BoxStream, StreamExt};
 use reqwest::Client;
 use serde::Serialize;
 use serde_json::Value;
+
+use crate::provider::{AiError, ChatRequest, ModelProvider};
 
 #[derive(Clone)]
 pub struct OpenAIProvider {
@@ -15,11 +15,7 @@ pub struct OpenAIProvider {
 
 impl OpenAIProvider {
     pub fn new(base_url: String, api_key: String) -> Self {
-        Self {
-            base_url,
-            api_key,
-            client: Client::new(),
-        }
+        Self { base_url, api_key, client: Client::new() }
     }
 }
 
@@ -46,41 +42,36 @@ impl ModelProvider for OpenAIProvider {
             max_tokens: req.max_tokens,
         };
 
-        let response = self
-            .client
-            .post(&url)
-            .bearer_auth(&self.api_key)
-            .json(&openai_req)
-            .send()
-            .await?;
+        let response =
+            self.client.post(&url).bearer_auth(&self.api_key).json(&openai_req).send().await?;
 
-        let stream = response.bytes_stream().map(|res| {
-            match res {
-                Ok(bytes) => {
-                    let mut output = String::new();
-                    let text = String::from_utf8_lossy(&bytes);
-                    for line in text.lines() {
-                        if let Some(data) = line.strip_prefix("data: ") {
-                            if data == "[DONE]" {
-                                continue;
-                            }
-                            if let Ok(val) = serde_json::from_str::<Value>(data) {
-                                if let Some(choices) = val.get("choices") {
-                                    if let Some(first_choice) = choices.get(0) {
-                                        if let Some(delta) = first_choice.get("delta") {
-                                            if let Some(content) = delta.get("content").and_then(|c| c.as_str()) {
-                                                output.push_str(content);
-                                            }
+        let stream = response.bytes_stream().map(|res| match res {
+            Ok(bytes) => {
+                let mut output = String::new();
+                let text = String::from_utf8_lossy(&bytes);
+                for line in text.lines() {
+                    if let Some(data) = line.strip_prefix("data: ") {
+                        if data == "[DONE]" {
+                            continue;
+                        }
+                        if let Ok(val) = serde_json::from_str::<Value>(data) {
+                            if let Some(choices) = val.get("choices") {
+                                if let Some(first_choice) = choices.get(0) {
+                                    if let Some(delta) = first_choice.get("delta") {
+                                        if let Some(content) =
+                                            delta.get("content").and_then(|c| c.as_str())
+                                        {
+                                            output.push_str(content);
                                         }
                                     }
                                 }
                             }
                         }
                     }
-                    Ok(output)
                 }
-                Err(e) => Err(AiError::Network(e)),
+                Ok(output)
             }
+            Err(e) => Err(AiError::Network(e)),
         });
 
         Ok(Box::pin(stream))

@@ -4,9 +4,8 @@
 //! explicitly allowed by a policy rule or it is denied. Rules are evaluated
 //! in order; first match wins.
 
-use tracing::warn;
-
 use serde::{Deserialize, Serialize};
+use tracing::warn;
 
 /// The result of a policy evaluation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -218,8 +217,9 @@ impl PolicyEngine {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use chrono::Utc;
+
+    use super::*;
 
     fn test_rules() -> Vec<PolicyRule> {
         vec![
@@ -422,15 +422,13 @@ mod tests {
 
     #[test]
     fn test_evaluate_allow_with_trust_tier_gating() {
-        let rules = vec![
-            PolicyRule {
-                name: "allow-admin".into(),
-                action_pattern: "admin.*".into(),
-                decision: "allow".into(),
-                trust_tier: 3, // requires Autonomous
-                description: None,
-            },
-        ];
+        let rules = vec![PolicyRule {
+            name: "allow-admin".into(),
+            action_pattern: "admin.*".into(),
+            decision: "allow".into(),
+            trust_tier: 3, // requires Autonomous
+            description: None,
+        }];
         let engine = PolicyEngine::new(rules, TrustTier::Basic);
         let decision = engine.evaluate("admin.create");
         assert!(decision.is_denied()); // trust tier too low

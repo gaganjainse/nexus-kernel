@@ -73,11 +73,9 @@ impl TaskInput {
         match self {
             TaskInput::Text(t) => t.clone(),
             TaskInput::Vision { text, .. } => text.clone(),
-            TaskInput::Multi { parts } => parts
-                .iter()
-                .map(|p| p.text())
-                .collect::<Vec<_>>()
-                .join("\n---\n"),
+            TaskInput::Multi { parts } => {
+                parts.iter().map(|p| p.text()).collect::<Vec<_>>().join("\n---\n")
+            }
         }
     }
 }
@@ -263,7 +261,8 @@ mod tests {
 
     #[test]
     fn test_task_input_serde_vision() {
-        let input = TaskInput::Vision { text: "desc".into(), image_paths: vec![PathBuf::from("/img.png")] };
+        let input =
+            TaskInput::Vision { text: "desc".into(), image_paths: vec![PathBuf::from("/img.png")] };
         let json = serde_json::to_string(&input).unwrap();
         let back: TaskInput = serde_json::from_str(&json).unwrap();
         match back {

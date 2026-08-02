@@ -1,10 +1,15 @@
-use std::io::{Read, Write};
-use std::sync::{Arc, Mutex};
-use tokio::sync::mpsc;
-use portable_pty::{CommandBuilder, PtySize, native_pty_system};
+use std::{
+    io::{Read, Write},
+    sync::{Arc, Mutex},
+};
 
-use crate::controller::{BlockInput, Controller, ControllerError, ControllerStatus};
-use crate::filestore::BlockFileStore;
+use portable_pty::{native_pty_system, CommandBuilder, PtySize};
+use tokio::sync::mpsc;
+
+use crate::{
+    controller::{BlockInput, Controller, ControllerError, ControllerStatus},
+    filestore::BlockFileStore,
+};
 
 fn detect_shell() -> String {
     std::env::var("SHELL").unwrap_or_else(|_| {
@@ -49,25 +54,24 @@ impl ShellController {
 impl Controller for ShellController {
     async fn start(&self) -> Result<(), ControllerError> {
         let pty_system = native_pty_system();
-        let pair = pty_system.openpty(PtySize {
-            rows: 24,
-            cols: 80,
-            pixel_width: 0,
-            pixel_height: 0,
-        }).map_err(|e| ControllerError::Shell(e.to_string()))?;
+        let pair = pty_system
+            .openpty(PtySize { rows: 24, cols: 80, pixel_width: 0, pixel_height: 0 })
+            .map_err(|e| ControllerError::Shell(e.to_string()))?;
 
         let cmd = CommandBuilder::new(&self.shell_path);
-        let mut child = pair.slave.spawn_command(cmd).map_err(|e| ControllerError::Shell(e.to_string()))?;
+        let mut child =
+            pair.slave.spawn_command(cmd).map_err(|e| ControllerError::Shell(e.to_string()))?;
 
         *self.status.lock().unwrap_or_else(|e| e.into_inner()) = "running".to_string();
 
         let (tx, mut rx) = mpsc::channel::<BlockInput>(256);
         *self.input_tx.lock().unwrap_or_else(|e| e.into_inner()) = Some(tx);
 
-        let mut reader = pair.master.try_clone_reader().map_err(|e| ControllerError::Shell(e.to_string()))?;
+        let mut reader =
+            pair.master.try_clone_reader().map_err(|e| ControllerError::Shell(e.to_string()))?;
         let block_id = self.block_id.clone();
         let file_store = self.file_store.clone();
-        
+
         // Reader task
         tokio::task::spawn_blocking(move || {
             let mut buf = [0u8; 4096];
@@ -83,9 +87,10 @@ impl Controller for ShellController {
         });
 
         // Writer task
-        let mut writer = pair.master.take_writer().map_err(|e| ControllerError::Shell(e.to_string()))?;
+        let mut writer =
+            pair.master.take_writer().map_err(|e| ControllerError::Shell(e.to_string()))?;
         let master = pair.master;
-        
+
         tokio::task::spawn_blocking(move || {
             while let Some(input) = rx.blocking_recv() {
                 match input {
@@ -94,12 +99,8 @@ impl Controller for ShellController {
                         let _ = writer.flush();
                     }
                     BlockInput::Resize { rows, cols } => {
-                        let _ = master.resize(PtySize {
-                            rows,
-                            cols,
-                            pixel_width: 0,
-                            pixel_height: 0,
-                        });
+                        let _ =
+                            master.resize(PtySize { rows, cols, pixel_width: 0, pixel_height: 0 });
                     }
                     BlockInput::Signal(_) => {}
                 }
@@ -109,7 +110,7 @@ impl Controller for ShellController {
         // Waiter task
         let status = self.status.clone();
         let exit_code = self.exit_code.clone();
-        
+
         tokio::task::spawn_blocking(move || {
             if let Ok(exit_status) = child.wait() {
                 let code = exit_status.exit_code();
@@ -151,7 +152,7 @@ impl Controller for ShellController {
             let guard = self.input_tx.lock().unwrap_or_else(|e| e.into_inner());
             guard.clone()
         };
-        
+
         if let Some(tx) = tx {
             tx.send(input).await.map_err(|_| ControllerError::NotRunning(self.block_id.clone()))?;
             Ok(())
@@ -185,7 +186,8 @@ mod tests {
     #[test]
     fn test_controller_init_with_custom_shell() {
         let store = Arc::new(BlockFileStore::new());
-        let controller = ShellController::new("blk1".to_string(), store, Some("/bin/sh".to_string()));
+        let controller =
+            ShellController::new("blk1".to_string(), store, Some("/bin/sh".to_string()));
         assert_eq!(controller.conn_name(), "local");
         let status = controller.runtime_status();
         assert_eq!(status.status, "init");
@@ -252,7 +254,8 @@ mod tests {
     #[tokio::test]
     async fn test_start_invalid_shell_path() {
         let store = Arc::new(BlockFileStore::new());
-        let controller = ShellController::new("blk1".to_string(), store, Some("/nonexistent/shell".to_string()));
+        let controller =
+            ShellController::new("blk1".to_string(), store, Some("/nonexistent/shell".to_string()));
         let result = controller.start().await;
         assert!(result.is_err());
         match result {

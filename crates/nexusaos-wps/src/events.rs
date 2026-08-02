@@ -76,8 +76,9 @@ impl WaveEvent {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use serde_json::json;
+
+    use super::*;
 
     #[test]
     fn test_wave_event_creation() {
@@ -89,7 +90,7 @@ mod tests {
 
         let ev2 = WaveEvent::global("global", json!(1));
         assert!(ev2.scopes.is_empty());
-        
+
         let ev3 = ev2.with_persist(5);
         assert_eq!(ev3.persist, 5);
     }
@@ -226,10 +227,7 @@ mod tests {
 
     #[test]
     fn test_subscription_request_empty_scopes() {
-        let req = SubscriptionRequest {
-            topic: "test".to_string(),
-            scopes: vec![],
-        };
+        let req = SubscriptionRequest { topic: "test".to_string(), scopes: vec![] };
         assert!(req.scopes.is_empty());
     }
 

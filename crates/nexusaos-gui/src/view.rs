@@ -1,12 +1,19 @@
-use iced::widget::canvas::{self, Canvas, Frame, Geometry, Program};
-use iced::widget::{column, container, mouse_area, row, rule, text, Space};
-use iced::mouse::Cursor;
-use iced::{Alignment, Color, Element, Length, Padding, Point, Rectangle, Size};
 use std::cell::RefCell;
 
-use crate::app::{Message, NexusApp, Tab};
-use crate::terminal::{CellAttr, TermColor};
-use crate::theme;
+use iced::{
+    mouse::Cursor,
+    widget::{
+        canvas::{self, Canvas, Frame, Geometry, Program},
+        column, container, mouse_area, row, rule, text, Space,
+    },
+    Alignment, Color, Element, Length, Padding, Point, Rectangle, Size,
+};
+
+use crate::{
+    app::{Message, NexusApp, Tab},
+    terminal::{CellAttr, TermColor},
+    theme,
+};
 
 /// A span of contiguous cells with the same attributes.
 struct CellSpan {
@@ -93,13 +100,8 @@ fn row_to_spans(row: &[crate::terminal::Cell]) -> Vec<CellSpan> {
                     spans.push(span);
                 }
                 // Start new span
-                current_span = Some(CellSpan {
-                    start_col: col,
-                    end_col: col,
-                    text: ch.to_string(),
-                    fg,
-                    bg,
-                });
+                current_span =
+                    Some(CellSpan { start_col: col, end_col: col, text: ch.to_string(), fg, bg });
             }
         }
     }
@@ -245,10 +247,7 @@ pub fn render(app: &NexusApp) -> Element<'_, Message> {
     };
 
     // --- Root layout ---
-    row![sidebar, main_content]
-        .width(Length::Fill)
-        .height(Length::Fill)
-        .into()
+    row![sidebar, main_content].width(Length::Fill).height(Length::Fill).into()
 }
 
 fn render_terminal(app: &NexusApp) -> Element<'_, Message> {
@@ -269,9 +268,8 @@ fn render_terminal(app: &NexusApp) -> Element<'_, Message> {
     .style(theme::tab_bar_style);
 
     // --- Terminal Canvas ---
-    let terminal_canvas = Canvas::new(TerminalView { app })
-        .width(Length::Fill)
-        .height(Length::Fill);
+    let terminal_canvas =
+        Canvas::new(TerminalView { app }).width(Length::Fill).height(Length::Fill);
 
     let terminal_pane = container(terminal_canvas)
         .width(Length::Fill)
@@ -313,15 +311,11 @@ fn render_ai_chat(app: &NexusApp) -> Element<'_, Message> {
             format!("{}{}", prefix, msg.content)
         };
         messages_col = messages_col.push(
-            container(text(content).size(14).color(color))
-                .padding(8)
-                .style(theme::tab_bar_style)
+            container(text(content).size(14).color(color)).padding(8).style(theme::tab_bar_style),
         );
     }
 
-    let chat_log = iced::widget::scrollable(messages_col)
-        .width(Length::Fill)
-        .height(Length::Fill);
+    let chat_log = iced::widget::scrollable(messages_col).width(Length::Fill).height(Length::Fill);
 
     let chat_input = iced::widget::text_input("Type your message...", &app.ai_input)
         .on_input(Message::AiInputChanged)
@@ -329,29 +323,21 @@ fn render_ai_chat(app: &NexusApp) -> Element<'_, Message> {
         .padding(10)
         .size(14);
 
-    container(
-        column![
-            container(text("AI Chat").size(13).color(theme::PEACH))
-                .width(Length::Fill)
-                .padding(Padding::from([8, 16]))
-                .style(theme::tab_bar_style),
-            container(
-                column![
-                    chat_log,
-                    Space::new().width(Length::Fill).height(16),
-                    chat_input,
-                ]
-            )
+    container(column![
+        container(text("AI Chat").size(13).color(theme::PEACH))
+            .width(Length::Fill)
+            .padding(Padding::from([8, 16]))
+            .style(theme::tab_bar_style),
+        container(column![chat_log, Space::new().width(Length::Fill).height(16), chat_input,])
             .width(Length::Fill)
             .height(Length::Fill)
             .padding(16)
             .style(theme::terminal_pane_style),
-            container(text("Ready").size(11).color(theme::SUBTEXT0))
-                .width(Length::Fill)
-                .padding(Padding::from([4, 16]))
-                .style(theme::status_bar_style),
-        ]
-    )
+        container(text("Ready").size(11).color(theme::SUBTEXT0))
+            .width(Length::Fill)
+            .padding(Padding::from([4, 16]))
+            .style(theme::status_bar_style),
+    ])
     .width(Length::Fill)
     .height(Length::Fill)
     .style(theme::main_area_style)

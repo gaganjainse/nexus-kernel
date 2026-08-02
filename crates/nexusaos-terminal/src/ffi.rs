@@ -24,7 +24,11 @@ pub struct ZigVt100Parser {
 impl ZigVt100Parser {
     pub fn new(cols: usize, rows: usize) -> Option<Self> {
         let ptr = unsafe { vt100_parser_create(cols, rows) };
-        if ptr.is_null() { None } else { Some(Self { ptr }) }
+        if ptr.is_null() {
+            None
+        } else {
+            Some(Self { ptr })
+        }
     }
 
     pub fn feed(&self, data: &[u8]) {
@@ -36,11 +40,19 @@ impl ZigVt100Parser {
     }
 
     pub fn lines_processed(&self) -> usize {
-        if self.ptr.is_null() { 0 } else { unsafe { vt100_parser_get_line_count(self.ptr) } }
+        if self.ptr.is_null() {
+            0
+        } else {
+            unsafe { vt100_parser_get_line_count(self.ptr) }
+        }
     }
 
     pub fn bytes_processed(&self) -> usize {
-        if self.ptr.is_null() { 0 } else { unsafe { vt100_parser_get_bytes_count(self.ptr) } }
+        if self.ptr.is_null() {
+            0
+        } else {
+            unsafe { vt100_parser_get_bytes_count(self.ptr) }
+        }
     }
 }
 

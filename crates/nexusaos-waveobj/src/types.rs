@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::meta::MetaMap;
-use crate::oref::ORef;
+use crate::{meta::MetaMap, oref::ORef};
 
 /// Trait that all Wave objects must implement.
 /// Provides typed access to the common fields (oid, version, meta).
@@ -19,10 +18,7 @@ pub trait WaveObj: std::fmt::Debug + Send + Sync {
     where
         Self: Sized,
     {
-        ORef {
-            otype: Self::otype().to_string(),
-            oid: *self.oid(),
-        }
+        ORef { otype: Self::otype().to_string(), oid: *self.oid() }
     }
 }
 
@@ -358,8 +354,9 @@ pub fn otype_to_table(otype: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::collections::HashMap;
+
+    use super::*;
 
     #[test]
     fn test_client_roundtrip() {
@@ -378,7 +375,7 @@ mod tests {
         assert_eq!(client.version(), 1);
         client.set_version(2);
         assert_eq!(client.version(), 2);
-        
+
         let json = serde_json::to_string(&client).unwrap();
         let client_deser: Client = serde_json::from_str(&json).unwrap();
         assert_eq!(client.oid, client_deser.oid);
@@ -395,7 +392,11 @@ mod tests {
             version: 1,
             name: "tab1".to_string(),
             layout_state: Uuid::now_v7().to_string(),
-            block_ids: vec![block_id1.to_string(), "invalid_uuid".to_string(), block_id2.to_string()],
+            block_ids: vec![
+                block_id1.to_string(),
+                "invalid_uuid".to_string(),
+                block_id2.to_string(),
+            ],
             meta: MetaMap::default(),
         };
 
@@ -533,10 +534,7 @@ mod tests {
 
     #[test]
     fn test_runtimeopts_env_none_skipped() {
-        let opts = RuntimeOpts {
-            term_size: TermSize { rows: 24, cols: 80 },
-            env: None,
-        };
+        let opts = RuntimeOpts { term_size: TermSize { rows: 24, cols: 80 }, env: None };
         let json = serde_json::to_value(&opts).unwrap();
         assert!(json.get("env").is_none());
     }
@@ -553,18 +551,9 @@ mod tests {
 
     #[test]
     fn test_runtimeopts_partial_eq() {
-        let opts1 = RuntimeOpts {
-            term_size: TermSize { rows: 24, cols: 80 },
-            env: None,
-        };
-        let opts2 = RuntimeOpts {
-            term_size: TermSize { rows: 24, cols: 80 },
-            env: None,
-        };
-        let opts3 = RuntimeOpts {
-            term_size: TermSize { rows: 30, cols: 80 },
-            env: None,
-        };
+        let opts1 = RuntimeOpts { term_size: TermSize { rows: 24, cols: 80 }, env: None };
+        let opts2 = RuntimeOpts { term_size: TermSize { rows: 24, cols: 80 }, env: None };
+        let opts3 = RuntimeOpts { term_size: TermSize { rows: 30, cols: 80 }, env: None };
         assert_eq!(opts1, opts2);
         assert_ne!(opts1, opts3);
     }
@@ -605,10 +594,7 @@ mod tests {
 
     #[test]
     fn test_leaforderentry_serde() {
-        let entry = LeafOrderEntry {
-            node_id: "node1".to_string(),
-            block_id: "block1".to_string(),
-        };
+        let entry = LeafOrderEntry { node_id: "node1".to_string(), block_id: "block1".to_string() };
         let json = serde_json::to_string(&entry).unwrap();
         let deserialized: LeafOrderEntry = serde_json::from_str(&json).unwrap();
         assert_eq!(entry, deserialized);
@@ -628,11 +614,8 @@ mod tests {
 
     #[test]
     fn test_layoutactiondata_optional_none_skipped() {
-        let action = LayoutActionData {
-            action_type: "resize".to_string(),
-            block_id: None,
-            node_size: None,
-        };
+        let action =
+            LayoutActionData { action_type: "resize".to_string(), block_id: None, node_size: None };
         let json = serde_json::to_value(&action).unwrap();
         assert!(json.get("block_id").is_none());
         assert!(json.get("node_size").is_none());
@@ -871,7 +854,8 @@ mod tests {
         assert!(json.get("icon").is_none());
         assert!(json.get("color").is_none());
 
-        let deserialized: Workspace = serde_json::from_str(&serde_json::to_string(&ws).unwrap()).unwrap();
+        let deserialized: Workspace =
+            serde_json::from_str(&serde_json::to_string(&ws).unwrap()).unwrap();
         assert_eq!(ws, deserialized);
     }
 
@@ -1064,13 +1048,11 @@ mod tests {
                 LeafOrderEntry { node_id: "n1".to_string(), block_id: "b1".to_string() },
                 LeafOrderEntry { node_id: "n2".to_string(), block_id: "b2".to_string() },
             ]),
-            pending_backend_actions: Some(vec![
-                LayoutActionData {
-                    action_type: "resize".to_string(),
-                    block_id: Some("b1".to_string()),
-                    node_size: Some(0.5),
-                },
-            ]),
+            pending_backend_actions: Some(vec![LayoutActionData {
+                action_type: "resize".to_string(),
+                block_id: Some("b1".to_string()),
+                node_size: Some(0.5),
+            }]),
             meta: MetaMap::default(),
         };
         let json = serde_json::to_string(&ls).unwrap();
@@ -1148,12 +1130,10 @@ mod tests {
                 term_size: TermSize { rows: 24, cols: 80 },
                 env: Some(HashMap::from([("PATH".to_string(), "/bin".to_string())])),
             }),
-            stickers: Some(vec![
-                StickerType {
-                    sticker_type: "cmd".to_string(),
-                    style: serde_json::json!({"color": "blue"}),
-                },
-            ]),
+            stickers: Some(vec![StickerType {
+                sticker_type: "cmd".to_string(),
+                style: serde_json::json!({"color": "blue"}),
+            }]),
             meta: MetaMap::default(),
             sub_block_ids: vec!["sub1".to_string(), "sub2".to_string()],
             job_id: Some("job123".to_string()),

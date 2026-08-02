@@ -295,17 +295,16 @@ mod tests {
         let json = serde_json::to_string(&payload).unwrap();
         let back: EventPayload = serde_json::from_str(&json).unwrap();
         match back {
-            EventPayload::PolicyCheck { reason, .. } => assert_eq!(reason, Some("not allowed".to_string())),
+            EventPayload::PolicyCheck { reason, .. } => {
+                assert_eq!(reason, Some("not allowed".to_string()))
+            }
             _ => panic!("Wrong variant"),
         }
     }
 
     #[test]
     fn test_event_error_event_with_details() {
-        let payload = EventPayload::ErrorEvent {
-            message: "fatal".to_string(),
-            details: None,
-        };
+        let payload = EventPayload::ErrorEvent { message: "fatal".to_string(), details: None };
         let json = serde_json::to_string(&payload).unwrap();
         let back: EventPayload = serde_json::from_str(&json).unwrap();
         match back {

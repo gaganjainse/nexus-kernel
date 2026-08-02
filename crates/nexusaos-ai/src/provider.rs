@@ -1,6 +1,6 @@
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
 use futures::stream::BoxStream;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -27,7 +27,10 @@ pub struct ChatRequest {
 #[async_trait]
 pub trait ModelProvider: Send + Sync {
     /// Returns a stream of text chunks.
-    async fn stream_chat(&self, req: ChatRequest) -> Result<BoxStream<'static, Result<String, AiError>>, AiError>;
+    async fn stream_chat(
+        &self,
+        req: ChatRequest,
+    ) -> Result<BoxStream<'static, Result<String, AiError>>, AiError>;
 }
 
 #[cfg(test)]
@@ -42,10 +45,7 @@ mod tests {
 
     #[test]
     fn test_chat_message_serde_roundtrip() {
-        let msg = ChatMessage {
-            role: "user".to_string(),
-            content: "hello".to_string(),
-        };
+        let msg = ChatMessage { role: "user".to_string(), content: "hello".to_string() };
         let json = serde_json::to_string(&msg).unwrap();
         let decoded: ChatMessage = serde_json::from_str(&json).unwrap();
         assert_eq!(msg, decoded);
@@ -53,11 +53,7 @@ mod tests {
 
     #[test]
     fn test_chat_request_construction() {
-        let req = ChatRequest {
-            messages: vec![],
-            model: "gpt".to_string(),
-            max_tokens: Some(100),
-        };
+        let req = ChatRequest { messages: vec![], model: "gpt".to_string(), max_tokens: Some(100) };
         assert!(req.messages.is_empty());
         assert_eq!(req.model, "gpt");
         assert_eq!(req.max_tokens, Some(100));
@@ -65,20 +61,13 @@ mod tests {
 
     #[test]
     fn test_chat_request_with_none_max_tokens() {
-        let req = ChatRequest {
-            messages: vec![],
-            model: "gpt".to_string(),
-            max_tokens: None,
-        };
+        let req = ChatRequest { messages: vec![], model: "gpt".to_string(), max_tokens: None };
         assert!(req.max_tokens.is_none());
     }
 
     #[test]
     fn test_chat_message_clone() {
-        let msg = ChatMessage {
-            role: "assistant".to_string(),
-            content: "response".to_string(),
-        };
+        let msg = ChatMessage { role: "assistant".to_string(), content: "response".to_string() };
         let cloned = msg.clone();
         assert_eq!(msg, cloned);
     }

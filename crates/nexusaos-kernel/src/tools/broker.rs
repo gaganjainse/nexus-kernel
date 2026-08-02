@@ -142,7 +142,9 @@ mod tests {
         let req = ToolRequest { tool_name: "dummy".to_string(), arguments: json!({}) };
         let res = broker.execute(&req).await.unwrap();
         match res {
-            BrokerResult::Denied(reason) => assert!(reason.contains("deny") || reason.contains("Deny")),
+            BrokerResult::Denied(reason) => {
+                assert!(reason.contains("deny") || reason.contains("Deny"))
+            }
             _ => panic!("Expected Denied"),
         }
     }
@@ -198,9 +200,15 @@ mod tests {
         struct AnotherTool;
         #[async_trait]
         impl ToolExecutor for AnotherTool {
-            fn name(&self) -> &str { "another" }
-            fn description(&self) -> &str { "another tool" }
-            fn is_destructive(&self) -> bool { false }
+            fn name(&self) -> &str {
+                "another"
+            }
+            fn description(&self) -> &str {
+                "another tool"
+            }
+            fn is_destructive(&self) -> bool {
+                false
+            }
             async fn execute(&self, _req: &ToolRequest) -> Result<ToolResult, ToolError> {
                 Ok(ToolResult { success: true, output: "ok".into(), data: None })
             }

@@ -1,6 +1,6 @@
+use std::{collections::HashMap, sync::RwLock};
+
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::sync::RwLock;
 
 pub const STATUS_INIT: &str = "init";
 pub const STATUS_RUNNING: &str = "running";
@@ -13,31 +13,31 @@ pub const STATUS_ERROR: &str = "error";
 pub struct ObjRTInfo {
     /// Block ID this info belongs to
     pub block_id: String,
-    
+
     /// Shell process status: "running", "done", "init", "error"
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub shell_proc_status: Option<String>,
-    
+
     /// Connection name for the shell process
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub shell_proc_conn_name: Option<String>,
-    
+
     /// Shell process exit code (if completed)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub shell_proc_exit_code: Option<i32>,
-    
+
     /// Tsunami app port (for web app blocks)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tsunami_port: Option<u16>,
-    
+
     /// Wave AI chat status
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub wave_ai_status: Option<String>,
-    
+
     /// Builder status
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub builder_status: Option<String>,
-    
+
     /// Extra metadata (extensible)
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     pub extra: HashMap<String, serde_json::Value>,
@@ -51,9 +51,7 @@ pub struct RTInfoStore {
 
 impl RTInfoStore {
     pub fn new() -> Self {
-        Self {
-            data: RwLock::new(HashMap::new()),
-        }
+        Self { data: RwLock::new(HashMap::new()) }
     }
 
     pub fn get(&self, block_id: &str) -> Option<ObjRTInfo> {
@@ -100,7 +98,7 @@ impl RTInfoStore {
     pub fn merge_update(&self, partial: ObjRTInfo) {
         let mut guard = self.data.write().unwrap_or_else(|e| e.into_inner());
         let existing = guard.get_mut(&partial.block_id);
-        
+
         match existing {
             Some(existing) => {
                 if partial.shell_proc_status.is_some() {
@@ -134,10 +132,9 @@ impl RTInfoStore {
 
 #[cfg(test)]
 mod tests {
+    use std::{collections::HashMap, sync::Arc, thread};
+
     use super::*;
-    use std::collections::HashMap;
-    use std::sync::Arc;
-    use std::thread;
 
     #[test]
     fn test_status_constants() {
@@ -175,7 +172,7 @@ mod tests {
     #[test]
     fn test_store_basic_operations() {
         let store = RTInfoStore::new();
-        
+
         let info = ObjRTInfo {
             block_id: "b1".to_string(),
             shell_proc_status: Some(STATUS_INIT.to_string()),
@@ -216,7 +213,7 @@ mod tests {
     #[test]
     fn test_merge_update() {
         let store = RTInfoStore::new();
-        
+
         // 5. merge_update: new entry is inserted
         let info = ObjRTInfo {
             block_id: "b1".to_string(),
@@ -224,7 +221,7 @@ mod tests {
             ..Default::default()
         };
         store.merge_update(info.clone());
-        
+
         let retrieved = store.get("b1").unwrap();
         assert_eq!(retrieved.shell_proc_status, Some(STATUS_INIT.to_string()));
         assert_eq!(retrieved.shell_proc_conn_name, None);
@@ -258,10 +255,10 @@ mod tests {
                     shell_proc_status: Some(STATUS_INIT.to_string()),
                     ..Default::default()
                 };
-                
+
                 // Write
                 store_clone.set(info);
-                
+
                 // Update
                 store_clone.update(&block_id, |i| {
                     i.shell_proc_status = Some(STATUS_RUNNING.to_string());
@@ -299,10 +296,7 @@ mod tests {
         assert_eq!(store.len(), 0);
         assert!(store.is_empty());
 
-        let info = ObjRTInfo {
-            block_id: "b1".to_string(),
-            ..Default::default()
-        };
+        let info = ObjRTInfo { block_id: "b1".to_string(), ..Default::default() };
         store.set(info);
         assert_eq!(store.len(), 1);
         assert!(!store.is_empty());
@@ -319,10 +313,7 @@ mod tests {
     fn test_clear_after_set() {
         let store = RTInfoStore::new();
         for i in 0..5 {
-            store.set(ObjRTInfo {
-                block_id: format!("b{}", i),
-                ..Default::default()
-            });
+            store.set(ObjRTInfo { block_id: format!("b{}", i), ..Default::default() });
         }
         assert_eq!(store.len(), 5);
         store.clear();
@@ -604,10 +595,7 @@ mod tests {
 
     #[test]
     fn test_serde_skip_serializing_if_none() {
-        let info = ObjRTInfo {
-            block_id: "b1".to_string(),
-            ..Default::default()
-        };
+        let info = ObjRTInfo { block_id: "b1".to_string(), ..Default::default() };
 
         let json = serde_json::to_value(&info).unwrap();
         // None fields should be skipped
@@ -620,10 +608,7 @@ mod tests {
 
     #[test]
     fn test_serde_extra_empty_skipped() {
-        let info = ObjRTInfo {
-            block_id: "b1".to_string(),
-            ..Default::default()
-        };
+        let info = ObjRTInfo { block_id: "b1".to_string(), ..Default::default() };
 
         let json = serde_json::to_value(&info).unwrap();
         assert!(json.get("extra").is_none());
@@ -634,11 +619,7 @@ mod tests {
         let mut extra = HashMap::new();
         extra.insert("key".to_string(), serde_json::json!("val"));
 
-        let info = ObjRTInfo {
-            block_id: "b1".to_string(),
-            extra,
-            ..Default::default()
-        };
+        let info = ObjRTInfo { block_id: "b1".to_string(), extra, ..Default::default() };
 
         let json = serde_json::to_value(&info).unwrap();
         assert!(json.get("extra").is_some());
@@ -660,9 +641,7 @@ mod tests {
 
         let mut ids: Vec<String> = all.iter().map(|i| i.block_id.clone()).collect();
         ids.sort();
-        assert_eq!(ids, vec![
-            "block_0", "block_1", "block_2", "block_3", "block_4"
-        ]);
+        assert_eq!(ids, vec!["block_0", "block_1", "block_2", "block_3", "block_4"]);
     }
 
     #[test]
@@ -724,10 +703,7 @@ mod tests {
         let store = Arc::new(RTInfoStore::new());
 
         for i in 0..10 {
-            store.set(ObjRTInfo {
-                block_id: format!("block_{}", i),
-                ..Default::default()
-            });
+            store.set(ObjRTInfo { block_id: format!("block_{}", i), ..Default::default() });
         }
 
         let mut handles = vec![];

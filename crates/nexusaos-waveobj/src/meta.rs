@@ -1,5 +1,6 @@
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+
+use serde::{Deserialize, Serialize};
 
 /// A metadata map wrapping serde_json::Map for typed access.
 /// This is the Rust equivalent of Wave Terminal's MetaMapType (map[string]any in Go).
@@ -118,15 +119,16 @@ pub const META_KEY_FRAME_CLEAR: &str = "frame:*";
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use serde_json::json;
+
+    use super::*;
 
     #[test]
     fn test_metamap_new_and_empty() {
         let mut meta = MetaMap::new();
         assert!(meta.is_empty());
         assert_eq!(meta.len(), 0);
-        
+
         meta.set("test", "value");
         assert!(!meta.is_empty());
         assert_eq!(meta.len(), 1);
@@ -144,16 +146,19 @@ mod tests {
 
         assert_eq!(meta.get_string("str"), Some("hello".to_string()));
         assert_eq!(meta.get_string("int"), None); // Non-string returns None
-        
+
         assert_eq!(meta.get_int("int"), Some(42));
         assert_eq!(meta.get_int("str"), None);
 
         assert_eq!(meta.get_float("float"), Some(std::f64::consts::PI));
-        
+
         assert_eq!(meta.get_bool("bool"), Some(true));
         assert_eq!(meta.get_bool("int"), None);
 
-        assert_eq!(meta.get_string_list("list"), Some(vec!["a".to_string(), "b".to_string(), "c".to_string()]));
+        assert_eq!(
+            meta.get_string_list("list"),
+            Some(vec!["a".to_string(), "b".to_string(), "c".to_string()])
+        );
         assert_eq!(meta.get_string_list("str"), None);
 
         let mut expected_map = HashMap::new();
@@ -166,7 +171,7 @@ mod tests {
     fn test_merge_meta_simple_set() {
         let mut base = MetaMap::new();
         base.set("a", "1");
-        
+
         let mut updates = MetaMap::new();
         updates.set("a", "2");
         updates.set("b", "3");
@@ -181,7 +186,7 @@ mod tests {
         let mut base = MetaMap::new();
         base.set("a", "1");
         base.set("b", "2");
-        
+
         let mut updates = MetaMap::new();
         updates.set("a", serde_json::Value::Null);
 
@@ -196,7 +201,7 @@ mod tests {
         base.set("ai:model", "gpt-4");
         base.set("ai:maxtokens", 1000);
         base.set("bg", "red");
-        
+
         let mut updates = MetaMap::new();
         updates.set("ai:*", serde_json::Value::Null);
 
@@ -213,7 +218,7 @@ mod tests {
         base.set("ai:maxtokens", 1000);
         base.set("term:theme", "dark");
         base.set("keep", "me");
-        
+
         let mut updates = MetaMap::new();
         updates.set("ai:*", serde_json::Value::Null);
         updates.set("term:theme", serde_json::Value::Null);
@@ -233,7 +238,7 @@ mod tests {
         meta.set("key", "value");
         let serialized = serde_json::to_string(&meta).unwrap();
         assert_eq!(serialized, r#"{"key":"value"}"#);
-        
+
         let deserialized: MetaMap = serde_json::from_str(&serialized).unwrap();
         assert_eq!(deserialized, meta);
     }

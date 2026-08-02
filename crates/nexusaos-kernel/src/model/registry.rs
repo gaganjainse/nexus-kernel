@@ -1,6 +1,4 @@
-use std::collections::HashMap;
-use std::panic::AssertUnwindSafe;
-use std::sync::Arc;
+use std::{collections::HashMap, panic::AssertUnwindSafe, sync::Arc};
 
 use futures::FutureExt;
 use tracing::warn;
@@ -47,13 +45,7 @@ impl ProviderRegistry {
                     let reason = panic_reason(&panic_payload);
                     let reason = format!("task panicked: {}", reason);
                     warn!(provider = %name, %reason, "provider health check panicked");
-                    results.insert(
-                        *role,
-                        Err(ProviderError::HealthCheckFailed {
-                            name,
-                            reason,
-                        }),
-                    );
+                    results.insert(*role, Err(ProviderError::HealthCheckFailed { name, reason }));
                 }
             }
         }
@@ -74,7 +66,8 @@ impl Default for ProviderRegistry {
 
 /// Extract a human-readable reason from a panic payload.
 fn panic_reason(payload: &Box<dyn std::any::Any + Send>) -> String {
-    payload.downcast_ref::<&str>()
+    payload
+        .downcast_ref::<&str>()
         .map(|s| s.to_string())
         .or_else(|| payload.downcast_ref::<String>().cloned())
         .unwrap_or_else(|| "task panicked".to_string())
@@ -131,13 +124,30 @@ mod tests {
         struct MockCoder;
         #[async_trait]
         impl ModelProvider for MockCoder {
-            fn name(&self) -> &str { "mock-coder" }
-            fn role(&self) -> ModelRole { ModelRole::Coder }
-            fn max_context(&self) -> usize { 100 }
-            fn supports_vision(&self) -> bool { false }
-            async fn health_check(&self) -> Result<bool, ProviderError> { Ok(true) }
-            async fn complete(&self, _r: CompletionRequest) -> Result<CompletionResponse, ProviderError> { unimplemented!() }
-            async fn cancel(&self) -> Result<(), ProviderError> { Ok(()) }
+            fn name(&self) -> &str {
+                "mock-coder"
+            }
+            fn role(&self) -> ModelRole {
+                ModelRole::Coder
+            }
+            fn max_context(&self) -> usize {
+                100
+            }
+            fn supports_vision(&self) -> bool {
+                false
+            }
+            async fn health_check(&self) -> Result<bool, ProviderError> {
+                Ok(true)
+            }
+            async fn complete(
+                &self,
+                _r: CompletionRequest,
+            ) -> Result<CompletionResponse, ProviderError> {
+                unimplemented!()
+            }
+            async fn cancel(&self) -> Result<(), ProviderError> {
+                Ok(())
+            }
         }
 
         let mut registry = ProviderRegistry::new();
@@ -158,13 +168,30 @@ mod tests {
         struct AnotherPlanner;
         #[async_trait]
         impl ModelProvider for AnotherPlanner {
-            fn name(&self) -> &str { "another-planner" }
-            fn role(&self) -> ModelRole { ModelRole::Planner }
-            fn max_context(&self) -> usize { 200 }
-            fn supports_vision(&self) -> bool { true }
-            async fn health_check(&self) -> Result<bool, ProviderError> { Ok(true) }
-            async fn complete(&self, _r: CompletionRequest) -> Result<CompletionResponse, ProviderError> { unimplemented!() }
-            async fn cancel(&self) -> Result<(), ProviderError> { Ok(()) }
+            fn name(&self) -> &str {
+                "another-planner"
+            }
+            fn role(&self) -> ModelRole {
+                ModelRole::Planner
+            }
+            fn max_context(&self) -> usize {
+                200
+            }
+            fn supports_vision(&self) -> bool {
+                true
+            }
+            async fn health_check(&self) -> Result<bool, ProviderError> {
+                Ok(true)
+            }
+            async fn complete(
+                &self,
+                _r: CompletionRequest,
+            ) -> Result<CompletionResponse, ProviderError> {
+                unimplemented!()
+            }
+            async fn cancel(&self) -> Result<(), ProviderError> {
+                Ok(())
+            }
         }
 
         registry.register(Box::new(AnotherPlanner));
@@ -195,13 +222,30 @@ mod tests {
         struct HealthyProvider;
         #[async_trait]
         impl ModelProvider for HealthyProvider {
-            fn name(&self) -> &str { "healthy" }
-            fn role(&self) -> ModelRole { ModelRole::Coder }
-            fn max_context(&self) -> usize { 100 }
-            fn supports_vision(&self) -> bool { false }
-            async fn health_check(&self) -> Result<bool, ProviderError> { Ok(true) }
-            async fn complete(&self, _r: CompletionRequest) -> Result<CompletionResponse, ProviderError> { unimplemented!() }
-            async fn cancel(&self) -> Result<(), ProviderError> { Ok(()) }
+            fn name(&self) -> &str {
+                "healthy"
+            }
+            fn role(&self) -> ModelRole {
+                ModelRole::Coder
+            }
+            fn max_context(&self) -> usize {
+                100
+            }
+            fn supports_vision(&self) -> bool {
+                false
+            }
+            async fn health_check(&self) -> Result<bool, ProviderError> {
+                Ok(true)
+            }
+            async fn complete(
+                &self,
+                _r: CompletionRequest,
+            ) -> Result<CompletionResponse, ProviderError> {
+                unimplemented!()
+            }
+            async fn cancel(&self) -> Result<(), ProviderError> {
+                Ok(())
+            }
         }
 
         registry.register(Box::new(HealthyProvider));
@@ -223,15 +267,33 @@ mod tests {
         struct FailingProvider;
         #[async_trait]
         impl ModelProvider for FailingProvider {
-            fn name(&self) -> &str { "failing" }
-            fn role(&self) -> ModelRole { ModelRole::Reviewer }
-            fn max_context(&self) -> usize { 100 }
-            fn supports_vision(&self) -> bool { false }
-            async fn health_check(&self) -> Result<bool, ProviderError> {
-                Err(ProviderError::HealthCheckFailed { name: "failing".into(), reason: "timeout".into() })
+            fn name(&self) -> &str {
+                "failing"
             }
-            async fn complete(&self, _r: CompletionRequest) -> Result<CompletionResponse, ProviderError> { unimplemented!() }
-            async fn cancel(&self) -> Result<(), ProviderError> { Ok(()) }
+            fn role(&self) -> ModelRole {
+                ModelRole::Reviewer
+            }
+            fn max_context(&self) -> usize {
+                100
+            }
+            fn supports_vision(&self) -> bool {
+                false
+            }
+            async fn health_check(&self) -> Result<bool, ProviderError> {
+                Err(ProviderError::HealthCheckFailed {
+                    name: "failing".into(),
+                    reason: "timeout".into(),
+                })
+            }
+            async fn complete(
+                &self,
+                _r: CompletionRequest,
+            ) -> Result<CompletionResponse, ProviderError> {
+                unimplemented!()
+            }
+            async fn cancel(&self) -> Result<(), ProviderError> {
+                Ok(())
+            }
         }
 
         let mut registry = ProviderRegistry::new();

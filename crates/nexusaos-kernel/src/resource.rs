@@ -130,7 +130,10 @@ impl ResourceMonitor {
     fn query_disk_space() -> u64 {
         // Try sysinfo first (cross-platform, no subprocess needed)
         let disks = sysinfo::Disks::new_with_refreshed_list();
-        if let Some(root_disk) = disks.iter().find(|d| d.mount_point() == std::path::Path::new("/") || d.mount_point() == std::path::Path::new("C:\\")) {
+        if let Some(root_disk) = disks.iter().find(|d| {
+            d.mount_point() == std::path::Path::new("/")
+                || d.mount_point() == std::path::Path::new("C:\\")
+        }) {
             return root_disk.available_space() / (1024 * 1024 * 1024);
         }
 
@@ -148,9 +151,7 @@ impl ResourceMonitor {
 
     /// Run `df` and parse the available space column.
     fn query_df_space(args: &[&str], column: usize) -> u64 {
-        let output = std::process::Command::new("df")
-            .args(args)
-            .output();
+        let output = std::process::Command::new("df").args(args).output();
         if let Ok(output) = output {
             if output.status.success() {
                 let stdout = String::from_utf8_lossy(&output.stdout);

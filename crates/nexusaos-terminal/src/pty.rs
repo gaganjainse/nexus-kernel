@@ -3,11 +3,15 @@
 //! Includes backpressure-aware async reading: the PTY reader task yields its lock
 //! every `PTY_READ_CHUNK` bytes so the GUI renderer is never starved.
 
-use std::io::{Read, Write};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::{
+    io::{Read, Write},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+};
 
-use portable_pty::{CommandBuilder, PtyPair, PtySize, native_pty_system};
+use portable_pty::{native_pty_system, CommandBuilder, PtyPair, PtySize};
 use tokio::sync::mpsc;
 use tracing::info;
 
@@ -36,11 +40,7 @@ impl PtyManager {
         let _child = pair.slave.spawn_command(cmd)?;
         info!("Spawned PTY shell instance");
 
-        Ok(Self {
-            pair,
-            shutdown: Arc::new(AtomicBool::new(false)),
-            output_tx: None,
-        })
+        Ok(Self { pair, shutdown: Arc::new(AtomicBool::new(false)), output_tx: None })
     }
 
     /// Read raw output bytes from the PTY master with backpressure.

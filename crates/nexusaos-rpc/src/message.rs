@@ -28,8 +28,9 @@ pub struct RpcError {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use serde_json::json;
+
+    use super::*;
 
     #[test]
     fn test_rpc_request() {
@@ -60,24 +61,15 @@ mod tests {
 
     #[test]
     fn test_rpc_request_empty_method() {
-        let req = RpcRequest {
-            jsonrpc: "2.0".into(),
-            method: "".into(),
-            params: None,
-            id: None,
-        };
+        let req = RpcRequest { jsonrpc: "2.0".into(), method: "".into(), params: None, id: None };
         assert!(req.method.is_empty());
         assert!(req.id.is_none());
     }
 
     #[test]
     fn test_rpc_request_none_params_and_id() {
-        let req = RpcRequest {
-            jsonrpc: "2.0".into(),
-            method: "update".into(),
-            params: None,
-            id: None,
-        };
+        let req =
+            RpcRequest { jsonrpc: "2.0".into(), method: "update".into(), params: None, id: None };
         assert!(req.params.is_none());
         assert!(req.id.is_none());
     }
@@ -148,12 +140,8 @@ mod tests {
 
     #[test]
     fn test_rpc_response_none_id() {
-        let resp = RpcResponse {
-            jsonrpc: "2.0".into(),
-            result: Some(json!(null)),
-            error: None,
-            id: None,
-        };
+        let resp =
+            RpcResponse { jsonrpc: "2.0".into(), result: Some(json!(null)), error: None, id: None };
         assert!(resp.id.is_none());
     }
 

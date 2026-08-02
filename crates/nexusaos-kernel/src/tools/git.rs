@@ -119,18 +119,12 @@ mod tests {
     async fn test_git_diff() {
         let temp_dir = TempDir::new().unwrap();
         // Initialize a git repo
-        let _ = Command::new("git")
-            .arg("init")
-            .current_dir(temp_dir.path())
-            .output()
-            .await;
+        let _ = Command::new("git").arg("init").current_dir(temp_dir.path()).output().await;
 
         let tool = GitTool::new(temp_dir.path().to_path_buf());
 
-        let req = ToolRequest {
-            tool_name: "git".to_string(),
-            arguments: json!({ "action": "diff" }),
-        };
+        let req =
+            ToolRequest { tool_name: "git".to_string(), arguments: json!({ "action": "diff" }) };
         let res = tool.execute(&req).await.unwrap();
         assert!(res.success); // diff with no changes returns empty but succeeds
     }
@@ -138,11 +132,7 @@ mod tests {
     #[tokio::test]
     async fn test_git_diff_staged() {
         let temp_dir = TempDir::new().unwrap();
-        let _ = Command::new("git")
-            .arg("init")
-            .current_dir(temp_dir.path())
-            .output()
-            .await;
+        let _ = Command::new("git").arg("init").current_dir(temp_dir.path()).output().await;
         let _ = Command::new("git")
             .args(["config", "user.email", "test@test.com"])
             .current_dir(temp_dir.path())
@@ -177,11 +167,7 @@ mod tests {
     #[tokio::test]
     async fn test_git_log() {
         let temp_dir = TempDir::new().unwrap();
-        let _ = Command::new("git")
-            .arg("init")
-            .current_dir(temp_dir.path())
-            .output()
-            .await;
+        let _ = Command::new("git").arg("init").current_dir(temp_dir.path()).output().await;
         let _ = Command::new("git")
             .args(["config", "user.email", "test@test.com"])
             .current_dir(temp_dir.path())
@@ -221,11 +207,7 @@ mod tests {
     #[tokio::test]
     async fn test_git_add() {
         let temp_dir = TempDir::new().unwrap();
-        let _ = Command::new("git")
-            .arg("init")
-            .current_dir(temp_dir.path())
-            .output()
-            .await;
+        let _ = Command::new("git").arg("init").current_dir(temp_dir.path()).output().await;
         let _ = Command::new("git")
             .args(["config", "user.email", "test@test.com"])
             .current_dir(temp_dir.path())
@@ -253,11 +235,7 @@ mod tests {
     #[tokio::test]
     async fn test_git_commit() {
         let temp_dir = TempDir::new().unwrap();
-        let _ = Command::new("git")
-            .arg("init")
-            .current_dir(temp_dir.path())
-            .output()
-            .await;
+        let _ = Command::new("git").arg("init").current_dir(temp_dir.path()).output().await;
         let _ = Command::new("git")
             .args(["config", "user.email", "test@test.com"])
             .current_dir(temp_dir.path())
@@ -294,10 +272,8 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let tool = GitTool::new(temp_dir.path().to_path_buf());
 
-        let req = ToolRequest {
-            tool_name: "git".to_string(),
-            arguments: json!({ "action": "push" }),
-        };
+        let req =
+            ToolRequest { tool_name: "git".to_string(), arguments: json!({ "action": "push" }) };
         let err = tool.execute(&req).await.unwrap_err();
         match err {
             ToolError::ExecutionFailed { reason, .. } => assert!(reason.contains("Unknown action")),
@@ -310,13 +286,13 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let tool = GitTool::new(temp_dir.path().to_path_buf());
 
-        let req = ToolRequest {
-            tool_name: "git".to_string(),
-            arguments: json!({ "action": "commit" }),
-        };
+        let req =
+            ToolRequest { tool_name: "git".to_string(), arguments: json!({ "action": "commit" }) };
         let err = tool.execute(&req).await.unwrap_err();
         match err {
-            ToolError::ExecutionFailed { reason, .. } => assert!(reason.contains("Missing 'message' argument")),
+            ToolError::ExecutionFailed { reason, .. } => {
+                assert!(reason.contains("Missing 'message' argument"))
+            }
             _ => panic!("Expected ExecutionFailed"),
         }
     }
@@ -326,10 +302,8 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let tool = GitTool::new(temp_dir.path().to_path_buf());
 
-        let req = ToolRequest {
-            tool_name: "git".to_string(),
-            arguments: json!({ "action": "status" }),
-        };
+        let req =
+            ToolRequest { tool_name: "git".to_string(), arguments: json!({ "action": "status" }) };
         let res = tool.execute(&req).await.unwrap();
         // In a non-git directory, git status will fail
         assert!(!res.success || res.output.contains("fatal") || res.output.contains("not a git"));
@@ -338,11 +312,7 @@ mod tests {
     #[tokio::test]
     async fn test_git_log_default_count() {
         let temp_dir = TempDir::new().unwrap();
-        let _ = Command::new("git")
-            .arg("init")
-            .current_dir(temp_dir.path())
-            .output()
-            .await;
+        let _ = Command::new("git").arg("init").current_dir(temp_dir.path()).output().await;
         let _ = Command::new("git")
             .args(["config", "user.email", "test@test.com"])
             .current_dir(temp_dir.path())
@@ -371,10 +341,8 @@ mod tests {
         let tool = GitTool::new(temp_dir.path().to_path_buf());
 
         // Test default count (should use 10)
-        let req = ToolRequest {
-            tool_name: "git".to_string(),
-            arguments: json!({ "action": "log" }),
-        };
+        let req =
+            ToolRequest { tool_name: "git".to_string(), arguments: json!({ "action": "log" }) };
         let res = tool.execute(&req).await.unwrap();
         assert!(res.success);
     }

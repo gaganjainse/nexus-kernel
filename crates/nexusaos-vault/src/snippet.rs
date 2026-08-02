@@ -103,12 +103,7 @@ mod tests {
 
     #[test]
     fn test_snippet_new_generates_uuid() {
-        let snippet = CommandSnippet::new(
-            "test-cmd",
-            "echo hello",
-            "A test command",
-            vec![],
-        );
+        let snippet = CommandSnippet::new("test-cmd", "echo hello", "A test command", vec![]);
         assert!(!snippet.id.is_nil());
     }
 
@@ -229,12 +224,8 @@ mod tests {
         let store_path = temp_dir.path().join("roundtrip.jsonl");
         let store = VaultStore::new(store_path);
 
-        let original = CommandSnippet::new(
-            "roundtrip",
-            "cat <file>",
-            "Roundtrip test",
-            vec!["test".into()],
-        );
+        let original =
+            CommandSnippet::new("roundtrip", "cat <file>", "Roundtrip test", vec!["test".into()]);
         store.save(&original).unwrap();
 
         let loaded = store.load_all().unwrap();
@@ -292,12 +283,8 @@ mod tests {
 
     #[test]
     fn test_command_snippet_clone() {
-        let snippet = CommandSnippet::new(
-            "clone-test",
-            "cmd",
-            "desc",
-            vec!["a".into(), "b".into()],
-        );
+        let snippet =
+            CommandSnippet::new("clone-test", "cmd", "desc", vec!["a".into(), "b".into()]);
         let cloned = snippet.clone();
         assert_eq!(cloned.name, snippet.name);
         assert_eq!(cloned.template, snippet.template);

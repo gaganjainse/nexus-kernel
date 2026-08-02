@@ -1,7 +1,10 @@
-use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
-use thiserror::Error;
+use std::{
+    collections::HashMap,
+    sync::{Arc, RwLock},
+};
+
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum ControllerError {
@@ -21,7 +24,7 @@ pub enum ControllerError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ControllerStatus {
     pub block_id: String,
-    pub status: String,  // "init", "running", "done", "error"
+    pub status: String, // "init", "running", "done", "error"
     pub conn_name: String,
     pub exit_code: Option<i32>,
 }
@@ -59,12 +62,14 @@ pub struct ControllerRegistry {
 
 impl ControllerRegistry {
     pub fn new() -> Self {
-        Self {
-            controllers: RwLock::new(HashMap::new()),
-        }
+        Self { controllers: RwLock::new(HashMap::new()) }
     }
 
-    pub fn register(&self, block_id: &str, controller: Arc<dyn Controller>) -> Result<(), ControllerError> {
+    pub fn register(
+        &self,
+        block_id: &str,
+        controller: Arc<dyn Controller>,
+    ) -> Result<(), ControllerError> {
         let mut controllers = self.controllers.write().unwrap_or_else(|e| e.into_inner());
         if controllers.contains_key(block_id) {
             return Err(ControllerError::AlreadyExists(block_id.to_string()));
@@ -83,8 +88,14 @@ impl ControllerRegistry {
         controllers.remove(block_id)
     }
 
-    pub async fn send_input(&self, block_id: &str, input: BlockInput) -> Result<(), ControllerError> {
-        let controller = self.get(block_id).ok_or_else(|| ControllerError::BlockNotFound(block_id.to_string()))?;
+    pub async fn send_input(
+        &self,
+        block_id: &str,
+        input: BlockInput,
+    ) -> Result<(), ControllerError> {
+        let controller = self
+            .get(block_id)
+            .ok_or_else(|| ControllerError::BlockNotFound(block_id.to_string()))?;
         controller.send_input(input).await
     }
 
@@ -114,8 +125,9 @@ impl Default for ControllerRegistry {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::sync::atomic::{AtomicBool, Ordering};
+
+    use super::*;
 
     struct MockController {
         block_id: String,
@@ -135,7 +147,11 @@ mod tests {
         fn runtime_status(&self) -> ControllerStatus {
             ControllerStatus {
                 block_id: self.block_id.clone(),
-                status: if self.started.load(Ordering::SeqCst) { "running".to_string() } else { "init".to_string() },
+                status: if self.started.load(Ordering::SeqCst) {
+                    "running".to_string()
+                } else {
+                    "init".to_string()
+                },
                 conn_name: "mock".to_string(),
                 exit_code: None,
             }

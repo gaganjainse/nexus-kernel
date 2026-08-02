@@ -41,15 +41,14 @@ pub trait ToolExecutor: Send + Sync {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use serde_json::json;
+
+    use super::*;
 
     #[test]
     fn test_tool_request_construction() {
-        let req = ToolRequest {
-            tool_name: "test_tool".to_string(),
-            arguments: json!({"key": "value"}),
-        };
+        let req =
+            ToolRequest { tool_name: "test_tool".to_string(), arguments: json!({"key": "value"}) };
         assert_eq!(req.tool_name, "test_tool");
         assert_eq!(req.arguments["key"], "value");
     }
@@ -68,11 +67,8 @@ mod tests {
 
     #[test]
     fn test_tool_result_success() {
-        let result = ToolResult {
-            success: true,
-            output: "done".into(),
-            data: Some(json!({"bytes": 1024})),
-        };
+        let result =
+            ToolResult { success: true, output: "done".into(), data: Some(json!({"bytes": 1024})) };
         assert!(result.success);
         assert_eq!(result.output, "done");
         assert!(result.data.is_some());
@@ -80,11 +76,7 @@ mod tests {
 
     #[test]
     fn test_tool_result_failure() {
-        let result = ToolResult {
-            success: false,
-            output: "error msg".into(),
-            data: None,
-        };
+        let result = ToolResult { success: false, output: "error msg".into(), data: None };
         assert!(!result.success);
         assert_eq!(result.output, "error msg");
         assert!(result.data.is_none());
@@ -105,11 +97,7 @@ mod tests {
 
     #[test]
     fn test_tool_result_empty_output() {
-        let result = ToolResult {
-            success: true,
-            output: String::new(),
-            data: None,
-        };
+        let result = ToolResult { success: true, output: String::new(), data: None };
         assert!(result.output.is_empty());
     }
 }

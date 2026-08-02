@@ -1,11 +1,15 @@
-use crate::provider::{AiError, ChatMessage, ChatRequest, ModelProvider};
+use std::sync::Arc;
+
 use futures::StreamExt;
 use nexusaos_wconfig::settings::GlobalSettings;
-use nexusaos_wps::broker::Broker;
-use nexusaos_wps::events::{WaveEvent, EVENT_BUILDER_OUTPUT};
-use std::sync::Arc;
-use tokio::sync::{Mutex, mpsc};
+use nexusaos_wps::{
+    broker::Broker,
+    events::{WaveEvent, EVENT_BUILDER_OUTPUT},
+};
 use serde_json::json;
+use tokio::sync::{mpsc, Mutex};
+
+use crate::provider::{AiError, ChatMessage, ChatRequest, ModelProvider};
 
 /// A handle for receiving streaming chunks from an AI response.
 pub struct StreamHandle {
@@ -36,12 +40,7 @@ impl ChatSession {
         settings: Arc<Mutex<GlobalSettings>>,
         broker: Arc<Broker>,
     ) -> Self {
-        Self {
-            provider,
-            settings,
-            broker,
-            history: Arc::new(Mutex::new(Vec::new())),
-        }
+        Self { provider, settings, broker, history: Arc::new(Mutex::new(Vec::new())) }
     }
 
     /// Send a message and return a StreamHandle for receiving chunks.
@@ -49,13 +48,10 @@ impl ChatSession {
     pub async fn send_message_stream(&self, text: &str) -> Result<StreamHandle, AiError> {
         let req = {
             let mut history = self.history.lock().await;
-            history.push(ChatMessage {
-                role: "user".to_string(),
-                content: text.to_string(),
-            });
+            history.push(ChatMessage { role: "user".to_string(), content: text.to_string() });
 
             let _settings = self.settings.lock().await;
-            
+
             ChatRequest {
                 messages: history.clone(),
                 model: "default-model".to_string(),
@@ -102,10 +98,7 @@ impl ChatSession {
 
             // Append complete response to history
             let mut history_lock = history.lock().await;
-            history_lock.push(ChatMessage {
-                role: "assistant".to_string(),
-                content: ai_response,
-            });
+            history_lock.push(ChatMessage { role: "assistant".to_string(), content: ai_response });
         });
 
         Ok(StreamHandle::new(rx))
@@ -123,15 +116,19 @@ impl ChatSession {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use async_trait::async_trait;
     use futures::stream::BoxStream;
 
+    use super::*;
+
     struct MockProvider;
-    
+
     #[async_trait]
     impl ModelProvider for MockProvider {
-        async fn stream_chat(&self, _req: ChatRequest) -> Result<BoxStream<'static, Result<String, AiError>>, AiError> {
+        async fn stream_chat(
+            &self,
+            _req: ChatRequest,
+        ) -> Result<BoxStream<'static, Result<String, AiError>>, AiError> {
             Ok(Box::pin(futures::stream::iter(vec![
                 Ok("Hello ".to_string()),
                 Ok("World".to_string()),

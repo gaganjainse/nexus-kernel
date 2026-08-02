@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use std::sync::RwLock;
+use std::{collections::HashMap, sync::RwLock};
 
 pub struct BlockFileStore {
     zones: RwLock<HashMap<String, ZoneData>>,
@@ -12,17 +11,14 @@ struct ZoneData {
 
 impl BlockFileStore {
     pub fn new() -> Self {
-        Self {
-            zones: RwLock::new(HashMap::new()),
-        }
+        Self { zones: RwLock::new(HashMap::new()) }
     }
 
     pub fn append(&self, block_id: &str, data: &[u8]) {
         let mut zones = self.zones.write().unwrap_or_else(|e| e.into_inner());
-        let zone = zones.entry(block_id.to_string()).or_insert_with(|| ZoneData {
-            data: Vec::new(),
-            max_size: 1_048_576,
-        });
+        let zone = zones
+            .entry(block_id.to_string())
+            .or_insert_with(|| ZoneData { data: Vec::new(), max_size: 1_048_576 });
 
         zone.data.extend_from_slice(data);
         if zone.data.len() > zone.max_size {
@@ -39,11 +35,7 @@ impl BlockFileStore {
     pub fn read_tail(&self, block_id: &str, max_bytes: usize) -> Option<Vec<u8>> {
         let zones = self.zones.read().unwrap_or_else(|e| e.into_inner());
         zones.get(block_id).map(|zone| {
-            let start = if zone.data.len() > max_bytes {
-                zone.data.len() - max_bytes
-            } else {
-                0
-            };
+            let start = if zone.data.len() > max_bytes { zone.data.len() - max_bytes } else { 0 };
             zone.data[start..].to_vec()
         })
     }
@@ -67,10 +59,9 @@ impl BlockFileStore {
 
     pub fn set_max_size(&self, block_id: &str, max_size: usize) {
         let mut zones = self.zones.write().unwrap_or_else(|e| e.into_inner());
-        let zone = zones.entry(block_id.to_string()).or_insert_with(|| ZoneData {
-            data: Vec::new(),
-            max_size,
-        });
+        let zone = zones
+            .entry(block_id.to_string())
+            .or_insert_with(|| ZoneData { data: Vec::new(), max_size });
         zone.max_size = max_size;
         if zone.data.len() > max_size {
             let overflow = zone.data.len() - max_size;

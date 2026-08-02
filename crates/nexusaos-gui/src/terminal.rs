@@ -2,14 +2,15 @@
 /// Implements a proper cell-grid model with cursor, scrollback, and ANSI
 /// attribute tracking (color, bold, italic, underline, reverse).
 use std::collections::VecDeque;
-use std::io::{Read, Write};
-use std::sync::{Arc, Mutex};
-
-use portable_pty::{CommandBuilder, PtySize, native_pty_system};
-use vte::{Params, Parser, Perform};
+use std::{
+    io::{Read, Write},
+    sync::{Arc, Mutex},
+};
 
 use iced::keyboard;
+use portable_pty::{native_pty_system, CommandBuilder, PtySize};
 use tokio::sync::mpsc;
+use vte::{Params, Parser, Perform};
 
 // --- Grid geometry constants ---
 pub const DEFAULT_ROWS: usize = 30;
@@ -55,10 +56,7 @@ pub struct Cell {
 
 impl Default for Cell {
     fn default() -> Self {
-        Self {
-            ch: ' ',
-            attr: CellAttr::default(),
-        }
+        Self { ch: ' ', attr: CellAttr::default() }
     }
 }
 
@@ -282,11 +280,8 @@ impl TermPerformer {
                         self.current_attr.fg = TermColor::Indexed(ps[i + 2] as u8);
                         i += 2;
                     } else if i + 4 < ps.len() && ps[i + 1] == 2 {
-                        self.current_attr.fg = TermColor::Rgb(
-                            ps[i + 2] as u8,
-                            ps[i + 3] as u8,
-                            ps[i + 4] as u8,
-                        );
+                        self.current_attr.fg =
+                            TermColor::Rgb(ps[i + 2] as u8, ps[i + 3] as u8, ps[i + 4] as u8);
                         i += 4;
                     }
                 }
@@ -297,11 +292,8 @@ impl TermPerformer {
                         self.current_attr.bg = TermColor::Indexed(ps[i + 2] as u8);
                         i += 2;
                     } else if i + 4 < ps.len() && ps[i + 1] == 2 {
-                        self.current_attr.bg = TermColor::Rgb(
-                            ps[i + 2] as u8,
-                            ps[i + 3] as u8,
-                            ps[i + 4] as u8,
-                        );
+                        self.current_attr.bg =
+                            TermColor::Rgb(ps[i + 2] as u8, ps[i + 3] as u8, ps[i + 4] as u8);
                         i += 4;
                     }
                 }
@@ -338,11 +330,7 @@ impl Perform for TermPerformer {
 
         // Apply reverse video to stored attributes
         let attr = if self.current_attr.reverse {
-            CellAttr {
-                fg: self.current_attr.bg,
-                bg: self.current_attr.fg,
-                ..self.current_attr
-            }
+            CellAttr { fg: self.current_attr.bg, bg: self.current_attr.fg, ..self.current_attr }
         } else {
             self.current_attr
         };
@@ -456,11 +444,7 @@ impl Perform for TermPerformer {
             // Set scroll region
             'r' => {
                 let top = (p1.max(1) as usize).saturating_sub(1);
-                let bot = if p2 == 0 {
-                    self.rows - 1
-                } else {
-                    (p2 as usize).saturating_sub(1)
-                };
+                let bot = if p2 == 0 { self.rows - 1 } else { (p2 as usize).saturating_sub(1) };
                 self.scroll_top = top.min(self.rows - 1);
                 self.scroll_bot = bot.min(self.rows - 1);
                 // Cursor to top-left of new region
@@ -493,10 +477,7 @@ impl Perform for TermPerformer {
         }
         let cmd = std::str::from_utf8(params[0]).unwrap_or("");
         if matches!(cmd, "0" | "1" | "2") {
-            if let Some(title) = params
-                .get(1)
-                .and_then(|b| std::str::from_utf8(b).ok())
-            {
+            if let Some(title) = params.get(1).and_then(|b| std::str::from_utf8(b).ok()) {
                 self.title = title.to_string();
             }
         }
@@ -616,18 +597,18 @@ impl TerminalState {
             loop {
                 // Resize buffer to chunk size
                 buffer.resize(PTY_READ_CHUNK, 0);
-                
+
                 match reader.read(&mut buffer) {
                     Ok(0) | Err(_) => break,
                     Ok(n) => {
                         buffer.truncate(n);
                         total_read += n;
-                        
+
                         // Send chunk to GUI thread
                         if pty_tx.blocking_send(buffer.clone()).is_err() {
                             break; // Channel closed
                         }
-                        
+
                         // Backpressure: if buffer is getting large, yield to allow GUI to process
                         if total_read >= PTY_MAX_BUFFER {
                             std::thread::yield_now();
@@ -672,34 +653,33 @@ impl TerminalState {
 
     /// Handle special / modified keys from the keyboard.
     pub fn handle_key(&mut self, key: keyboard::Key, modifiers: keyboard::Modifiers) {
-        use keyboard::key::Named;
-        use keyboard::Key;
+        use keyboard::{key::Named, Key};
 
         match key {
             Key::Named(named) => match named {
-                Named::Enter     => self.write_to_pty(b"\r"),
+                Named::Enter => self.write_to_pty(b"\r"),
                 Named::Backspace => self.write_to_pty(b"\x7f"),
-                Named::Tab       => self.write_to_pty(b"\t"),
-                Named::Escape    => self.write_to_pty(b"\x1b"),
-                Named::ArrowUp    => self.write_to_pty(b"\x1b[A"),
-                Named::ArrowDown  => self.write_to_pty(b"\x1b[B"),
+                Named::Tab => self.write_to_pty(b"\t"),
+                Named::Escape => self.write_to_pty(b"\x1b"),
+                Named::ArrowUp => self.write_to_pty(b"\x1b[A"),
+                Named::ArrowDown => self.write_to_pty(b"\x1b[B"),
                 Named::ArrowRight => self.write_to_pty(b"\x1b[C"),
-                Named::ArrowLeft  => self.write_to_pty(b"\x1b[D"),
-                Named::Home     => self.write_to_pty(b"\x1b[H"),
-                Named::End      => self.write_to_pty(b"\x1b[F"),
-                Named::PageUp   => self.write_to_pty(b"\x1b[5~"),
+                Named::ArrowLeft => self.write_to_pty(b"\x1b[D"),
+                Named::Home => self.write_to_pty(b"\x1b[H"),
+                Named::End => self.write_to_pty(b"\x1b[F"),
+                Named::PageUp => self.write_to_pty(b"\x1b[5~"),
                 Named::PageDown => self.write_to_pty(b"\x1b[6~"),
-                Named::Delete   => self.write_to_pty(b"\x1b[3~"),
-                Named::Insert   => self.write_to_pty(b"\x1b[2~"),
-                Named::F1  => self.write_to_pty(b"\x1bOP"),
-                Named::F2  => self.write_to_pty(b"\x1bOQ"),
-                Named::F3  => self.write_to_pty(b"\x1bOR"),
-                Named::F4  => self.write_to_pty(b"\x1bOS"),
-                Named::F5  => self.write_to_pty(b"\x1b[15~"),
-                Named::F6  => self.write_to_pty(b"\x1b[17~"),
-                Named::F7  => self.write_to_pty(b"\x1b[18~"),
-                Named::F8  => self.write_to_pty(b"\x1b[19~"),
-                Named::F9  => self.write_to_pty(b"\x1b[20~"),
+                Named::Delete => self.write_to_pty(b"\x1b[3~"),
+                Named::Insert => self.write_to_pty(b"\x1b[2~"),
+                Named::F1 => self.write_to_pty(b"\x1bOP"),
+                Named::F2 => self.write_to_pty(b"\x1bOQ"),
+                Named::F3 => self.write_to_pty(b"\x1bOR"),
+                Named::F4 => self.write_to_pty(b"\x1bOS"),
+                Named::F5 => self.write_to_pty(b"\x1b[15~"),
+                Named::F6 => self.write_to_pty(b"\x1b[17~"),
+                Named::F7 => self.write_to_pty(b"\x1b[18~"),
+                Named::F8 => self.write_to_pty(b"\x1b[19~"),
+                Named::F9 => self.write_to_pty(b"\x1b[20~"),
                 Named::F10 => self.write_to_pty(b"\x1b[21~"),
                 Named::F11 => self.write_to_pty(b"\x1b[23~"),
                 Named::F12 => self.write_to_pty(b"\x1b[24~"),

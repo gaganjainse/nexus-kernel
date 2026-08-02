@@ -1,10 +1,12 @@
-use notify::{Watcher, RecursiveMode, Event as NotifyEvent, EventKind};
-use std::path::PathBuf;
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
+
+use nexusaos_wps::{
+    broker::Broker,
+    events::{WaveEvent, EVENT_CONFIG},
+};
+use notify::{Event as NotifyEvent, EventKind, RecursiveMode, Watcher};
 use tokio::sync::mpsc;
-use tracing::{info, error, debug};
-use nexusaos_wps::broker::Broker;
-use nexusaos_wps::events::{WaveEvent, EVENT_CONFIG};
+use tracing::{debug, error, info};
 
 pub struct ConfigWatcher {
     config_path: PathBuf,
@@ -13,10 +15,7 @@ pub struct ConfigWatcher {
 
 impl ConfigWatcher {
     pub fn new(config_path: PathBuf, broker: Arc<Broker>) -> Self {
-        Self {
-            config_path,
-            broker,
-        }
+        Self { config_path, broker }
     }
 
     pub fn start(&self) {
@@ -52,17 +51,25 @@ impl ConfigWatcher {
                             match event.kind {
                                 EventKind::Modify(_) | EventKind::Create(_) => {
                                     debug!("Config file changed: {:?}", config_path);
-                                    
+
                                     // Try reading the file
                                     match tokio::fs::read_to_string(&config_path).await {
                                         Ok(content) => {
-                                            match serde_json::from_str::<serde_json::Value>(&content) {
+                                            match serde_json::from_str::<serde_json::Value>(
+                                                &content,
+                                            ) {
                                                 Ok(parsed_json) => {
-                                                    let wave_event = WaveEvent::global(EVENT_CONFIG, parsed_json);
+                                                    let wave_event = WaveEvent::global(
+                                                        EVENT_CONFIG,
+                                                        parsed_json,
+                                                    );
                                                     broker.publish(wave_event);
                                                 }
                                                 Err(e) => {
-                                                    error!("Failed to parse config file JSON: {:?}", e);
+                                                    error!(
+                                                        "Failed to parse config file JSON: {:?}",
+                                                        e
+                                                    );
                                                 }
                                             }
                                         }
@@ -80,7 +87,7 @@ impl ConfigWatcher {
                     }
                 }
             }
-            
+
             // Keep watcher alive
             drop(watcher);
         });
@@ -89,29 +96,30 @@ impl ConfigWatcher {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use tempfile::TempDir;
-    use std::io::Write;
-    use std::time::Duration;
-    use tokio::time::timeout;
-    use serde_json::json;
+    use std::{io::Write, time::Duration};
+
     use nexusaos_wps::events::SubscriptionRequest;
+    use serde_json::json;
+    use tempfile::TempDir;
+    use tokio::time::timeout;
+
+    use super::*;
 
     #[tokio::test]
     async fn test_config_watcher() {
         let temp_dir = TempDir::new().unwrap();
         let config_path = temp_dir.path().join("settings.json");
-        
+
         // Initially empty
         std::fs::File::create(&config_path).unwrap();
 
         let broker = Broker::new(10);
-        
-        broker.subscribe("test_route", SubscriptionRequest {
-            topic: EVENT_CONFIG.to_string(),
-            scopes: vec![],
-        });
-        
+
+        broker.subscribe(
+            "test_route",
+            SubscriptionRequest { topic: EVENT_CONFIG.to_string(), scopes: vec![] },
+        );
+
         let mut subscriber = broker.receiver();
 
         let watcher = ConfigWatcher::new(config_path.clone(), broker.clone());
@@ -180,16 +188,16 @@ mod tests {
         std::fs::File::create(&config_path).unwrap();
 
         let broker = Broker::new(10);
-        
-        broker.subscribe("route1", SubscriptionRequest {
-            topic: EVENT_CONFIG.to_string(),
-            scopes: vec![],
-        });
-        broker.subscribe("route2", SubscriptionRequest {
-            topic: EVENT_CONFIG.to_string(),
-            scopes: vec![],
-        });
-        
+
+        broker.subscribe(
+            "route1",
+            SubscriptionRequest { topic: EVENT_CONFIG.to_string(), scopes: vec![] },
+        );
+        broker.subscribe(
+            "route2",
+            SubscriptionRequest { topic: EVENT_CONFIG.to_string(), scopes: vec![] },
+        );
+
         let mut subscriber = broker.receiver();
 
         let watcher = ConfigWatcher::new(config_path.clone(), broker.clone());
@@ -244,11 +252,11 @@ mod tests {
         std::fs::File::create(&config_path).unwrap();
 
         let broker = Broker::new(10);
-        broker.subscribe("test_route", SubscriptionRequest {
-            topic: EVENT_CONFIG.to_string(),
-            scopes: vec![],
-        });
-        
+        broker.subscribe(
+            "test_route",
+            SubscriptionRequest { topic: EVENT_CONFIG.to_string(), scopes: vec![] },
+        );
+
         let mut subscriber = broker.receiver();
 
         let watcher = ConfigWatcher::new(config_path.clone(), broker.clone());

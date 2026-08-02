@@ -117,22 +117,40 @@ mod tests {
     fn test_explain_flags_known_long_flags() {
         let cmd = "rm --force --recursive --verbose --yes --delete --archive /tmp";
         let flags = FlagInspector::explain_flags(cmd);
-        assert!(flags.iter().any(|(f, e)| f == "--force" && e == "Force operation without prompt or error"));
-        assert!(flags.iter().any(|(f, e)| f == "--recursive" && e == "Operate recursively on subdirectories"));
-        assert!(flags.iter().any(|(f, e)| f == "--verbose" && e == "Enable verbose progress output"));
-        assert!(flags.iter().any(|(f, e)| f == "--yes" && e == "Automatically answer yes to all prompts"));
-        assert!(flags.iter().any(|(f, e)| f == "--delete" && e == "Delete extraneous files from target destination"));
-        assert!(flags.iter().any(|(f, e)| f == "--archive" && e == "Archive mode; preserves permissions, times, and symlinks"));
+        assert!(flags
+            .iter()
+            .any(|(f, e)| f == "--force" && e == "Force operation without prompt or error"));
+        assert!(flags
+            .iter()
+            .any(|(f, e)| f == "--recursive" && e == "Operate recursively on subdirectories"));
+        assert!(flags
+            .iter()
+            .any(|(f, e)| f == "--verbose" && e == "Enable verbose progress output"));
+        assert!(flags
+            .iter()
+            .any(|(f, e)| f == "--yes" && e == "Automatically answer yes to all prompts"));
+        assert!(flags.iter().any(
+            |(f, e)| f == "--delete" && e == "Delete extraneous files from target destination"
+        ));
+        assert!(flags.iter().any(|(f, e)| f == "--archive"
+            && e == "Archive mode; preserves permissions, times, and symlinks"));
     }
 
     #[test]
     fn test_explain_flags_known_short_flags() {
         let cmd = "rsync -avryzf src dst";
         let flags = FlagInspector::explain_flags(cmd);
-        assert!(flags.iter().any(|(f, e)| f == "-a" && e == "Archive mode; preserves permissions, times, and symlinks"));
+        assert!(flags
+            .iter()
+            .any(|(f, e)| f == "-a"
+                && e == "Archive mode; preserves permissions, times, and symlinks"));
         assert!(flags.iter().any(|(f, e)| f == "-v" && e == "Enable verbose progress output"));
-        assert!(flags.iter().any(|(f, e)| f == "-r" && e == "Operate recursively on subdirectories"));
-        assert!(flags.iter().any(|(f, e)| f == "-y" && e == "Automatically answer yes to all prompts"));
+        assert!(flags
+            .iter()
+            .any(|(f, e)| f == "-r" && e == "Operate recursively on subdirectories"));
+        assert!(flags
+            .iter()
+            .any(|(f, e)| f == "-y" && e == "Automatically answer yes to all prompts"));
         assert!(flags.iter().any(|(f, e)| f == "-z" && e == "Compress file data during transfer"));
     }
 

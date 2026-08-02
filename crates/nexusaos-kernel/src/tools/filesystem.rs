@@ -272,7 +272,9 @@ mod tests {
         };
         let err = tool.execute(&req).await.unwrap_err();
         match err {
-            ToolError::ExecutionFailed { reason, .. } => assert!(reason.contains("Missing 'path' argument")),
+            ToolError::ExecutionFailed { reason, .. } => {
+                assert!(reason.contains("Missing 'path' argument"))
+            }
             _ => panic!("Expected ExecutionFailed"),
         }
     }
@@ -292,7 +294,9 @@ mod tests {
         };
         let err = tool.execute(&req).await.unwrap_err();
         match err {
-            ToolError::ExecutionFailed { reason, .. } => assert!(reason.contains("Missing 'content' argument")),
+            ToolError::ExecutionFailed { reason, .. } => {
+                assert!(reason.contains("Missing 'content' argument"))
+            }
             _ => panic!("Expected ExecutionFailed"),
         }
     }
@@ -342,7 +346,8 @@ mod tests {
         let env_path = temp_dir.path().join(".env");
         std::fs::write(&env_path, "SECRET=value").unwrap();
 
-        let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![".env".to_string()]);
+        let tool =
+            FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![".env".to_string()]);
 
         let req = ToolRequest {
             tool_name: "filesystem".to_string(),

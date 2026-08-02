@@ -142,7 +142,7 @@ impl JsonlEventStore {
         Ok(events.into_iter().filter(|e| e.sequence.0 >= sequence).collect())
     }
 
-/// Get total event count.
+    /// Get total event count.
     pub async fn count(&self) -> u64 {
         self.index.read().await.len() as u64
     }
@@ -173,6 +173,7 @@ impl crate::storage::EventStore for JsonlEventStore {
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
+
     use tempfile::TempDir;
 
     use super::*;
@@ -263,15 +264,30 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let store = JsonlEventStore::open(temp_dir.path().to_path_buf()).await.unwrap();
 
-        let mut e1 = Event::new(TaskId::new(), EventKind::TaskCreated, EventPayload::TaskCreated { request: serde_json::json!({}) }, "test".to_string());
+        let mut e1 = Event::new(
+            TaskId::new(),
+            EventKind::TaskCreated,
+            EventPayload::TaskCreated { request: serde_json::json!({}) },
+            "test".to_string(),
+        );
         e1.sequence = crate::events::SequenceNumber(1);
         store.append(&mut e1).await.unwrap();
 
-        let mut e2 = Event::new(TaskId::new(), EventKind::TaskCreated, EventPayload::TaskCreated { request: serde_json::json!({}) }, "test".to_string());
+        let mut e2 = Event::new(
+            TaskId::new(),
+            EventKind::TaskCreated,
+            EventPayload::TaskCreated { request: serde_json::json!({}) },
+            "test".to_string(),
+        );
         e2.sequence = crate::events::SequenceNumber(2);
         store.append(&mut e2).await.unwrap();
 
-        let mut e3 = Event::new(TaskId::new(), EventKind::TaskCreated, EventPayload::TaskCreated { request: serde_json::json!({}) }, "test".to_string());
+        let mut e3 = Event::new(
+            TaskId::new(),
+            EventKind::TaskCreated,
+            EventPayload::TaskCreated { request: serde_json::json!({}) },
+            "test".to_string(),
+        );
         e3.sequence = crate::events::SequenceNumber(3);
         store.append(&mut e3).await.unwrap();
 
@@ -332,9 +348,8 @@ mod tests {
     #[tokio::test]
     async fn test_event_store_get_all_events_trait() {
         let temp_dir = TempDir::new().unwrap();
-        let store: Arc<dyn crate::storage::EventStore> = Arc::new(
-            JsonlEventStore::open(temp_dir.path().to_path_buf()).await.unwrap()
-        );
+        let store: Arc<dyn crate::storage::EventStore> =
+            Arc::new(JsonlEventStore::open(temp_dir.path().to_path_buf()).await.unwrap());
 
         let task_id = TaskId::new();
         let event = Event::new(
@@ -352,9 +367,8 @@ mod tests {
     #[tokio::test]
     async fn test_event_store_get_task_events_trait() {
         let temp_dir = TempDir::new().unwrap();
-        let store: Arc<dyn crate::storage::EventStore> = Arc::new(
-            JsonlEventStore::open(temp_dir.path().to_path_buf()).await.unwrap()
-        );
+        let store: Arc<dyn crate::storage::EventStore> =
+            Arc::new(JsonlEventStore::open(temp_dir.path().to_path_buf()).await.unwrap());
 
         let task_id = TaskId::new();
         let event = Event::new(

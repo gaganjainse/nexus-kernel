@@ -136,13 +136,12 @@ mod tests {
     async fn test_terminal_missing_command() {
         let tool = TerminalTool::new(5, vec![]);
 
-        let req = ToolRequest {
-            tool_name: "terminal".to_string(),
-            arguments: json!({}),
-        };
+        let req = ToolRequest { tool_name: "terminal".to_string(), arguments: json!({}) };
         let err = tool.execute(&req).await.unwrap_err();
         match err {
-            ToolError::ExecutionFailed { reason, .. } => assert!(reason.contains("Missing 'command' argument")),
+            ToolError::ExecutionFailed { reason, .. } => {
+                assert!(reason.contains("Missing 'command' argument"))
+            }
             _ => panic!("Expected ExecutionFailed"),
         }
     }

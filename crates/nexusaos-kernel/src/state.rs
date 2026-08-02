@@ -161,7 +161,8 @@ mod tests {
 
     #[test]
     fn test_model_role_serde() {
-        let roles = vec![ModelRole::Planner, ModelRole::Coder, ModelRole::Vision, ModelRole::Reviewer];
+        let roles =
+            vec![ModelRole::Planner, ModelRole::Coder, ModelRole::Vision, ModelRole::Reviewer];
         for role in roles {
             let json = serde_json::to_string(&role).unwrap();
             let back: ModelRole = serde_json::from_str(&json).unwrap();
@@ -304,7 +305,10 @@ mod tests {
             request,
             current_state: TaskState::Classified,
             assigned_role: Some(ModelRole::Coder),
-            state_history: vec![(TaskState::Received, Utc::now()), (TaskState::Classified, Utc::now())],
+            state_history: vec![
+                (TaskState::Received, Utc::now()),
+                (TaskState::Classified, Utc::now()),
+            ],
         };
         let json = serde_json::to_string(&record).unwrap();
         let back: TaskRecord = serde_json::from_str(&json).unwrap();

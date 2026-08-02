@@ -1,12 +1,12 @@
 //! Ratatui UI layout rendering engine for JetBrains IDE styled interface.
 use ratatui::{
-    Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Tabs, Wrap},
+    Frame,
 };
 
-use crate::app::{ActiveToolWindow, AppMode, App};
+use crate::app::{ActiveToolWindow, App, AppMode};
 
 pub fn render_ui(frame: &mut Frame, app: &App) {
     let main_chunks = Layout::default()
@@ -139,7 +139,8 @@ fn render_editor_ai_panel(frame: &mut Frame, app: &App, area: Rect) {
         .iter()
         .map(|line| {
             let style = if line.starts_with('>') {
-                Style::default().fg(Color::Rgb(204, 120, 50)).add_modifier(Modifier::BOLD) // Darcula Keyword Orange
+                Style::default().fg(Color::Rgb(204, 120, 50)).add_modifier(Modifier::BOLD)
+            // Darcula Keyword Orange
             } else if line.starts_with("===") {
                 Style::default().fg(Color::Rgb(53, 116, 240)).add_modifier(Modifier::BOLD)
             } else if line.starts_with("⚠️") || line.starts_with("[ERROR]") {

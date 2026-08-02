@@ -1,10 +1,10 @@
 pub mod app;
-pub mod view;
 pub mod terminal;
 pub mod theme;
+pub mod view;
 
-use iced::Font;
 use app::NexusApp;
+use iced::Font;
 
 fn main() -> iced::Result {
     iced::application(NexusApp::new, NexusApp::update, NexusApp::view)

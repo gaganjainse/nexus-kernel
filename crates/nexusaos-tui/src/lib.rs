@@ -14,5 +14,5 @@ pub use modal::ApprovalModal;
 pub use patch::PatchEngine;
 pub use stream::TokenStreamer;
 pub use ui::render_ui;
-pub mod layout;
 pub mod input;
+pub mod layout;

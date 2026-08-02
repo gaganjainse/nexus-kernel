@@ -40,7 +40,10 @@ impl TaskComplexity {
 
         let multiple_files = file_count >= 2;
 
-        if arch_score > 0 || input_len > 5000 || (code_score > 0 && multiple_files && line_count > 50) {
+        if arch_score > 0
+            || input_len > 5000
+            || (code_score > 0 && multiple_files && line_count > 50)
+        {
             TaskComplexity::Architecture
         } else if (code_score > 0 && file_count > 0 && req_score > 0 && input_len > 200)
             || (code_score > 0 && multiple_files)
@@ -52,11 +55,13 @@ impl TaskComplexity {
                 0..=200 => TaskComplexity::Simple,
                 201..=1000 => TaskComplexity::CodeEdit,
                 1001..=5000 => TaskComplexity::Feature,
-                _ => if code_score > 0 || file_count > 0 {
-                    TaskComplexity::Feature
-                } else {
-                    TaskComplexity::Architecture
-                },
+                _ => {
+                    if code_score > 0 || file_count > 0 {
+                        TaskComplexity::Feature
+                    } else {
+                        TaskComplexity::Architecture
+                    }
+                }
             }
         }
     }
@@ -67,21 +72,16 @@ impl TaskComplexity {
 }
 
 // Static keyword sets for complexity estimation.
-static CODE_KEYWORDS: &[&str] = &[
-    "fn ", "struct ", "impl ", "class ", "def ", "function ", "async ", "pub ", "mod ",
-];
-static FILE_PATH_INDICATORS: &[&str] = &[
-    "src/", "tests/", "lib/", "Cargo.toml", "package.json", ".rs", ".py", ".ts", ".js",
-];
-static ARCHITECTURE_PATTERNS: &[&str] = &[
-    "refactor", "redesign", "architecture", "migrate", "rewrite", "system design",
-];
-static REQUIREMENT_KEYWORDS: &[&str] = &[
-    "require", "must ", "should ", "implement", "feature", "bug", "fix ", "issue ", "ticket",
-];
-static ERROR_PATTERNS: &[&str] = &[
-    "error:", "panic:", "traceback", "exception:", "failed to", "fatal:",
-];
+static CODE_KEYWORDS: &[&str] =
+    &["fn ", "struct ", "impl ", "class ", "def ", "function ", "async ", "pub ", "mod "];
+static FILE_PATH_INDICATORS: &[&str] =
+    &["src/", "tests/", "lib/", "Cargo.toml", "package.json", ".rs", ".py", ".ts", ".js"];
+static ARCHITECTURE_PATTERNS: &[&str] =
+    &["refactor", "redesign", "architecture", "migrate", "rewrite", "system design"];
+static REQUIREMENT_KEYWORDS: &[&str] =
+    &["require", "must ", "should ", "implement", "feature", "bug", "fix ", "issue ", "ticket"];
+static ERROR_PATTERNS: &[&str] =
+    &["error:", "panic:", "traceback", "exception:", "failed to", "fatal:"];
 
 /// A validated context budget for an inference request.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -149,16 +149,28 @@ impl ContextManager {
             was_clamped: &mut was_clamped,
             clamp_reason: &mut clamp_reason,
         };
-        pressure_check.check(pressure.ram_available_mb, self.config.ram_headroom_mb, "RAM", &self.config, |needed, available| ResourceError::InsufficientRam {
-            needed_mb: needed,
-            available_mb: available,
-        })?;
+        pressure_check.check(
+            pressure.ram_available_mb,
+            self.config.ram_headroom_mb,
+            "RAM",
+            &self.config,
+            |needed, available| ResourceError::InsufficientRam {
+                needed_mb: needed,
+                available_mb: available,
+            },
+        )?;
 
         // Check VRAM pressure — halve budget if VRAM is too tight
-        pressure_check.check(pressure.vram_available_mb, self.config.vram_headroom_mb, "VRAM", &self.config, |needed, available| ResourceError::InsufficientVram {
-            needed_mb: needed,
-            available_mb: available,
-        })?;
+        pressure_check.check(
+            pressure.vram_available_mb,
+            self.config.vram_headroom_mb,
+            "VRAM",
+            &self.config,
+            |needed, available| ResourceError::InsufficientVram {
+                needed_mb: needed,
+                available_mb: available,
+            },
+        )?;
 
         Ok(ContextBudget { max_tokens, complexity, was_clamped, clamp_reason })
     }
@@ -283,28 +295,55 @@ mod tests {
     #[test]
     fn test_complexity_estimation() {
         assert_eq!(TaskComplexity::estimate_from_input("hello", false), TaskComplexity::Simple);
-        assert_eq!(TaskComplexity::estimate_from_input(&"x".repeat(500), false), TaskComplexity::CodeEdit);
-        assert_eq!(TaskComplexity::estimate_from_input(&"x".repeat(3000), false), TaskComplexity::Feature);
-        assert_eq!(TaskComplexity::estimate_from_input(&"x".repeat(10000), false), TaskComplexity::Architecture);
+        assert_eq!(
+            TaskComplexity::estimate_from_input(&"x".repeat(500), false),
+            TaskComplexity::CodeEdit
+        );
+        assert_eq!(
+            TaskComplexity::estimate_from_input(&"x".repeat(3000), false),
+            TaskComplexity::Feature
+        );
+        assert_eq!(
+            TaskComplexity::estimate_from_input(&"x".repeat(10000), false),
+            TaskComplexity::Architecture
+        );
         assert_eq!(TaskComplexity::estimate_from_input("short", true), TaskComplexity::Feature);
     }
 
     #[test]
     fn test_complexity_boundary_exact_200() {
-        assert_eq!(TaskComplexity::estimate_from_input(&"x".repeat(200), false), TaskComplexity::Simple);
-        assert_eq!(TaskComplexity::estimate_from_input(&"x".repeat(201), false), TaskComplexity::CodeEdit);
+        assert_eq!(
+            TaskComplexity::estimate_from_input(&"x".repeat(200), false),
+            TaskComplexity::Simple
+        );
+        assert_eq!(
+            TaskComplexity::estimate_from_input(&"x".repeat(201), false),
+            TaskComplexity::CodeEdit
+        );
     }
 
     #[test]
     fn test_complexity_boundary_exact_1000() {
-        assert_eq!(TaskComplexity::estimate_from_input(&"x".repeat(1000), false), TaskComplexity::CodeEdit);
-        assert_eq!(TaskComplexity::estimate_from_input(&"x".repeat(1001), false), TaskComplexity::Feature);
+        assert_eq!(
+            TaskComplexity::estimate_from_input(&"x".repeat(1000), false),
+            TaskComplexity::CodeEdit
+        );
+        assert_eq!(
+            TaskComplexity::estimate_from_input(&"x".repeat(1001), false),
+            TaskComplexity::Feature
+        );
     }
 
     #[test]
     fn test_complexity_boundary_exact_5000() {
-        assert_eq!(TaskComplexity::estimate_from_input(&"x".repeat(5000), false), TaskComplexity::Feature);
-        assert_eq!(TaskComplexity::estimate_from_input(&"x".repeat(5001), false), TaskComplexity::Architecture);
+        assert_eq!(
+            TaskComplexity::estimate_from_input(&"x".repeat(5000), false),
+            TaskComplexity::Feature
+        );
+        assert_eq!(
+            TaskComplexity::estimate_from_input(&"x".repeat(5001), false),
+            TaskComplexity::Architecture
+        );
     }
 
     #[test]
@@ -397,13 +436,17 @@ mod tests {
 
     #[test]
     fn test_estimate_from_input_max_usize() {
-        assert_eq!(TaskComplexity::estimate_from_input(&"x".repeat(10_000_000), false), TaskComplexity::Architecture);
+        assert_eq!(
+            TaskComplexity::estimate_from_input(&"x".repeat(10_000_000), false),
+            TaskComplexity::Architecture
+        );
     }
 
     #[test]
     fn test_context_budget_complexity_field() {
         let mgr = ContextManager::new(test_config());
-        let budget = mgr.estimate_budget(TaskComplexity::CodeEdit, &normal_pressure(), 65536).unwrap();
+        let budget =
+            mgr.estimate_budget(TaskComplexity::CodeEdit, &normal_pressure(), 65536).unwrap();
         assert_eq!(budget.complexity, TaskComplexity::CodeEdit);
     }
 }

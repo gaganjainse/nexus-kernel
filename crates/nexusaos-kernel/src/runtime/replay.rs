@@ -1,8 +1,8 @@
 use crate::{
     error::NexusError,
     events::{Event, EventKind, EventPayload},
-    storage::{EventStore, TaskProjection},
     state::{TaskRecord, TaskState},
+    storage::{EventStore, TaskProjection},
     task::{TaskId, TaskRequest},
 };
 
@@ -195,9 +195,24 @@ mod tests {
         let req1 = TaskRequest::new(TaskInput::Text("task1".into()));
         let req2 = TaskRequest::new(TaskInput::Text("task2".into()));
 
-        let e1 = Event::new(t1, EventKind::TaskCreated, EventPayload::TaskCreated { request: serde_json::to_value(&req1).unwrap() }, "k".into());
-        let e2 = Event::new(t2, EventKind::TaskCreated, EventPayload::TaskCreated { request: serde_json::to_value(&req2).unwrap() }, "k".into());
-        let e3 = Event::new(t1, EventKind::TaskStateChanged, EventPayload::StateChanged { from: "Received".into(), to: "Classified".into() }, "k".into());
+        let e1 = Event::new(
+            t1,
+            EventKind::TaskCreated,
+            EventPayload::TaskCreated { request: serde_json::to_value(&req1).unwrap() },
+            "k".into(),
+        );
+        let e2 = Event::new(
+            t2,
+            EventKind::TaskCreated,
+            EventPayload::TaskCreated { request: serde_json::to_value(&req2).unwrap() },
+            "k".into(),
+        );
+        let e3 = Event::new(
+            t1,
+            EventKind::TaskStateChanged,
+            EventPayload::StateChanged { from: "Received".into(), to: "Classified".into() },
+            "k".into(),
+        );
 
         store.append(e1).await.unwrap();
         store.append(e2).await.unwrap();
@@ -233,8 +248,18 @@ mod tests {
         let task_id = TaskId::new();
 
         let req = TaskRequest::new(TaskInput::Text("test".into()));
-        let e1 = Event::new(task_id, EventKind::TaskCreated, EventPayload::TaskCreated { request: serde_json::to_value(&req).unwrap() }, "k".into());
-        let e2 = Event::new(task_id, EventKind::TaskStateChanged, EventPayload::StateChanged { from: "Received".into(), to: "UnknownState".into() }, "k".into());
+        let e1 = Event::new(
+            task_id,
+            EventKind::TaskCreated,
+            EventPayload::TaskCreated { request: serde_json::to_value(&req).unwrap() },
+            "k".into(),
+        );
+        let e2 = Event::new(
+            task_id,
+            EventKind::TaskStateChanged,
+            EventPayload::StateChanged { from: "Received".into(), to: "UnknownState".into() },
+            "k".into(),
+        );
 
         store.append(e1).await.unwrap();
         store.append(e2).await.unwrap();
@@ -253,11 +278,26 @@ mod tests {
         let task_id = TaskId::new();
 
         let req = TaskRequest::new(TaskInput::Text("test".into()));
-        let mut e1 = Event::new(task_id, EventKind::TaskCreated, EventPayload::TaskCreated { request: serde_json::to_value(&req).unwrap() }, "k".into());
+        let mut e1 = Event::new(
+            task_id,
+            EventKind::TaskCreated,
+            EventPayload::TaskCreated { request: serde_json::to_value(&req).unwrap() },
+            "k".into(),
+        );
         e1.sequence = crate::events::SequenceNumber(1);
-        let mut e2 = Event::new(task_id, EventKind::TaskStateChanged, EventPayload::StateChanged { from: "Received".into(), to: "Classified".into() }, "k".into());
+        let mut e2 = Event::new(
+            task_id,
+            EventKind::TaskStateChanged,
+            EventPayload::StateChanged { from: "Received".into(), to: "Classified".into() },
+            "k".into(),
+        );
         e2.sequence = crate::events::SequenceNumber(2);
-        let mut e3 = Event::new(task_id, EventKind::TaskStateChanged, EventPayload::StateChanged { from: "Classified".into(), to: "Planned".into() }, "k".into());
+        let mut e3 = Event::new(
+            task_id,
+            EventKind::TaskStateChanged,
+            EventPayload::StateChanged { from: "Classified".into(), to: "Planned".into() },
+            "k".into(),
+        );
         e3.sequence = crate::events::SequenceNumber(3);
 
         store.append(e1).await.unwrap();

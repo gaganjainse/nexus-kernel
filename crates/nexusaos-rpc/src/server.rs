@@ -1,7 +1,8 @@
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
+
 use tokio::net::UnixListener;
+
 use crate::handler::RpcHandler;
-use std::path::PathBuf;
 
 pub struct RpcServer {
     handler: Arc<RpcHandler>,
@@ -16,7 +17,7 @@ impl RpcServer {
     pub async fn run(&self) -> Result<(), std::io::Error> {
         tokio::fs::remove_file(&self.socket_path).await.ok();
         let listener = UnixListener::bind(&self.socket_path)?;
-        
+
         loop {
             let (stream, _addr) = listener.accept().await?;
             let handler = self.handler.clone();
@@ -32,10 +33,12 @@ impl RpcServer {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::path::PathBuf;
-    use nexusaos_wps::broker::Broker;
+
     use nexusaos_waveobj::store::WaveStore;
+    use nexusaos_wps::broker::Broker;
+
+    use super::*;
 
     #[tokio::test]
     async fn test_server_new() {

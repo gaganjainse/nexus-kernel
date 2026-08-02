@@ -2,8 +2,8 @@ use std::{
     cmp::Ordering,
     collections::BinaryHeap,
     sync::{
-        Mutex,
         atomic::{AtomicUsize, Ordering as AtomicOrdering},
+        Mutex,
     },
 };
 

@@ -93,10 +93,7 @@ mod tests {
         let file_path = temp.path().join("test.txt");
         fs::write(&file_path, "line 1\nline 2").unwrap();
 
-        let patch = vec![
-            "+new line 1".to_string(),
-            "+new line 2".to_string(),
-        ];
+        let patch = vec!["+new line 1".to_string(), "+new line 2".to_string()];
 
         PatchEngine::apply_patch(&file_path, &patch).unwrap();
         let updated = fs::read_to_string(&file_path).unwrap();
@@ -110,11 +107,7 @@ mod tests {
         let file_path = temp.path().join("test.txt");
         fs::write(&file_path, "line 1\nline 2\nline 3").unwrap();
 
-        let patch = vec![
-            "-line 1".to_string(),
-            "-line 2".to_string(),
-            "-line 3".to_string(),
-        ];
+        let patch = vec!["-line 1".to_string(), "-line 2".to_string(), "-line 3".to_string()];
 
         PatchEngine::apply_patch(&file_path, &patch).unwrap();
         let updated = fs::read_to_string(&file_path).unwrap();

@@ -254,14 +254,23 @@ mod tests {
 
     #[test]
     fn test_capability_equality() {
-        let cap1 = Capability { name: "read".into(), scope: Scope::Path(PathBuf::from("/etc")), description: "read etc".into() };
-        let cap2 = Capability { name: "read".into(), scope: Scope::Path(PathBuf::from("/etc")), description: "read etc".into() };
+        let cap1 = Capability {
+            name: "read".into(),
+            scope: Scope::Path(PathBuf::from("/etc")),
+            description: "read etc".into(),
+        };
+        let cap2 = Capability {
+            name: "read".into(),
+            scope: Scope::Path(PathBuf::from("/etc")),
+            description: "read etc".into(),
+        };
         assert_eq!(cap1, cap2);
     }
 
     #[test]
     fn test_lease_valid_no_expiry() {
-        let cap = Capability { name: "perm".into(), scope: Scope::Global, description: "perm".into() };
+        let cap =
+            Capability { name: "perm".into(), scope: Scope::Global, description: "perm".into() };
         let lease = CapabilityLease {
             id: Uuid::new_v4(),
             capability: cap,
@@ -275,7 +284,8 @@ mod tests {
 
     #[test]
     fn test_lease_valid_future_expiry() {
-        let cap = Capability { name: "perm".into(), scope: Scope::Global, description: "perm".into() };
+        let cap =
+            Capability { name: "perm".into(), scope: Scope::Global, description: "perm".into() };
         let now = Utc::now();
         let future = now + chrono::Duration::days(1);
         let lease = CapabilityLease {
@@ -291,7 +301,8 @@ mod tests {
 
     #[test]
     fn test_lease_expires_at_now_boundary() {
-        let cap = Capability { name: "perm".into(), scope: Scope::Global, description: "perm".into() };
+        let cap =
+            Capability { name: "perm".into(), scope: Scope::Global, description: "perm".into() };
         let now = Utc::now();
         let lease = CapabilityLease {
             id: Uuid::new_v4(),
@@ -315,7 +326,8 @@ mod tests {
 
     #[test]
     fn test_grant_with_ttl() {
-        let cap = Capability { name: "temp".into(), scope: Scope::Global, description: "temp".into() };
+        let cap =
+            Capability { name: "temp".into(), scope: Scope::Global, description: "temp".into() };
         let mut set = CapabilitySet::new();
         let ttl = Duration::from_secs(3600);
         let lease = set.grant(cap, "admin".into(), Some(ttl));
@@ -334,8 +346,10 @@ mod tests {
 
     #[test]
     fn test_revoke_partial_set() {
-        let cap1 = Capability { name: "a".to_string(), scope: Scope::Global, description: "".into() };
-        let cap2 = Capability { name: "b".to_string(), scope: Scope::Global, description: "".into() };
+        let cap1 =
+            Capability { name: "a".to_string(), scope: Scope::Global, description: "".into() };
+        let cap2 =
+            Capability { name: "b".to_string(), scope: Scope::Global, description: "".into() };
         let mut set = CapabilitySet::new();
         let id1 = set.grant(cap1, "admin".to_string(), None).id;
         let _id2 = set.grant(cap2, "admin".to_string(), None).id;
@@ -356,7 +370,11 @@ mod tests {
         let mut set = CapabilitySet::new();
         set.leases.push(CapabilityLease {
             id: Uuid::new_v4(),
-            capability: Capability { name: "expired".into(), scope: Scope::Global, description: "".into() },
+            capability: Capability {
+                name: "expired".into(),
+                scope: Scope::Global,
+                description: "".into(),
+            },
             granted_at: past,
             expires_at: Some(past),
             granted_by: "admin".into(),
@@ -364,7 +382,11 @@ mod tests {
         });
         set.leases.push(CapabilityLease {
             id: Uuid::new_v4(),
-            capability: Capability { name: "valid".into(), scope: Scope::Global, description: "".into() },
+            capability: Capability {
+                name: "valid".into(),
+                scope: Scope::Global,
+                description: "".into(),
+            },
             granted_at: now,
             expires_at: Some(future),
             granted_by: "admin".into(),
@@ -372,7 +394,11 @@ mod tests {
         });
         set.leases.push(CapabilityLease {
             id: Uuid::new_v4(),
-            capability: Capability { name: "revoked".into(), scope: Scope::Global, description: "".into() },
+            capability: Capability {
+                name: "revoked".into(),
+                scope: Scope::Global,
+                description: "".into(),
+            },
             granted_at: now,
             expires_at: Some(future),
             granted_by: "admin".into(),
@@ -386,7 +412,11 @@ mod tests {
 
     #[test]
     fn test_covers_path_non_path_scope() {
-        let cap = Capability { name: "cmd".into(), scope: Scope::Command("ls".into()), description: "".into() };
+        let cap = Capability {
+            name: "cmd".into(),
+            scope: Scope::Command("ls".into()),
+            description: "".into(),
+        };
         let mut set = CapabilitySet::new();
         set.grant(cap, "admin".into(), None);
         assert!(!set.check_path(Path::new("/etc/passwd")));
@@ -394,7 +424,11 @@ mod tests {
 
     #[test]
     fn test_covers_command_non_command_scope() {
-        let cap = Capability { name: "path".into(), scope: Scope::Path(PathBuf::from("/etc")), description: "".into() };
+        let cap = Capability {
+            name: "path".into(),
+            scope: Scope::Path(PathBuf::from("/etc")),
+            description: "".into(),
+        };
         let mut set = CapabilitySet::new();
         set.grant(cap, "admin".into(), None);
         assert!(!set.check_command("ls -la"));
@@ -402,7 +436,11 @@ mod tests {
 
     #[test]
     fn test_path_coverage_edge_cases() {
-        let cap = Capability { name: "fs".into(), scope: Scope::Path(PathBuf::from("/etc")), description: "".into() };
+        let cap = Capability {
+            name: "fs".into(),
+            scope: Scope::Path(PathBuf::from("/etc")),
+            description: "".into(),
+        };
         let mut set = CapabilitySet::new();
         set.grant(cap, "admin".into(), None);
 
@@ -414,7 +452,11 @@ mod tests {
 
     #[test]
     fn test_command_coverage_edge_cases() {
-        let cap = Capability { name: "cmd".into(), scope: Scope::Command("git".into()), description: "".into() };
+        let cap = Capability {
+            name: "cmd".into(),
+            scope: Scope::Command("git".into()),
+            description: "".into(),
+        };
         let mut set = CapabilitySet::new();
         set.grant(cap, "admin".into(), None);
 
@@ -427,9 +469,21 @@ mod tests {
     #[test]
     fn test_has_capability_multiple_grants() {
         let mut set = CapabilitySet::new();
-        set.grant(Capability { name: "a".into(), scope: Scope::Global, description: "".into() }, "admin".into(), None);
-        set.grant(Capability { name: "b".into(), scope: Scope::Global, description: "".into() }, "admin".into(), None);
-        set.grant(Capability { name: "c".into(), scope: Scope::Global, description: "".into() }, "admin".into(), None);
+        set.grant(
+            Capability { name: "a".into(), scope: Scope::Global, description: "".into() },
+            "admin".into(),
+            None,
+        );
+        set.grant(
+            Capability { name: "b".into(), scope: Scope::Global, description: "".into() },
+            "admin".into(),
+            None,
+        );
+        set.grant(
+            Capability { name: "c".into(), scope: Scope::Global, description: "".into() },
+            "admin".into(),
+            None,
+        );
 
         assert!(set.has_capability("a"));
         assert!(set.has_capability("b"));
@@ -457,7 +511,11 @@ mod tests {
     fn test_capability_lease_serde_roundtrip() {
         let lease = CapabilityLease {
             id: Uuid::new_v4(),
-            capability: Capability { name: "test".into(), scope: Scope::Global, description: "desc".into() },
+            capability: Capability {
+                name: "test".into(),
+                scope: Scope::Global,
+                description: "desc".into(),
+            },
             granted_at: Utc::now(),
             expires_at: None,
             granted_by: "admin".into(),

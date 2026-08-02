@@ -2,8 +2,10 @@
 
 use tracing::info;
 
-use crate::config::{AppConfig, ModelProviderConfig, ToolsConfig};
-use crate::error::NexusError;
+use crate::{
+    config::{AppConfig, ModelProviderConfig, ToolsConfig},
+    error::NexusError,
+};
 
 /// Display the resolved configuration.
 pub fn run(config_path: &str) -> Result<(), NexusError> {

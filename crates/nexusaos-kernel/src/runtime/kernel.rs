@@ -68,8 +68,7 @@ impl Kernel {
 
         // Emit TaskCreated event
         let event_payload = EventPayload::TaskCreated {
-            request: serde_json::to_value(&request)
-                .map_err(NexusError::Serde)?,
+            request: serde_json::to_value(&request).map_err(NexusError::Serde)?,
         };
         let event =
             Event::new(task_id, EventKind::TaskCreated, event_payload, "kernel".to_string());
@@ -207,11 +206,16 @@ impl Kernel {
                 })
             })?;
 
-        let plan_resp = match self.call_model(*task_id, "Planner", &input_text, "You are a planner.", planner).await {
+        let plan_resp = match self
+            .call_model(*task_id, "Planner", &input_text, "You are a planner.", planner)
+            .await
+        {
             Ok(resp) => resp,
             Err(e) => {
                 let err_msg = format!("{}", e);
-                return self.emit_failure_and_return(*task_id, err_msg, Some(input_text.clone())).await;
+                return self
+                    .emit_failure_and_return(*task_id, err_msg, Some(input_text.clone()))
+                    .await;
             }
         };
 
@@ -236,11 +240,16 @@ impl Kernel {
             let coder = coder.unwrap();
             self.transition_task(task_id, TaskState::Executing).await?;
 
-            let code_resp = match self.call_model(*task_id, "Coder", &final_output, "You are a coder.", coder).await {
+            let code_resp = match self
+                .call_model(*task_id, "Coder", &final_output, "You are a coder.", coder)
+                .await
+            {
                 Ok(resp) => resp,
                 Err(e) => {
                     let err_msg = format!("{}", e);
-                    return self.emit_failure_and_return(*task_id, err_msg, Some(final_output)).await;
+                    return self
+                        .emit_failure_and_return(*task_id, err_msg, Some(final_output))
+                        .await;
                 }
             };
 
@@ -248,11 +257,22 @@ impl Kernel {
 
             // Reviewer
             if let Some(reviewer) = self.provider_registry.get(&crate::state::ModelRole::Reviewer) {
-                let rev_resp = match self.call_model(*task_id, "Reviewer", &final_output, "You are a reviewer.", reviewer).await {
+                let rev_resp = match self
+                    .call_model(
+                        *task_id,
+                        "Reviewer",
+                        &final_output,
+                        "You are a reviewer.",
+                        reviewer,
+                    )
+                    .await
+                {
                     Ok(resp) => resp,
                     Err(e) => {
                         let err_msg = format!("{}", e);
-                        return self.emit_failure_and_return(*task_id, err_msg, Some(final_output.clone())).await;
+                        return self
+                            .emit_failure_and_return(*task_id, err_msg, Some(final_output.clone()))
+                            .await;
                     }
                 };
                 final_output = format!("{}\nReview: {}", final_output, rev_resp.content);
@@ -261,11 +281,15 @@ impl Kernel {
 
         let mut requires_confirmation = false;
 
-        if let Some(tool_call_str) = final_output.strip_prefix("TOOL:").map(|s| s.trim()).filter(|s| !s.is_empty()) {
+        if let Some(tool_call_str) =
+            final_output.strip_prefix("TOOL:").map(|s| s.trim()).filter(|s| !s.is_empty())
+        {
             let tool_call = match parse_tool_call(tool_call_str) {
                 Ok(tc) => tc,
                 Err(err_msg) => {
-                    return self.emit_failure_and_return(*task_id, err_msg, Some(final_output.clone())).await;
+                    return self
+                        .emit_failure_and_return(*task_id, err_msg, Some(final_output.clone()))
+                        .await;
                 }
             };
 
@@ -277,20 +301,52 @@ impl Kernel {
 
             match self.tool_broker.execute(&tool_req).await {
                 Ok(crate::tools::broker::BrokerResult::Completed(res)) => {
-                    self.emit_tool_result(*task_id, EventKind::ToolCompleted, &tool_call.tool_name, res.success, &res.output).await?;
+                    self.emit_tool_result(
+                        *task_id,
+                        EventKind::ToolCompleted,
+                        &tool_call.tool_name,
+                        res.success,
+                        &res.output,
+                    )
+                    .await?;
                 }
                 Ok(crate::tools::broker::BrokerResult::Denied(reason)) => {
-                    self.emit_tool_result(*task_id, EventKind::ToolFailed, &tool_call.tool_name, false, &format!("Denied: {}", reason)).await?;
+                    self.emit_tool_result(
+                        *task_id,
+                        EventKind::ToolFailed,
+                        &tool_call.tool_name,
+                        false,
+                        &format!("Denied: {}", reason),
+                    )
+                    .await?;
                     let err_msg = format!("Tool denied: {}", reason);
-                    return self.emit_failure_and_return(*task_id, err_msg, Some(final_output.clone())).await;
+                    return self
+                        .emit_failure_and_return(*task_id, err_msg, Some(final_output.clone()))
+                        .await;
                 }
                 Ok(crate::tools::broker::BrokerResult::RequiresConfirmation(reason)) => {
-                    self.emit_tool_result(*task_id, EventKind::ToolFailed, &tool_call.tool_name, false, &format!("Requires confirmation: {}", reason)).await?;
+                    self.emit_tool_result(
+                        *task_id,
+                        EventKind::ToolFailed,
+                        &tool_call.tool_name,
+                        false,
+                        &format!("Requires confirmation: {}", reason),
+                    )
+                    .await?;
                     requires_confirmation = true;
                 }
                 Err(e) => {
-                    self.emit_tool_result(*task_id, EventKind::ToolFailed, &tool_call.tool_name, false, &e.to_string()).await?;
-                    return self.emit_failure_and_return(*task_id, e.to_string(), Some(final_output)).await;
+                    self.emit_tool_result(
+                        *task_id,
+                        EventKind::ToolFailed,
+                        &tool_call.tool_name,
+                        false,
+                        &e.to_string(),
+                    )
+                    .await?;
+                    return self
+                        .emit_failure_and_return(*task_id, e.to_string(), Some(final_output))
+                        .await;
                 }
             }
         }
@@ -346,11 +402,7 @@ impl Kernel {
         self.emit_event(Event::new(
             task_id,
             EventKind::ModelRequested,
-            EventPayload::ModelRequest {
-                role: role.to_string(),
-                prompt_tokens: 0,
-                context_budget,
-            },
+            EventPayload::ModelRequest { role: role.to_string(), prompt_tokens: 0, context_budget },
             "kernel".to_string(),
         ))
         .await
@@ -385,10 +437,7 @@ impl Kernel {
         self.emit_event(Event::new(
             task_id,
             EventKind::ToolRequested,
-            EventPayload::ToolCall {
-                tool_name: tool_name.to_string(),
-                arguments,
-            },
+            EventPayload::ToolCall { tool_name: tool_name.to_string(), arguments },
             "kernel".to_string(),
         ))
         .await
@@ -426,10 +475,7 @@ impl Kernel {
         self.emit_event(Event::new(
             task_id,
             EventKind::Error,
-            EventPayload::ErrorEvent {
-                message: error_message.clone(),
-                details: None,
-            },
+            EventPayload::ErrorEvent { message: error_message.clone(), details: None },
             "kernel".to_string(),
         ))
         .await?;
@@ -455,21 +501,44 @@ impl Kernel {
     ) -> Result<CompletionResponse, crate::error::ProviderError> {
         let req = CompletionRequest::new(
             vec![
-                ChatMessage { role: ChatRole::System, content: system_prompt.to_string(), images: None },
-                ChatMessage { role: ChatRole::User, content: user_content.to_string(), images: None },
+                ChatMessage {
+                    role: ChatRole::System,
+                    content: system_prompt.to_string(),
+                    images: None,
+                },
+                ChatMessage {
+                    role: ChatRole::User,
+                    content: user_content.to_string(),
+                    images: None,
+                },
             ],
             provider.name(),
             provider.max_context(),
         );
-        self.emit_model_requested(task_id, role_label, provider.max_context())
-            .await
-            .map_err(|e| crate::error::ProviderError::InferenceFailed(format!("{} event emission failed: {}", role_label, e)))?;
+        self.emit_model_requested(task_id, role_label, provider.max_context()).await.map_err(
+            |e| {
+                crate::error::ProviderError::InferenceFailed(format!(
+                    "{} event emission failed: {}",
+                    role_label, e
+                ))
+            },
+        )?;
         let resp = provider.complete(req).await.map_err(|e| {
             crate::error::ProviderError::InferenceFailed(format!("{} failed: {}", role_label, e))
         })?;
-        self.emit_model_responded(task_id, role_label, resp.completion_tokens.unwrap_or(0), &resp.content)
-            .await
-            .map_err(|e| crate::error::ProviderError::InferenceFailed(format!("{} event emission failed: {}", role_label, e)))?;
+        self.emit_model_responded(
+            task_id,
+            role_label,
+            resp.completion_tokens.unwrap_or(0),
+            &resp.content,
+        )
+        .await
+        .map_err(|e| {
+            crate::error::ProviderError::InferenceFailed(format!(
+                "{} event emission failed: {}",
+                role_label, e
+            ))
+        })?;
         Ok(resp)
     }
 }
@@ -508,8 +577,7 @@ fn truncate_output(output: &str, max_size: usize) -> &str {
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
-    use std::sync::Mutex;
-    use std::path::PathBuf;
+    use std::{path::PathBuf, sync::Mutex};
 
     use async_trait::async_trait;
 
@@ -607,7 +675,9 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576).await.unwrap();
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+            .await
+            .unwrap();
 
         let id = kernel.submit_task(TaskInput::Text("test".into())).await.unwrap();
         let state = kernel.task_state(&id).await.unwrap();
@@ -620,7 +690,9 @@ mod tests {
         let policy = PolicyEngine::deny_all();
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576).await.unwrap();
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+            .await
+            .unwrap();
 
         let result = kernel.submit_task(TaskInput::Text("test".into())).await;
         assert!(matches!(result, Err(NexusError::Policy(_))));
@@ -639,7 +711,9 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576).await.unwrap();
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+            .await
+            .unwrap();
 
         let id = kernel.submit_task(TaskInput::Text("test".into())).await.unwrap();
         kernel.transition_task(&id, TaskState::Planned).await.unwrap();
@@ -659,7 +733,9 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576).await.unwrap();
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+            .await
+            .unwrap();
 
         let id = kernel.submit_task(TaskInput::Text("test".into())).await.unwrap();
         // Classified -> Completed is invalid
@@ -694,7 +770,15 @@ mod tests {
         }));
 
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), Arc::new(registry), broker, 1_048_576).await.unwrap();
+        let kernel = Kernel::new(
+            store,
+            Arc::new(RwLock::new(policy)),
+            Arc::new(registry),
+            broker,
+            1_048_576,
+        )
+        .await
+        .unwrap();
 
         let id = kernel.submit_task(TaskInput::Text("fix this".into())).await.unwrap();
 
@@ -722,7 +806,9 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576).await.unwrap();
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+            .await
+            .unwrap();
 
         let fake_id = TaskId::new();
         let result = kernel.task_state(&fake_id).await;
@@ -746,7 +832,9 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576).await.unwrap();
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+            .await
+            .unwrap();
 
         let id1 = kernel.submit_task(TaskInput::Text("task1".into())).await.unwrap();
         let id2 = kernel.submit_task(TaskInput::Text("task2".into())).await.unwrap();
@@ -773,7 +861,9 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576).await.unwrap();
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+            .await
+            .unwrap();
 
         assert_eq!(kernel.task_count().await, 0);
         kernel.submit_task(TaskInput::Text("t1".into())).await.unwrap();
@@ -795,7 +885,9 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576).await.unwrap();
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+            .await
+            .unwrap();
 
         let fake_id = TaskId::new();
         let result = kernel.transition_task(&fake_id, TaskState::Planned).await;
@@ -815,7 +907,9 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576).await.unwrap();
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+            .await
+            .unwrap();
 
         let id = kernel.submit_task(TaskInput::Text("do something".into())).await.unwrap();
         let result = kernel.execute_task(&id).await;
@@ -839,7 +933,10 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store.clone(), Arc::new(RwLock::new(policy)), registry, broker, 1_048_576).await.unwrap();
+        let kernel =
+            Kernel::new(store.clone(), Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+                .await
+                .unwrap();
 
         let _id = kernel.submit_task(TaskInput::Text("test".into())).await.unwrap();
 
@@ -870,7 +967,15 @@ mod tests {
         }));
 
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store.clone(), Arc::new(RwLock::new(policy)), Arc::new(registry), broker, 1_048_576).await.unwrap();
+        let kernel = Kernel::new(
+            store.clone(),
+            Arc::new(RwLock::new(policy)),
+            Arc::new(registry),
+            broker,
+            1_048_576,
+        )
+        .await
+        .unwrap();
 
         let id = kernel.submit_task(TaskInput::Text("plan something".into())).await.unwrap();
         let outcome = kernel.execute_task(&id).await.unwrap();
@@ -882,14 +987,20 @@ mod tests {
 
         // Verify reviewer was skipped: no ModelRequest events for "Reviewer"
         let events = store.get_all_events().await.unwrap();
-        let reviewer_events: Vec<_> = events.iter().filter(|e| {
-            if let EventPayload::ModelRequest { role, .. } = &e.payload {
-                role == "Reviewer"
-            } else {
-                false
-            }
-        }).collect();
-        assert!(reviewer_events.is_empty(), "Reviewer should be skipped when only planner is registered");
+        let reviewer_events: Vec<_> = events
+            .iter()
+            .filter(|e| {
+                if let EventPayload::ModelRequest { role, .. } = &e.payload {
+                    role == "Reviewer"
+                } else {
+                    false
+                }
+            })
+            .collect();
+        assert!(
+            reviewer_events.is_empty(),
+            "Reviewer should be skipped when only planner is registered"
+        );
     }
 
     #[tokio::test]
@@ -898,7 +1009,9 @@ mod tests {
         let policy = PolicyEngine::deny_all();
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576).await.unwrap();
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+            .await
+            .unwrap();
         assert_eq!(kernel.task_count().await, 0);
     }
 
@@ -915,7 +1028,9 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576).await.unwrap();
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+            .await
+            .unwrap();
 
         let id = kernel.submit_task(TaskInput::Text("test".into())).await.unwrap();
         assert_eq!(kernel.task_state(&id).await.unwrap(), TaskState::Classified);
@@ -950,12 +1065,17 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576).await.unwrap();
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+            .await
+            .unwrap();
 
-        let id = kernel.submit_task(TaskInput::Vision {
-            text: "describe this image".into(),
-            image_paths: vec![PathBuf::from("/tmp/img.png")],
-        }).await.unwrap();
+        let id = kernel
+            .submit_task(TaskInput::Vision {
+                text: "describe this image".into(),
+                image_paths: vec![PathBuf::from("/tmp/img.png")],
+            })
+            .await
+            .unwrap();
         assert_eq!(kernel.task_state(&id).await.unwrap(), TaskState::Classified);
     }
 
@@ -972,13 +1092,12 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576).await.unwrap();
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+            .await
+            .unwrap();
 
         let input = TaskInput::Multi {
-            parts: vec![
-                TaskInput::Text("part1".into()),
-                TaskInput::Text("part2".into()),
-            ],
+            parts: vec![TaskInput::Text("part1".into()), TaskInput::Text("part2".into())],
         };
         let id = kernel.submit_task(input).await.unwrap();
         assert_eq!(kernel.task_state(&id).await.unwrap(), TaskState::Classified);
@@ -997,7 +1116,10 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store.clone(), Arc::new(RwLock::new(policy)), registry, broker, 1_048_576).await.unwrap();
+        let kernel =
+            Kernel::new(store.clone(), Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+                .await
+                .unwrap();
 
         let id = kernel.submit_task(TaskInput::Text("test".into())).await.unwrap();
 

@@ -1,10 +1,10 @@
-use crate::provider::{AiError, ChatRequest, ModelProvider};
 use async_trait::async_trait;
-use futures::stream::BoxStream;
-use futures::StreamExt;
+use futures::{stream::BoxStream, StreamExt};
 use reqwest::Client;
 use serde::Serialize;
 use serde_json::Value;
+
+use crate::provider::{AiError, ChatRequest, ModelProvider};
 
 #[derive(Clone)]
 pub struct AnthropicProvider {
@@ -15,11 +15,7 @@ pub struct AnthropicProvider {
 
 impl AnthropicProvider {
     pub fn new(base_url: String, api_key: String) -> Self {
-        Self {
-            base_url,
-            api_key,
-            client: Client::new(),
-        }
+        Self { base_url, api_key, client: Client::new() }
     }
 }
 
@@ -54,28 +50,30 @@ impl ModelProvider for AnthropicProvider {
             .send()
             .await?;
 
-        let stream = response.bytes_stream().map(|res| {
-            match res {
-                Ok(bytes) => {
-                    let mut output = String::new();
-                    let text = String::from_utf8_lossy(&bytes);
-                    for line in text.lines() {
-                        if let Some(data) = line.strip_prefix("data: ") {
-                            if let Ok(val) = serde_json::from_str::<Value>(data) {
-                                if val.get("type").and_then(|t| t.as_str()) == Some("content_block_delta") {
-                                    if let Some(delta) = val.get("delta") {
-                                        if let Some(content) = delta.get("text").and_then(|c| c.as_str()) {
-                                            output.push_str(content);
-                                        }
+        let stream = response.bytes_stream().map(|res| match res {
+            Ok(bytes) => {
+                let mut output = String::new();
+                let text = String::from_utf8_lossy(&bytes);
+                for line in text.lines() {
+                    if let Some(data) = line.strip_prefix("data: ") {
+                        if let Ok(val) = serde_json::from_str::<Value>(data) {
+                            if val.get("type").and_then(|t| t.as_str())
+                                == Some("content_block_delta")
+                            {
+                                if let Some(delta) = val.get("delta") {
+                                    if let Some(content) =
+                                        delta.get("text").and_then(|c| c.as_str())
+                                    {
+                                        output.push_str(content);
                                     }
                                 }
                             }
                         }
                     }
-                    Ok(output)
                 }
-                Err(e) => Err(AiError::Network(e)),
+                Ok(output)
             }
+            Err(e) => Err(AiError::Network(e)),
         });
 
         Ok(Box::pin(stream))

@@ -252,7 +252,9 @@ mod tests {
 
     #[test]
     fn test_error_display_storage_corrupted() {
-        let err = NexusError::Storage(StorageError::CorruptedSnapshot { message: "bad data".to_string() });
+        let err = NexusError::Storage(StorageError::CorruptedSnapshot {
+            message: "bad data".to_string(),
+        });
         assert!(err.to_string().contains("bad data"));
     }
 
@@ -309,7 +311,10 @@ mod tests {
 
     #[test]
     fn test_error_from_provider_health_check_failed() {
-        let provider_err = ProviderError::HealthCheckFailed { name: "ollama".to_string(), reason: "connection refused".to_string() };
+        let provider_err = ProviderError::HealthCheckFailed {
+            name: "ollama".to_string(),
+            reason: "connection refused".to_string(),
+        };
         let nexus_err: NexusError = provider_err.into();
         assert!(nexus_err.to_string().contains("ollama"));
         assert!(nexus_err.to_string().contains("connection refused"));
@@ -333,7 +338,10 @@ mod tests {
     fn test_error_from_provider_cancelled() {
         let provider_err = ProviderError::Cancelled;
         let nexus_err: NexusError = provider_err.into();
-        assert!(nexus_err.to_string().contains("cancelled") || nexus_err.to_string().contains("Cancelled"));
+        assert!(
+            nexus_err.to_string().contains("cancelled")
+                || nexus_err.to_string().contains("Cancelled")
+        );
     }
 
     #[test]
@@ -359,7 +367,10 @@ mod tests {
 
     #[test]
     fn test_error_from_tool_execution_failed() {
-        let tool_err = ToolError::ExecutionFailed { name: "fs".to_string(), reason: "permission denied".to_string() };
+        let tool_err = ToolError::ExecutionFailed {
+            name: "fs".to_string(),
+            reason: "permission denied".to_string(),
+        };
         let nexus_err: NexusError = tool_err.into();
         assert!(nexus_err.to_string().contains("permission denied"));
     }
@@ -395,7 +406,8 @@ mod tests {
 
     #[test]
     fn test_error_from_task_invalid_transition() {
-        let task_err = TaskError::InvalidTransition { from: "Received".into(), to: "Completed".into() };
+        let task_err =
+            TaskError::InvalidTransition { from: "Received".into(), to: "Completed".into() };
         let nexus_err: NexusError = task_err.into();
         assert!(nexus_err.to_string().contains("Received"));
         assert!(nexus_err.to_string().contains("Completed"));
@@ -419,14 +431,19 @@ mod tests {
     fn test_error_from_task_duplicate() {
         let task_err = TaskError::Duplicate;
         let nexus_err: NexusError = task_err.into();
-        assert!(nexus_err.to_string().contains("Duplicate") || nexus_err.to_string().contains("duplicate"));
+        assert!(
+            nexus_err.to_string().contains("Duplicate")
+                || nexus_err.to_string().contains("duplicate")
+        );
     }
 
     #[test]
     fn test_error_from_task_cancelled() {
         let task_err = TaskError::Cancelled;
         let nexus_err: NexusError = task_err.into();
-        assert!(nexus_err.to_string().contains("cancel") || nexus_err.to_string().contains("Cancelled"));
+        assert!(
+            nexus_err.to_string().contains("cancel") || nexus_err.to_string().contains("Cancelled")
+        );
     }
 
     #[test]
@@ -447,7 +464,8 @@ mod tests {
 
     #[test]
     fn test_error_from_resource_context_budget_exceeded() {
-        let res_err = ResourceError::ContextBudgetExceeded { requested: 100000, max_allowed: 32000 };
+        let res_err =
+            ResourceError::ContextBudgetExceeded { requested: 100000, max_allowed: 32000 };
         let nexus_err: NexusError = res_err.into();
         assert!(nexus_err.to_string().contains("100000"));
         assert!(nexus_err.to_string().contains("32000"));
@@ -471,7 +489,10 @@ mod tests {
     fn test_config_error_from_toml() {
         let toml_err = toml::from_str::<AppConfig>("invalid").unwrap_err();
         let config_err: ConfigError = toml_err.into();
-        assert!(config_err.to_string().contains("TOML parse error") || config_err.to_string().contains("parse"));
+        assert!(
+            config_err.to_string().contains("TOML parse error")
+                || config_err.to_string().contains("parse")
+        );
     }
 
     #[test]

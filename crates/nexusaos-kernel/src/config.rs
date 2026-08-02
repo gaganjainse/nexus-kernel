@@ -3,8 +3,10 @@
 //! Configuration is loaded from TOML files and provides all tunable parameters
 //! for the kernel, model providers, tools, resource limits, and policies.
 
-use std::collections::HashSet;
-use std::path::{Path, PathBuf};
+use std::{
+    collections::HashSet,
+    path::{Path, PathBuf},
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -153,7 +155,9 @@ impl ModelProviderConfig {
     ///
     /// Returns `Ok(OpenAiCompatProvider)` for OpenAI-compatible providers
     /// or appropriate provider implementations.
-    pub fn into_provider(&self) -> Result<Box<dyn crate::model::provider::ModelProvider>, crate::error::ProviderError> {
+    pub fn into_provider(
+        &self,
+    ) -> Result<Box<dyn crate::model::provider::ModelProvider>, crate::error::ProviderError> {
         match self.provider_kind.as_str() {
             "anthropic" | "claude" => {
                 let role = match self.role.to_lowercase().as_str() {
@@ -415,8 +419,9 @@ fn dirs_home() -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use tempfile::TempDir;
+
+    use super::*;
 
     fn sample_toml() -> &'static str {
         r#"
@@ -794,10 +799,16 @@ max_context = 32768
 "#;
         let config = AppConfig::parse_toml(toml).expect("should parse");
         assert_eq!(config.tools.filesystem.allowed_paths, vec!["."]);
-        assert_eq!(config.tools.filesystem.denied_patterns, vec!["**/.git/objects/**", "**/node_modules/**", "**/target/**"]);
+        assert_eq!(
+            config.tools.filesystem.denied_patterns,
+            vec!["**/.git/objects/**", "**/node_modules/**", "**/target/**"]
+        );
         assert!(config.tools.git.enabled);
         assert_eq!(config.tools.terminal.timeout_secs, 30);
-        assert_eq!(config.tools.terminal.denied_prefixes, vec!["rm -rf /", "sudo rm", "mkfs", "dd if="]);
+        assert_eq!(
+            config.tools.terminal.denied_prefixes,
+            vec!["rm -rf /", "sudo rm", "mkfs", "dd if="]
+        );
     }
 
     #[test]

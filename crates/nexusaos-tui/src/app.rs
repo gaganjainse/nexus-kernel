@@ -1,16 +1,19 @@
 //! TUI Application state machine for the JetBrains IDE layout.
 
-use crate::block::TileGrid;
-use nexusaos_wps::broker::Broker;
-use nexusaos_wps::events::SubscriptionRequest;
-use nexusaos_wps::events::{EVENT_CONFIG, EVENT_BLOCK_UPDATE};
-use nexusaos_waveobj::store::WaveStore;
-use nexusaos_blockctl::controller::ControllerRegistry;
 use std::sync::Arc;
-use futures::StreamExt;
+
 use crossterm::event::{Event, EventStream, KeyCode};
+use futures::StreamExt;
+use nexusaos_blockctl::controller::ControllerRegistry;
+use nexusaos_waveobj::store::WaveStore;
+use nexusaos_wps::{
+    broker::Broker,
+    events::{SubscriptionRequest, EVENT_BLOCK_UPDATE, EVENT_CONFIG},
+};
 use ratatui::{backend::Backend, Terminal};
 use uuid::Uuid;
+
+use crate::block::TileGrid;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ActiveToolWindow {
@@ -49,14 +52,18 @@ pub struct App {
     pub active_model: String,
     pub status_message: String,
     pub running: bool,
-    
+
     pub broker: Arc<Broker>,
     pub store: Arc<WaveStore>,
     pub registry: Arc<ControllerRegistry>,
 }
 
 impl App {
-    pub fn new(broker: Arc<Broker>, store: Arc<WaveStore>, registry: Arc<ControllerRegistry>) -> Self {
+    pub fn new(
+        broker: Arc<Broker>,
+        store: Arc<WaveStore>,
+        registry: Arc<ControllerRegistry>,
+    ) -> Self {
         Self {
             active_tool_window: ActiveToolWindow::AiAssistant,
             mode: AppMode::NormalPrompt,
@@ -106,35 +113,37 @@ impl App {
 
     /// Create a minimal App for CLI interactive mode (without full broker/store/registry).
     pub fn new_cli() -> Self {
-        use nexusaos_wps::broker::Broker;
-        use nexusaos_waveobj::store::WaveStore;
-        use nexusaos_blockctl::controller::ControllerRegistry;
         use std::sync::Arc;
-        
+
+        use nexusaos_blockctl::controller::ControllerRegistry;
+        use nexusaos_waveobj::store::WaveStore;
+        use nexusaos_wps::broker::Broker;
+
         let broker = Broker::new(100);
-        let store = Arc::new(WaveStore::open_in_memory().expect("Failed to create in-memory store"));
+        let store =
+            Arc::new(WaveStore::open_in_memory().expect("Failed to create in-memory store"));
         let registry = Arc::new(ControllerRegistry::new());
-        
+
         Self::new(broker, store, registry)
     }
 
     pub async fn run<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> std::io::Result<()> {
         let route_id = Uuid::now_v7().to_string();
-        
-        self.broker.subscribe(&route_id, SubscriptionRequest {
-            topic: EVENT_CONFIG.to_string(),
-            scopes: vec![],
-        });
-        self.broker.subscribe(&route_id, SubscriptionRequest {
-            topic: EVENT_BLOCK_UPDATE.to_string(),
-            scopes: vec![],
-        });
-        
+
+        self.broker.subscribe(
+            &route_id,
+            SubscriptionRequest { topic: EVENT_CONFIG.to_string(), scopes: vec![] },
+        );
+        self.broker.subscribe(
+            &route_id,
+            SubscriptionRequest { topic: EVENT_BLOCK_UPDATE.to_string(), scopes: vec![] },
+        );
+
         let mut broker_rx = self.broker.receiver();
         let mut events = EventStream::new();
-        
+
         terminal.draw(|f| crate::ui::render_ui(f, self))?;
-        
+
         while self.running {
             tokio::select! {
                 maybe_event = events.next() => {
@@ -144,21 +153,21 @@ impl App {
                                 self.running = false;
                                 break;
                             }
-                            
+
                             // Route input
                             let active_block_id = match self.active_tool_window {
                                 ActiveToolWindow::Terminal => "terminal_block",
                                 _ => "default_block",
                             };
-                            
+
                             let _ = crate::input::handle_key_event(key, active_block_id, self.registry.clone()).await;
-                            
+
                             // In real app we might only draw if handle_key_event resulted in local state change,
                             // but for simplicity redraw
                             terminal.draw(|f| crate::ui::render_ui(f, self))?;
                         }
                 }
-                
+
                 Ok((_route, wave_event)) = broker_rx.recv() => {
                     match wave_event.topic.as_str() {
                         EVENT_CONFIG => {
@@ -174,7 +183,7 @@ impl App {
                 }
             }
         }
-        
+
         self.broker.unsubscribe_all(&route_id);
         Ok(())
     }
@@ -198,7 +207,7 @@ impl App {
     }
 
     // --- Methods needed by CLI ---
-    
+
     pub fn handle_click(&mut self, col: u16, row: u16) {
         // Simple click handling - could be expanded to focus blocks
         // For now, just log it
