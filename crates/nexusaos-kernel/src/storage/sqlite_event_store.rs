@@ -149,7 +149,7 @@ impl EventStore for SqliteEventStore {
                 Ok(())
             })
             .await;
-        result.map_err(|e| NexusError::Storage(e))?;
+        result.map_err(NexusError::Storage)?;
         Ok(())
     }
 

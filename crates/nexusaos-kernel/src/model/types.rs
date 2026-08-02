@@ -10,7 +10,7 @@ pub enum ChatRole {
 }
 
 impl ChatRole {
-    pub(crate) fn into_claude_role(&self) -> &'static str {
+    pub(crate) fn as_claude_role(&self) -> &'static str {
         match self {
             ChatRole::User | ChatRole::System => "user",
             ChatRole::Assistant => "assistant",

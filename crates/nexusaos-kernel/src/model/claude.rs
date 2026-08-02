@@ -89,7 +89,7 @@ impl ModelProvider for ClaudeProvider {
             .messages
             .into_iter()
             .map(|m| ClaudeMessage {
-                role: m.role.into_claude_role().to_string(),
+                role: m.role.as_claude_role().to_string(),
                 content: m.content,
             })
             .collect();

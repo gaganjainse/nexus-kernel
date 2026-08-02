@@ -7,8 +7,9 @@ use crate::{
     error::{NexusError, TaskError},
     events::{Event, EventKind, EventPayload},
     model::{
+        provider::ModelProvider,
         registry::ProviderRegistry,
-        types::{ChatMessage, ChatRole, CompletionRequest},
+        types::{ChatMessage, ChatRole, CompletionRequest, CompletionResponse},
     },
     policy::PolicyEngine,
     router::TaskRouter,
@@ -206,39 +207,20 @@ impl Kernel {
                 })
             })?;
 
-        let req = CompletionRequest::new(
-            vec![
-                ChatMessage {
-                    role: ChatRole::System,
-                    content: "You are a planner.".to_string(),
-                    images: None,
-                },
-                ChatMessage { role: ChatRole::User, content: input_text.clone(), images: None },
-            ],
-            planner.name(),
-            planner.max_context(),
-        );
-
-        self.emit_model_requested(*task_id, "Planner", planner.max_context()).await?;
-
-        let plan_resp = match planner.complete(req).await {
+        let plan_resp = match self.call_model(*task_id, "Planner", &input_text, "You are a planner.", planner).await {
             Ok(resp) => resp,
             Err(e) => {
-                let err_msg = format!("Planner failed: {}", e);
+                let err_msg = format!("{}", e);
                 return self.emit_failure_and_return(*task_id, err_msg, Some(input_text.clone())).await;
             }
         };
 
-        self.emit_model_responded(*task_id, "Planner", plan_resp.completion_tokens.unwrap_or(0), &plan_resp.content).await?;
-
         self.transition_task(task_id, TaskState::Planned).await?;
 
         let plan = plan_resp.content.to_lowercase();
-        let requires_coder = plan.contains("write code")
-            || plan.contains("implement ")
-            || plan.contains("edit ")
-            || plan.contains("fix bug")
-            || plan.contains("refactor")
+        let requires_coder = ["write code", "implement ", "edit ", "fix bug", "refactor"]
+            .iter()
+            .any(|kw| plan.contains(kw))
             || task.assigned_role == Some(crate::state::ModelRole::Coder);
 
         let mut final_output = plan_resp.content;
@@ -254,117 +236,60 @@ impl Kernel {
             let coder = coder.unwrap();
             self.transition_task(task_id, TaskState::Executing).await?;
 
-            let code_req = CompletionRequest::new(
-                vec![
-                    ChatMessage {
-                        role: ChatRole::System,
-                        content: "You are a coder.".to_string(),
-                        images: None,
-                    },
-                    ChatMessage {
-                        role: ChatRole::User,
-                        content: final_output.clone(),
-                        images: None,
-                    },
-                ],
-                coder.name(),
-                coder.max_context(),
-            );
-
-            self.emit_model_requested(*task_id, "Coder", coder.max_context()).await?;
-
-            let code_resp = match coder.complete(code_req).await {
+            let code_resp = match self.call_model(*task_id, "Coder", &final_output, "You are a coder.", coder).await {
                 Ok(resp) => resp,
                 Err(e) => {
-                    let err_msg = format!("Coder failed: {}", e);
+                    let err_msg = format!("{}", e);
                     return self.emit_failure_and_return(*task_id, err_msg, Some(final_output)).await;
                 }
             };
-
-            self.emit_model_responded(*task_id, "Coder", code_resp.completion_tokens.unwrap_or(0), &code_resp.content).await?;
 
             final_output = code_resp.content.clone();
 
             // Reviewer
             if let Some(reviewer) = self.provider_registry.get(&crate::state::ModelRole::Reviewer) {
-                let rev_req = CompletionRequest::new(
-                    vec![
-                        ChatMessage {
-                            role: ChatRole::System,
-                            content: "You are a reviewer.".to_string(),
-                            images: None,
-                        },
-                        ChatMessage {
-                            role: ChatRole::User,
-                            content: final_output.clone(),
-                            images: None,
-                        },
-                    ],
-                    reviewer.name(),
-                    reviewer.max_context(),
-                );
-
-                self.emit_model_requested(*task_id, "Reviewer", reviewer.max_context()).await?;
-
-                let rev_resp = match reviewer.complete(rev_req).await {
+                let rev_resp = match self.call_model(*task_id, "Reviewer", &final_output, "You are a reviewer.", reviewer).await {
                     Ok(resp) => resp,
                     Err(e) => {
-                        let err_msg = format!("Reviewer failed: {}", e);
+                        let err_msg = format!("{}", e);
                         return self.emit_failure_and_return(*task_id, err_msg, Some(final_output.clone())).await;
                     }
                 };
-
-                self.emit_model_responded(*task_id, "Reviewer", rev_resp.completion_tokens.unwrap_or(0), &rev_resp.content).await?;
-
                 final_output = format!("{}\nReview: {}", final_output, rev_resp.content);
             }
         }
 
         let mut requires_confirmation = false;
 
-        if let Some(tool_call) = final_output.strip_prefix("TOOL:").map(|s| s.trim()).filter(|s| !s.is_empty()) {
-            let tool_name_end = tool_call.find(|c: char| c.is_whitespace()).unwrap_or(tool_call.len());
-            let tool_name = &tool_call[..tool_name_end];
-            let args_str = tool_call[tool_name_end..].trim();
-
-            if tool_name.is_empty() {
-                let err_msg = "Tool name is empty".to_string();
-                return self.emit_failure_and_return(*task_id, err_msg, Some(final_output.clone())).await;
-            }
-
-            let arguments: serde_json::Value = if args_str.is_empty() {
-                serde_json::json!({})
-            } else {
-                match serde_json::from_str(args_str) {
-                    Ok(val) => val,
-Err(e) => {
-                    let err_msg = format!("Invalid tool arguments JSON: {}", e);
+        if let Some(tool_call_str) = final_output.strip_prefix("TOOL:").map(|s| s.trim()).filter(|s| !s.is_empty()) {
+            let tool_call = match parse_tool_call(tool_call_str) {
+                Ok(tc) => tc,
+                Err(err_msg) => {
                     return self.emit_failure_and_return(*task_id, err_msg, Some(final_output.clone())).await;
-                }
                 }
             };
 
             let tool_req = crate::tools::executor::ToolRequest {
-                tool_name: tool_name.to_string(),
-                arguments: arguments.clone(),
+                tool_name: tool_call.tool_name.clone(),
+                arguments: tool_call.arguments.clone(),
             };
-            self.emit_tool_requested(*task_id, tool_name, arguments).await?;
+            self.emit_tool_requested(*task_id, &tool_call.tool_name, tool_call.arguments).await?;
 
             match self.tool_broker.execute(&tool_req).await {
                 Ok(crate::tools::broker::BrokerResult::Completed(res)) => {
-                    self.emit_tool_result(*task_id, EventKind::ToolCompleted, tool_name, res.success, &res.output).await?;
+                    self.emit_tool_result(*task_id, EventKind::ToolCompleted, &tool_call.tool_name, res.success, &res.output).await?;
                 }
                 Ok(crate::tools::broker::BrokerResult::Denied(reason)) => {
-                    self.emit_tool_result(*task_id, EventKind::ToolFailed, tool_name, false, &format!("Denied: {}", reason)).await?;
+                    self.emit_tool_result(*task_id, EventKind::ToolFailed, &tool_call.tool_name, false, &format!("Denied: {}", reason)).await?;
                     let err_msg = format!("Tool denied: {}", reason);
                     return self.emit_failure_and_return(*task_id, err_msg, Some(final_output.clone())).await;
                 }
                 Ok(crate::tools::broker::BrokerResult::RequiresConfirmation(reason)) => {
-                    self.emit_tool_result(*task_id, EventKind::ToolFailed, tool_name, false, &format!("Requires confirmation: {}", reason)).await?;
+                    self.emit_tool_result(*task_id, EventKind::ToolFailed, &tool_call.tool_name, false, &format!("Requires confirmation: {}", reason)).await?;
                     requires_confirmation = true;
                 }
                 Err(e) => {
-                    self.emit_tool_result(*task_id, EventKind::ToolFailed, tool_name, false, &e.to_string()).await?;
+                    self.emit_tool_result(*task_id, EventKind::ToolFailed, &tool_call.tool_name, false, &e.to_string()).await?;
                     return self.emit_failure_and_return(*task_id, e.to_string(), Some(final_output)).await;
                 }
             }
@@ -478,17 +403,7 @@ Err(e) => {
         output: &str,
     ) -> Result<(), NexusError> {
         let max_size = self.max_tool_output_size;
-        let truncated = if output.len() > max_size {
-            // Try to truncate at a newline boundary to preserve line structure
-            let cut_point = &output[..max_size];
-            if let Some(last_newline) = cut_point.rfind('\n') {
-                &output[..last_newline + 1]
-            } else {
-                cut_point
-            }
-        } else {
-            output
-        };
+        let truncated = truncate_output(output, max_size);
         self.emit_event(Event::new(
             task_id,
             kind,
@@ -528,6 +443,66 @@ Err(e) => {
             requires_confirmation: false,
         })
     }
+
+    /// Call a model provider with the given prompt, emitting telemetry events.
+    async fn call_model(
+        &self,
+        task_id: TaskId,
+        role_label: &str,
+        user_content: &str,
+        system_prompt: &str,
+        provider: &dyn ModelProvider,
+    ) -> Result<CompletionResponse, crate::error::ProviderError> {
+        let req = CompletionRequest::new(
+            vec![
+                ChatMessage { role: ChatRole::System, content: system_prompt.to_string(), images: None },
+                ChatMessage { role: ChatRole::User, content: user_content.to_string(), images: None },
+            ],
+            provider.name(),
+            provider.max_context(),
+        );
+        self.emit_model_requested(task_id, role_label, provider.max_context())
+            .await
+            .map_err(|e| crate::error::ProviderError::InferenceFailed(format!("{} event emission failed: {}", role_label, e)))?;
+        let resp = provider.complete(req).await.map_err(|e| {
+            crate::error::ProviderError::InferenceFailed(format!("{} failed: {}", role_label, e))
+        })?;
+        self.emit_model_responded(task_id, role_label, resp.completion_tokens.unwrap_or(0), &resp.content)
+            .await
+            .map_err(|e| crate::error::ProviderError::InferenceFailed(format!("{} event emission failed: {}", role_label, e)))?;
+        Ok(resp)
+    }
+}
+
+/// A parsed tool call directive from a model response.
+struct ParsedToolCall {
+    tool_name: String,
+    arguments: serde_json::Value,
+}
+
+/// Parse a `TOOL:name args` directive from model output.
+fn parse_tool_call(input: &str) -> Result<ParsedToolCall, String> {
+    let tool_name_end = input.find(|c: char| c.is_whitespace()).unwrap_or(input.len());
+    let tool_name = input[..tool_name_end].to_string();
+    if tool_name.is_empty() {
+        return Err("Tool name is empty".to_string());
+    }
+    let args_str = input[tool_name_end..].trim();
+    let arguments = if args_str.is_empty() {
+        serde_json::json!({})
+    } else {
+        serde_json::from_str(args_str).map_err(|e| format!("Invalid tool arguments JSON: {}", e))?
+    };
+    Ok(ParsedToolCall { tool_name, arguments })
+}
+
+/// Truncate output at a newline boundary to avoid cutting lines mid-way.
+fn truncate_output(output: &str, max_size: usize) -> &str {
+    if output.len() <= max_size {
+        return output;
+    }
+    let cut_point = &output[..max_size];
+    cut_point.rfind('\n').map(|i| &output[..i + 1]).unwrap_or(cut_point)
 }
 
 #[cfg(test)]
