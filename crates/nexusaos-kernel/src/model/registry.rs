@@ -44,11 +44,7 @@ impl ProviderRegistry {
                     results.insert(*role, Err(e));
                 }
                 Err(panic_payload) => {
-                    let reason = panic_payload
-                        .downcast_ref::<&str>()
-                        .map(|s| s.to_string())
-                        .or_else(|| panic_payload.downcast_ref::<String>().map(|s| s.to_string()))
-                        .unwrap_or_else(|| "task panicked".to_string());
+                    let reason = panic_reason(&panic_payload);
                     let reason = format!("task panicked: {}", reason);
                     warn!(provider = %name, %reason, "provider health check panicked");
                     results.insert(
@@ -74,6 +70,14 @@ impl Default for ProviderRegistry {
     fn default() -> Self {
         Self::new()
     }
+}
+
+/// Extract a human-readable reason from a panic payload.
+fn panic_reason(payload: &Box<dyn std::any::Any + Send>) -> String {
+    payload.downcast_ref::<&str>()
+        .map(|s| s.to_string())
+        .or_else(|| payload.downcast_ref::<String>().cloned())
+        .unwrap_or_else(|| "task panicked".to_string())
 }
 
 #[cfg(test)]

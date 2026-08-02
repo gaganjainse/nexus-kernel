@@ -23,86 +23,81 @@ pub struct RouteDecision {
     pub reason: String,
 }
 
-/// Keyword sets for classification.
-struct ClassificationKeywords;
+/// Keywords that indicate planning/architecture tasks.
+static PLANNER_KEYWORDS: &[&str] = &[
+    "plan",
+    "design",
+    "architect",
+    "architecture",
+    "trade-off",
+    "tradeoff",
+    "decompose",
+    "breakdown",
+    "strategy",
+    "approach",
+    "evaluate",
+    "compare",
+    "review",
+    "assess",
+    "analyze",
+    "scope",
+    "roadmap",
+    "requirements",
+    "specification",
+    "rfc",
+    "proposal",
+    "decision",
+];
 
-impl ClassificationKeywords {
-    /// Keywords that indicate planning/architecture tasks.
-    const PLANNER: &'static [&'static str] = &[
-        "plan",
-        "design",
-        "architect",
-        "architecture",
-        "trade-off",
-        "tradeoff",
-        "decompose",
-        "breakdown",
-        "strategy",
-        "approach",
-        "evaluate",
-        "compare",
-        "review",
-        "assess",
-        "analyze",
-        "scope",
-        "roadmap",
-        "requirements",
-        "specification",
-        "rfc",
-        "proposal",
-        "decision",
-    ];
+/// Keywords that indicate coding tasks.
+static CODER_KEYWORDS: &[&str] = &[
+    "implement",
+    "code",
+    "write",
+    "create",
+    "build",
+    "fix",
+    "bug",
+    "debug",
+    "refactor",
+    "test",
+    "function",
+    "class",
+    "struct",
+    "module",
+    "api",
+    "endpoint",
+    "database",
+    "query",
+    "migration",
+    "compile",
+    "syntax",
+    "error",
+    "lint",
+    "format",
+    "optimize",
+];
 
-    /// Keywords that indicate coding tasks.
-    const CODER: &'static [&'static str] = &[
-        "implement",
-        "code",
-        "write",
-        "create",
-        "build",
-        "fix",
-        "bug",
-        "debug",
-        "refactor",
-        "test",
-        "function",
-        "class",
-        "struct",
-        "module",
-        "api",
-        "endpoint",
-        "database",
-        "query",
-        "migration",
-        "compile",
-        "syntax",
-        "error",
-        "lint",
-        "format",
-        "optimize",
-    ];
-
-    /// Keywords that indicate vision tasks.
-    const VISION: &'static [&'static str] = &[
-        "screenshot",
-        "image",
-        "picture",
-        "photo",
-        "diagram",
-        "pdf",
-        "document",
-        "ui",
-        "interface",
-        "layout",
-        "visual",
-        "ocr",
-        "read",
-        "display",
-        "screen",
-        "mockup",
-        "wireframe",
-    ];
-}
+/// Keywords that indicate vision tasks.
+static VISION_KEYWORDS: &[&str] = &[
+    "screenshot",
+    "image",
+    "picture",
+    "photo",
+    "diagram",
+    "pdf",
+    "document",
+    "ui",
+    "interface",
+    "layout",
+    "visual",
+    "ocr",
+    "read",
+    "display",
+    "screen",
+    "mockup",
+    "wireframe",
+];
 
 /// The task router classifies intent and selects specialist roles.
 pub struct TaskRouter;
@@ -123,9 +118,9 @@ impl TaskRouter {
         let lower = input_text.to_lowercase();
 
         // Score each category
-        let planner_score = Self::keyword_score(&lower, ClassificationKeywords::PLANNER);
-        let coder_score = Self::keyword_score(&lower, ClassificationKeywords::CODER);
-        let vision_score = Self::keyword_score(&lower, ClassificationKeywords::VISION);
+        let planner_score = Self::keyword_score(&lower, PLANNER_KEYWORDS);
+        let coder_score = Self::keyword_score(&lower, CODER_KEYWORDS);
+        let vision_score = Self::keyword_score(&lower, VISION_KEYWORDS);
 
         let max_score = planner_score.max(coder_score).max(vision_score);
 

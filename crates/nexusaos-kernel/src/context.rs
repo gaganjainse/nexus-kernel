@@ -28,34 +28,23 @@ impl TaskComplexity {
             return TaskComplexity::Feature;
         }
 
-        let code_keywords = ["fn ", "struct ", "impl ", "class ", "def ", "function ", "async ", "pub ", "mod "];
-        let file_path_indicators = ["src/", "tests/", "lib/", "Cargo.toml", "package.json", ".rs", ".py", ".ts", ".js"];
-        let architecture_patterns = ["refactor", "redesign", "architecture", "migrate", "rewrite", "system design"];
-        let requirement_keywords = ["require", "must ", "should ", "implement", "feature", "bug", "fix ", "issue ", "ticket"];
-        let error_patterns = ["error:", "panic:", "traceback", "exception:", "failed to", "fatal:"];
-
         let input_lower = input.to_lowercase();
-
-        let has_code = code_keywords.iter().any(|kw| input_lower.contains(kw));
-        let has_file_paths = file_path_indicators.iter().any(|ind| input.contains(ind));
-        let has_architecture = architecture_patterns.iter().any(|pat| input_lower.contains(pat));
-        let has_requirements = requirement_keywords.iter().any(|kw| input_lower.contains(kw));
-        let has_errors = error_patterns.iter().any(|pat| input_lower.contains(pat));
-
-        // Count distinct file references
-        let file_count = file_path_indicators.iter().filter(|ind| input.contains(**ind)).count();
-        let multiple_files = file_count >= 2;
-
-        // Count lines — more lines suggests more content to process
+        let input_len = input.len();
         let line_count = input.lines().count();
 
-        let input_len = input.len();
+        let code_score = Self::keyword_score(&input_lower, CODE_KEYWORDS);
+        let file_count = Self::keyword_score(input, FILE_PATH_INDICATORS);
+        let arch_score = Self::keyword_score(&input_lower, ARCHITECTURE_PATTERNS);
+        let req_score = Self::keyword_score(&input_lower, REQUIREMENT_KEYWORDS);
+        let err_score = Self::keyword_score(&input_lower, ERROR_PATTERNS);
 
-        if has_architecture || input_len > 5000 || (has_code && multiple_files && line_count > 50) {
+        let multiple_files = file_count >= 2;
+
+        if arch_score > 0 || input_len > 5000 || (code_score > 0 && multiple_files && line_count > 50) {
             TaskComplexity::Architecture
-        } else if (has_code && has_file_paths && has_requirements && input_len > 200)
-            || (has_code && multiple_files)
-            || (has_code && has_errors && input_len > 300)
+        } else if (code_score > 0 && file_count > 0 && req_score > 0 && input_len > 200)
+            || (code_score > 0 && multiple_files)
+            || (code_score > 0 && err_score > 0 && input_len > 300)
         {
             TaskComplexity::Feature
         } else {
@@ -63,7 +52,7 @@ impl TaskComplexity {
                 0..=200 => TaskComplexity::Simple,
                 201..=1000 => TaskComplexity::CodeEdit,
                 1001..=5000 => TaskComplexity::Feature,
-                _ => if has_code || has_file_paths {
+                _ => if code_score > 0 || file_count > 0 {
                     TaskComplexity::Feature
                 } else {
                     TaskComplexity::Architecture
@@ -71,7 +60,28 @@ impl TaskComplexity {
             }
         }
     }
+
+    fn keyword_score(input: &str, keywords: &[&str]) -> usize {
+        keywords.iter().filter(|kw| input.contains(*kw)).count()
+    }
 }
+
+// Static keyword sets for complexity estimation.
+static CODE_KEYWORDS: &[&str] = &[
+    "fn ", "struct ", "impl ", "class ", "def ", "function ", "async ", "pub ", "mod ",
+];
+static FILE_PATH_INDICATORS: &[&str] = &[
+    "src/", "tests/", "lib/", "Cargo.toml", "package.json", ".rs", ".py", ".ts", ".js",
+];
+static ARCHITECTURE_PATTERNS: &[&str] = &[
+    "refactor", "redesign", "architecture", "migrate", "rewrite", "system design",
+];
+static REQUIREMENT_KEYWORDS: &[&str] = &[
+    "require", "must ", "should ", "implement", "feature", "bug", "fix ", "issue ", "ticket",
+];
+static ERROR_PATTERNS: &[&str] = &[
+    "error:", "panic:", "traceback", "exception:", "failed to", "fatal:",
+];
 
 /// A validated context budget for an inference request.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -134,55 +144,50 @@ impl ContextManager {
         }
 
         // Check memory pressure — refuse if RAM is too tight
-        self.check_pressure(
-            pressure.ram_available_mb,
-            self.config.ram_headroom_mb,
-            &mut max_tokens,
-            &mut was_clamped,
-            &mut clamp_reason,
-            "RAM",
-            |needed, available| ResourceError::InsufficientRam {
-                needed_mb: needed,
-                available_mb: available,
-            },
-        )?;
+        let mut pressure_check = PressureCheck {
+            max_tokens: &mut max_tokens,
+            was_clamped: &mut was_clamped,
+            clamp_reason: &mut clamp_reason,
+        };
+        pressure_check.check(pressure.ram_available_mb, self.config.ram_headroom_mb, "RAM", &self.config, |needed, available| ResourceError::InsufficientRam {
+            needed_mb: needed,
+            available_mb: available,
+        })?;
 
         // Check VRAM pressure — halve budget if VRAM is too tight
-        self.check_pressure(
-            pressure.vram_available_mb,
-            self.config.vram_headroom_mb,
-            &mut max_tokens,
-            &mut was_clamped,
-            &mut clamp_reason,
-            "VRAM",
-            |needed, available| ResourceError::InsufficientVram {
-                needed_mb: needed,
-                available_mb: available,
-            },
-        )?;
+        pressure_check.check(pressure.vram_available_mb, self.config.vram_headroom_mb, "VRAM", &self.config, |needed, available| ResourceError::InsufficientVram {
+            needed_mb: needed,
+            available_mb: available,
+        })?;
 
         Ok(ContextBudget { max_tokens, complexity, was_clamped, clamp_reason })
     }
+}
 
-    #[allow(clippy::too_many_arguments)]
-    fn check_pressure(
-        &self,
+/// Mutable state shared across pressure checks.
+struct PressureCheck<'a> {
+    max_tokens: &'a mut usize,
+    was_clamped: &'a mut bool,
+    clamp_reason: &'a mut Option<String>,
+}
+
+impl PressureCheck<'_> {
+    fn check(
+        &mut self,
         available_mb: u64,
         headroom_mb: u64,
-        max_tokens: &mut usize,
-        was_clamped: &mut bool,
-        clamp_reason: &mut Option<String>,
         label: &str,
+        config: &ContextConfig,
         make_error: impl FnOnce(u64, u64) -> ResourceError,
     ) -> Result<(), ResourceError> {
         if available_mb < headroom_mb {
-            let reduced = *max_tokens / 2;
-            if reduced < self.config.simple_question {
+            let reduced = *self.max_tokens / 2;
+            if reduced < config.simple_question {
                 return Err(make_error(headroom_mb, available_mb));
             }
-            *max_tokens = reduced;
-            *was_clamped = true;
-            *clamp_reason = Some(format!(
+            *self.max_tokens = reduced;
+            *self.was_clamped = true;
+            *self.clamp_reason = Some(format!(
                 "{} pressure: {} MB available, {} MB headroom required. Budget halved.",
                 label, available_mb, headroom_mb
             ));

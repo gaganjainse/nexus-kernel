@@ -134,41 +134,34 @@ impl ResourceMonitor {
             return root_disk.available_space() / (1024 * 1024 * 1024);
         }
 
-        // Fallback to platform-specific commands
+        // Fallback to platform-specific df commands
         #[cfg(target_os = "linux")]
         {
-            let output = std::process::Command::new("df")
-                .args(["--output=avail", "-BG", "/"])
-                .output();
-            if let Ok(output) = output {
-                if output.status.success() {
-                    let stdout = String::from_utf8_lossy(&output.stdout);
-                    if let Some(line) = stdout.lines().nth(1) {
-                        let trimmed = line.trim().trim_end_matches('G');
-                        return trimmed.parse().unwrap_or(0);
-                    }
-                }
-            }
+            Self::query_df_space(&["--output=avail", "-BG", "/"], 0)
         }
 
         #[cfg(target_os = "macos")]
         {
-            let output = std::process::Command::new("df")
-                .args(["-g", "/"])
-                .output();
-            if let Ok(output) = output {
-                if output.status.success() {
-                    let stdout = String::from_utf8_lossy(&output.stdout);
-                    if let Some(line) = stdout.lines().nth(1) {
-                        let parts: Vec<&str> = line.split_whitespace().collect();
-                        if parts.len() >= 4 {
-                            return parts[3].parse().unwrap_or(0);
-                        }
+            Self::query_df_space(&["-g", "/"], 3)
+        }
+    }
+
+    /// Run `df` and parse the available space column.
+    fn query_df_space(args: &[&str], column: usize) -> u64 {
+        let output = std::process::Command::new("df")
+            .args(args)
+            .output();
+        if let Ok(output) = output {
+            if output.status.success() {
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                if let Some(line) = stdout.lines().nth(1) {
+                    let parts: Vec<&str> = line.split_whitespace().collect();
+                    if column < parts.len() {
+                        return parts[column].trim_end_matches('G').parse().unwrap_or(0);
                     }
                 }
             }
         }
-
         0
     }
 

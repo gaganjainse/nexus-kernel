@@ -143,7 +143,7 @@ pub struct ModelProviderConfig {
     #[serde(default)]
     pub api_key: String,
 
-/// Provider backend kind: openai, anthropic, etc.
+    /// Provider backend kind: openai, anthropic, etc.
     #[serde(default = "default_provider_kind")]
     pub provider_kind: String,
 }
@@ -172,7 +172,7 @@ impl ModelProviderConfig {
                     self.api_key.clone(),
                     self.model_id.clone(),
                     role,
-                )))
+                )?))
             }
             _ => {
                 let provider = crate::model::openai_compat::OpenAiCompatProvider::new(self)?;
