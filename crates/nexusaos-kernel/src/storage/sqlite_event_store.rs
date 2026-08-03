@@ -11,7 +11,6 @@ use crate::{
 /// SQLite-backed event store.
 pub struct SqliteEventStore {
     db_path: PathBuf,
-    next_sequence: AtomicU64,
 }
 
 impl SqliteEventStore {
