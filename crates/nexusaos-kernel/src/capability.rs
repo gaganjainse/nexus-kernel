@@ -2,7 +2,7 @@
 // All types derive Debug, Clone, Serialize, Deserialize
 
 use std::{
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
     time::Duration,
 };
 
@@ -42,6 +42,47 @@ pub struct CapabilityLease {
     pub expires_at: Option<DateTime<Utc>>,
     pub granted_by: String,
     pub revoked: bool,
+}
+
+/// Lexically normalizes a path, resolving `.` and `..` components.
+/// Returns `None` if the path attempts to escape above its root.
+fn normalize_lexical(path: &Path) -> Option<PathBuf> {
+    let mut components = Vec::new();
+    for comp in path.components() {
+        match comp {
+            Component::CurDir => {}
+            Component::ParentDir => {
+                if components.last().map_or(false, |c: &Component| {
+                    matches!(c, Component::Normal(_))
+                }) {
+                    components.pop();
+                } else if components.is_empty() {
+                    // Path escapes above root
+                    return None;
+                }
+            }
+            Component::RootDir => {
+                if components.is_empty() {
+                    components.push(comp);
+                }
+            }
+            Component::Prefix(_) => {
+                components.push(comp);
+            }
+            Component::Normal(_) => {
+                components.push(comp);
+            }
+        }
+    }
+    if components.is_empty() {
+        return Some(PathBuf::new());
+    }
+    Some(PathBuf::from(
+        components.iter().fold(PathBuf::new(), |mut acc, c| {
+            acc.push(c.as_os_str());
+            acc
+        }),
+    ))
 }
 
 impl CapabilityLease {
