@@ -4,13 +4,14 @@ use async_trait::async_trait;
 
 use crate::{
     error::{NexusError, StorageError},
-    events::Event,
+    events::{Event, SequenceNumber},
     storage::EventStore,
 };
 
 /// SQLite-backed event store.
 pub struct SqliteEventStore {
     db_path: PathBuf,
+    next_sequence: AtomicU64,
 }
 
 impl SqliteEventStore {
