@@ -72,7 +72,7 @@ impl TileBlock {
                 "[AI] Ready for prompt. Type your instructions below...".to_string(),
             ],
             BlockKind::CodeEditor => vec![
-                "// File: /home/gagan/Workspace/NexusAOS/crates/nexusaos-kernel/src/lib.rs"
+                "// File: /home/gagan/Workspace/nexus-kernel/crates/nexusaos-kernel/src/lib.rs"
                     .to_string(),
                 "1 | pub mod kernel;".to_string(),
                 "2 | pub mod policy;".to_string(),

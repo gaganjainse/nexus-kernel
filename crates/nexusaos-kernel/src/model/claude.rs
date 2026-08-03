@@ -1,5 +1,7 @@
 //! Anthropic Claude Provider Implementation for NexusAOS Kernel.
 
+use std::time::Duration;
+
 use async_trait::async_trait;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -17,6 +19,7 @@ pub struct ClaudeProvider {
     name: String,
     role: ModelRole,
     api_key: String,
+    base_url: String,
     model_id: String,
     max_context: usize,
     client: Client,
@@ -24,11 +27,15 @@ pub struct ClaudeProvider {
 
 impl ClaudeProvider {
     pub fn new(api_key: String, model_id: String, role: ModelRole) -> Result<Self, ProviderError> {
-        let client = Client::builder().build().map_err(|e| ProviderError::Http(e.to_string()))?;
+        let client = Client::builder()
+            .timeout(Duration::from_secs(120))
+            .build()
+            .map_err(|e| ProviderError::Http(e.to_string()))?;
         Ok(Self {
             name: format!("anthropic-claude-{}", model_id),
             role,
             api_key,
+            base_url: "https://api.anthropic.com".to_string(),
             model_id,
             max_context: 200_000,
             client,
@@ -41,6 +48,10 @@ struct ClaudeRequest {
     model: String,
     max_tokens: usize,
     messages: Vec<ClaudeMessage>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    system: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    stop_reason: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -52,11 +63,19 @@ struct ClaudeMessage {
 #[derive(Deserialize)]
 struct ClaudeResponse {
     content: Vec<ClaudeContentBlock>,
+    #[serde(rename = "usage")]
+    usage: Option<ClaudeUsage>,
 }
 
 #[derive(Deserialize)]
 struct ClaudeContentBlock {
     text: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct ClaudeUsage {
+    input_tokens: Option<usize>,
+    output_tokens: Option<usize>,
 }
 
 #[async_trait]
@@ -78,7 +97,23 @@ impl ModelProvider for ClaudeProvider {
     }
 
     async fn health_check(&self) -> Result<bool, ProviderError> {
-        Ok(!self.api_key.is_empty())
+        let url = format!("{}/v1/messages", self.base_url);
+        let resp = self
+            .client
+            .get(&url)
+            .header("x-api-key", &self.api_key)
+            .header("anthropic-version", "2023-06-01")
+            .send()
+            .await
+            .map_err(|e| ProviderError::Http(e.to_string()))?;
+        if resp.status().is_success() {
+            Ok(true)
+        } else {
+            Err(ProviderError::HealthCheckFailed {
+                name: self.name.clone(),
+                reason: format!("HTTP {}", resp.status()),
+            })
+        }
     }
 
     async fn complete(
@@ -98,11 +133,13 @@ impl ModelProvider for ClaudeProvider {
             model: self.model_id.clone(),
             max_tokens: request.max_tokens,
             messages,
+            system: None,
+            stop_reason: None,
         };
 
         let response = self
             .client
-            .post("https://api.anthropic.com/v1/messages")
+            .post(format!("{}/v1/messages", self.base_url))
             .header("x-api-key", &self.api_key)
             .header("anthropic-version", "2023-06-01")
             .header("content-type", "application/json")
@@ -122,12 +159,13 @@ impl ModelProvider for ClaudeProvider {
             response.json().await.map_err(|e| ProviderError::MalformedResponse(e.to_string()))?;
 
         let text = claude_resp.content.first().and_then(|c| c.text.clone()).unwrap_or_default();
+        let usage = claude_resp.usage;
 
         Ok(CompletionResponse {
             content: text,
             finish_reason: Some("end_turn".to_string()),
-            prompt_tokens: None,
-            completion_tokens: None,
+            prompt_tokens: usage.as_ref().and_then(|u| u.input_tokens),
+            completion_tokens: usage.as_ref().and_then(|u| u.output_tokens),
             model: self.model_id.clone(),
         })
     }

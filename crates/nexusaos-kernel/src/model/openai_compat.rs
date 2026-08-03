@@ -23,6 +23,7 @@ pub struct OpenAiCompatProvider {
     role: ModelRole,
     base_url: String,
     model_id: String,
+    api_key: String,
     max_context: usize,
     supports_vision: bool,
     client: Client,
@@ -48,10 +49,20 @@ impl OpenAiCompatProvider {
             role,
             base_url: config.base_url.trim_end_matches('/').to_string(),
             model_id: config.model_id.clone(),
+            api_key: config.api_key.clone(),
             max_context: config.max_context,
             supports_vision: config.supports_vision,
             client,
         })
+    }
+
+    /// Applies bearer authentication only when the API key is non-empty.
+    fn authorize(&self, req: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
+        if self.api_key.is_empty() {
+            req
+        } else {
+            req.bearer_auth(&self.api_key)
+        }
     }
 }
 
@@ -156,9 +167,7 @@ impl ModelProvider for OpenAiCompatProvider {
 
         let url = format!("{}/v1/chat/completions", self.base_url);
         let resp = self
-            .client
-            .post(&url)
-            .json(&request)
+            .authorize(self.client.post(&url).json(&request))
             .send()
             .await
             .map_err(|e| ProviderError::Http(e.to_string()))?;
@@ -199,9 +208,7 @@ impl ModelProvider for OpenAiCompatProvider {
         }
 
         let resp = self
-            .client
-            .post(&url)
-            .json(&payload)
+            .authorize(self.client.post(&url).json(&payload))
             .send()
             .await
             .map_err(|e| ProviderError::Http(e.to_string()))?;

@@ -71,7 +71,7 @@ impl App {
             input_buffer: String::new(),
             history: vec![
                 "=== JETBRAINS NEXUSAOS AI IDE ===".to_string(),
-                "Loaded Project: /home/gagan/Workspace/NexusAOS".to_string(),
+                "Loaded Project: /home/gagan/Workspace/nexus-kernel".to_string(),
                 "Active Models: Gemma-12B (Planner) | Qwen-30B (Coder)".to_string(),
                 "Press Alt+1: Project Tree | Alt+F12: Terminal | Ctrl+R: Run | F10: Exit"
                     .to_string(),

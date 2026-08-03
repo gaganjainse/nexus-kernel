@@ -55,7 +55,7 @@ max_context = 4096
     // Test 1: nexusaos init
     let output = Command::new("cargo")
         .args(["run", "--bin", "nexusaos", "--", "--config", config_path.to_str().unwrap(), "init"])
-        .current_dir("/home/gagan/Workspace/NexusAOS")
+        .current_dir("/home/gagan/Workspace/nexus-kernel")
         .output()
         .expect("Failed to execute init");
     assert!(output.status.success(), "init failed: {}", String::from_utf8_lossy(&output.stderr));
@@ -63,7 +63,7 @@ max_context = 4096
     // Test 2: nexusaos doctor
     let output = Command::new("cargo")
         .args(["run", "--bin", "nexusaos", "--", "--config", config_path.to_str().unwrap(), "doctor"])
-        .current_dir("/home/gagan/Workspace/NexusAOS")
+        .current_dir("/home/gagan/Workspace/nexus-kernel")
         .output()
         .expect("Failed to execute doctor");
     assert!(output.status.success(), "doctor failed: {}", String::from_utf8_lossy(&output.stderr));
@@ -71,7 +71,7 @@ max_context = 4096
     // Test 3: nexusaos run with simple task
     let output = Command::new("cargo")
         .args(["run", "--bin", "nexusaos", "--", "--config", config_path.to_str().unwrap(), "run", "echo hello", "--yes"])
-        .current_dir("/home/gagan/Workspace/NexusAOS")
+        .current_dir("/home/gagan/Workspace/nexus-kernel")
         .output()
         .expect("Failed to execute run");
     // May fail due to no LLM server, but should not crash
@@ -81,7 +81,7 @@ max_context = 4096
     // Test 4: nexusaos status
     let output = Command::new("cargo")
         .args(["run", "--bin", "nexusaos", "--", "--config", config_path.to_str().unwrap(), "status"])
-        .current_dir("/home/gagan/Workspace/NexusAOS")
+        .current_dir("/home/gagan/Workspace/nexus-kernel")
         .output()
         .expect("Failed to execute status");
     assert!(output.status.success(), "status failed: {}", String::from_utf8_lossy(&output.stderr));
@@ -89,7 +89,7 @@ max_context = 4096
     // Test 5: nexusaos config
     let output = Command::new("cargo")
         .args(["run", "--bin", "nexusaos", "--", "--config", config_path.to_str().unwrap(), "config"])
-        .current_dir("/home/gagan/Workspace/NexusAOS")
+        .current_dir("/home/gagan/Workspace/nexus-kernel")
         .output()
         .expect("Failed to execute config");
     assert!(output.status.success(), "config failed: {}", String::from_utf8_lossy(&output.stderr));

@@ -10,11 +10,26 @@ use crate::error::ToolError;
 pub struct TerminalTool {
     timeout_secs: u64,
     denied_prefixes: Vec<String>,
+    /// If true, refuse to run commands when bwrap is unavailable.
+    require_sandbox: bool,
 }
 
 impl TerminalTool {
     pub fn new(timeout_secs: u64, denied_prefixes: Vec<String>) -> Self {
-        Self { timeout_secs, denied_prefixes }
+        Self { timeout_secs, denied_prefixes, require_sandbox: false }
+    }
+
+    /// Resolve the bwrap binary through PATH.
+    fn resolve_bwrap() -> Option<std::path::PathBuf> {
+        if let Ok(path) = std::env::var("PATH") {
+            for dir in path.split(':') {
+                let candidate = std::path::Path::new(dir).join("bwrap");
+                if candidate.exists() {
+                    return Some(candidate);
+                }
+            }
+        }
+        None
     }
 
     fn is_command_denied(&self, command: &str) -> bool {
@@ -49,8 +64,15 @@ impl ToolExecutor for TerminalTool {
             return Err(ToolError::CommandDenied { command: command.to_string() });
         }
 
-        let has_bwrap = std::path::Path::new("/usr/bin/bwrap").exists()
-            || std::path::Path::new("/bin/bwrap").exists();
+        let bwrap_path = Self::resolve_bwrap();
+        let has_bwrap = bwrap_path.is_some();
+
+        if self.require_sandbox && !has_bwrap {
+            return Err(ToolError::ExecutionFailed {
+                name: self.name().to_string(),
+                reason: "Sandbox required but bwrap not found on PATH".to_string(),
+            });
+        }
 
         let mut cmd = if has_bwrap {
             let mut bwrap = Command::new("bwrap");
