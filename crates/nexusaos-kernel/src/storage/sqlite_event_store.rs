@@ -1,5 +1,4 @@
-use std::path::PathBuf;
-use std::sync::atomic::AtomicU64;
+use std::{path::PathBuf, sync::atomic::AtomicU64};
 
 use async_trait::async_trait;
 
@@ -34,8 +33,11 @@ impl SqliteEventStore {
             )
             .map_err(|e| NexusError::Storage(StorageError::Database(e)))?;
             // Migrate existing default-sequence rows to 0
-            conn.execute("UPDATE events SET sequence = 0 WHERE sequence IS NULL OR sequence = 0", ())
-                .ok();
+            conn.execute(
+                "UPDATE events SET sequence = 0 WHERE sequence IS NULL OR sequence = 0",
+                (),
+            )
+            .ok();
             let max: i64 = conn
                 .query_row("SELECT COALESCE(MAX(sequence), 0) FROM events", [], |r| r.get(0))
                 .unwrap_or(0);
@@ -45,10 +47,7 @@ impl SqliteEventStore {
         .map_err(|e| {
             NexusError::Storage(StorageError::Io(std::io::Error::other(e.to_string())))
         })??;
-        Ok(Self {
-            db_path,
-            next_sequence: AtomicU64::new(max_seq as u64 + 1),
-        })
+        Ok(Self { db_path, next_sequence: AtomicU64::new(max_seq as u64 + 1) })
     }
 
     /// Read all events in sequence order.

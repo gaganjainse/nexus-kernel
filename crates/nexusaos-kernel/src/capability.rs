@@ -52,9 +52,10 @@ fn normalize_lexical(path: &Path) -> Option<PathBuf> {
         match comp {
             Component::CurDir => {}
             Component::ParentDir => {
-                if components.last().map_or(false, |c: &Component| {
-                    matches!(c, Component::Normal(_))
-                }) {
+                if components
+                    .last()
+                    .map_or(false, |c: &Component| matches!(c, Component::Normal(_)))
+                {
                     components.pop();
                 } else if components.is_empty() {
                     // Path escapes above root
@@ -77,12 +78,10 @@ fn normalize_lexical(path: &Path) -> Option<PathBuf> {
     if components.is_empty() {
         return Some(PathBuf::new());
     }
-    Some(PathBuf::from(
-        components.iter().fold(PathBuf::new(), |mut acc, c| {
-            acc.push(c.as_os_str());
-            acc
-        }),
-    ))
+    Some(PathBuf::from(components.iter().fold(PathBuf::new(), |mut acc, c| {
+        acc.push(c.as_os_str());
+        acc
+    })))
 }
 
 impl CapabilityLease {
