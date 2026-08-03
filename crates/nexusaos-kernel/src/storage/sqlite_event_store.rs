@@ -1,10 +1,10 @@
-use std::{path::PathBuf, sync::atomic::AtomicU64};
+use std::path::PathBuf;
 
 use async_trait::async_trait;
 
 use crate::{
     error::{NexusError, StorageError},
-    events::{Event, SequenceNumber},
+    events::Event,
     storage::EventStore,
 };
 
@@ -18,7 +18,7 @@ impl SqliteEventStore {
     pub async fn open(path: PathBuf) -> Result<Self, NexusError> {
         let db_path = path.join("events.db");
         let db_path_clone = db_path.clone();
-        let max_seq: i64 = tokio::task::spawn_blocking(move || {
+        tokio::task::spawn_blocking(move || {
             let conn = rusqlite::Connection::open(&db_path_clone)
                 .map_err(|e| NexusError::Storage(StorageError::Database(e)))?;
             conn.execute(
@@ -37,16 +37,13 @@ impl SqliteEventStore {
                 (),
             )
             .ok();
-            let max: i64 = conn
-                .query_row("SELECT COALESCE(MAX(sequence), 0) FROM events", [], |r| r.get(0))
-                .unwrap_or(0);
-            Ok::<_, NexusError>(max)
+            Ok::<_, NexusError>(())
         })
         .await
         .map_err(|e| {
             NexusError::Storage(StorageError::Io(std::io::Error::other(e.to_string())))
         })??;
-        Ok(Self { db_path, next_sequence: AtomicU64::new(max_seq as u64 + 1) })
+        Ok(Self { db_path })
     }
 
     /// Read all events in sequence order.

@@ -54,7 +54,7 @@ fn normalize_lexical(path: &Path) -> Option<PathBuf> {
             Component::ParentDir => {
                 if components
                     .last()
-                    .map_or(false, |c: &Component| matches!(c, Component::Normal(_)))
+                    .is_some_and(|c: &Component| matches!(c, Component::Normal(_)))
                 {
                     components.pop();
                 } else if components.is_empty() {
@@ -78,10 +78,10 @@ fn normalize_lexical(path: &Path) -> Option<PathBuf> {
     if components.is_empty() {
         return Some(PathBuf::new());
     }
-    Some(PathBuf::from(components.iter().fold(PathBuf::new(), |mut acc, c| {
+    Some(components.iter().fold(PathBuf::new(), |mut acc, c| {
         acc.push(c.as_os_str());
         acc
-    })))
+    }))
 }
 
 impl CapabilityLease {
@@ -101,14 +101,26 @@ impl CapabilityLease {
         self.revoked = true;
     }
 
-    /// Checks if this lease grants access to the specified path
+    /// Checks if this lease grants access to the specified path.
+    /// Normalizes both paths lexically before comparison to prevent
+    /// path-traversal attacks (e.g. "/etc/../etc/passwd" bypassing "/etc" scope).
     pub fn covers_path(&self, path: &Path) -> bool {
         if !self.is_valid() {
             return false;
         }
         match &self.capability.scope {
             Scope::Global => true,
-            Scope::Path(p) => path.starts_with(p),
+            Scope::Path(p) => {
+                let normalized_request = match normalize_lexical(path) {
+                    Some(n) => n,
+                    None => return false,
+                };
+                let normalized_scope = match normalize_lexical(p) {
+                    Some(n) => n,
+                    None => return false,
+                };
+                normalized_request.starts_with(&normalized_scope)
+            }
             _ => false,
         }
     }
