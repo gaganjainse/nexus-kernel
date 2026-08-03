@@ -566,11 +566,18 @@ fn parse_tool_call(input: &str) -> Result<ParsedToolCall, String> {
 }
 
 /// Truncate output at a newline boundary to avoid cutting lines mid-way.
+/// Also ensures the truncation point is at a valid UTF-8 character boundary.
 fn truncate_output(output: &str, max_size: usize) -> &str {
     if output.len() <= max_size {
         return output;
     }
-    let cut_point = &output[..max_size];
+    // Step back to the nearest UTF-8 character boundary.
+    let mut boundary = max_size;
+    while boundary > 0 && !output.is_char_boundary(boundary) {
+        boundary -= 1;
+    }
+    // Step back to the nearest newline boundary to preserve line structure.
+    let cut_point = &output[..boundary];
     cut_point.rfind('\n').map(|i| &output[..i + 1]).unwrap_or(cut_point)
 }
 

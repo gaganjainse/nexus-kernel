@@ -93,20 +93,26 @@ struct OpenAiUsage {
 /// Parses SSE (Server-Sent Events) data from a buffer, extracting tokens and
 /// detecting the `[DONE]` sentinel.
 ///
-/// Processes all lines in the buffer (including a final line without a trailing
-/// newline), clears the buffer, and appends any extracted content tokens to
-/// `full_content` while invoking `on_token` for each token.
+/// Processes only complete newline-terminated lines, retaining any trailing
+/// partial line in the buffer for the next chunk. When `flush` is true (start
+/// of stream completion), processes the remaining buffered content.
 ///
 /// Returns `true` if a `[DONE]` event was encountered.
 fn parse_sse_buffer(
     buffer: &mut String,
     full_content: &mut String,
     on_token: &mut (impl FnMut(&str) + ?Sized),
+    flush: bool,
 ) -> bool {
     let mut done_received = false;
+    let mut consumed = 0usize;
 
-    for line in buffer.lines() {
-        let line = line.trim();
+    while let Some(offset) = buffer[consumed..].find('\n') {
+        let end = consumed + offset;
+        let line = buffer[consumed..end].trim().to_string();
+        consumed = end + 1;
+        let line = line.as_str();
+
         if let Some(data) = line.strip_prefix("data: ") {
             if data == "[DONE]" {
                 done_received = true;
@@ -122,7 +128,24 @@ fn parse_sse_buffer(
         }
     }
 
-    buffer.clear();
+    buffer.drain(..consumed);
+
+    if flush {
+        let line = buffer.trim().to_string();
+        if let Some(data) = line.strip_prefix("data: ") {
+            if data == "[DONE]" {
+                done_received = true;
+            } else if let Ok(val) = serde_json::from_str::<serde_json::Value>(data) {
+                if let Some(token) = val["choices"][0]["delta"]["content"].as_str() {
+                    let token_str = token.to_string();
+                    full_content.push_str(&token_str);
+                    on_token(&token_str);
+                }
+            }
+        }
+        buffer.clear();
+    }
+
     done_received
 }
 
@@ -173,7 +196,8 @@ impl ModelProvider for OpenAiCompatProvider {
             .map_err(|e| ProviderError::Http(e.to_string()))?;
 
         if !resp.status().is_success() {
-            return Err(ProviderError::InferenceFailed(format!("HTTP {}", resp.status())));
+            let body = resp.text().await.unwrap_or_default();
+            return Err(ProviderError::Api(body));
         }
 
         let oa_resp: OpenAiResponse =
@@ -214,7 +238,8 @@ impl ModelProvider for OpenAiCompatProvider {
             .map_err(|e| ProviderError::Http(e.to_string()))?;
 
         if !resp.status().is_success() {
-            return Err(ProviderError::InferenceFailed(format!("HTTP {}", resp.status())));
+            let body = resp.text().await.unwrap_or_default();
+            return Err(ProviderError::Api(body));
         }
 
         let mut stream = resp.bytes_stream();
@@ -240,7 +265,7 @@ impl ModelProvider for OpenAiCompatProvider {
             let text = String::from_utf8_lossy(&chunk_result);
             buffer.push_str(&text);
 
-            if parse_sse_buffer(&mut buffer, &mut full_content, on_token) {
+            if parse_sse_buffer(&mut buffer, &mut full_content, on_token, false) {
                 done_received = true;
                 break;
             }
@@ -248,7 +273,7 @@ impl ModelProvider for OpenAiCompatProvider {
 
         if !done_received && !buffer.is_empty() {
             tracing::warn!("Stream ended without [DONE] marker, processing remaining buffer");
-            if parse_sse_buffer(&mut buffer, &mut full_content, on_token) {
+            if parse_sse_buffer(&mut buffer, &mut full_content, on_token, true) {
                 done_received = true;
             }
         }

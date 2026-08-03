@@ -10,7 +10,7 @@ use crate::{
     error::ProviderError,
     model::{
         provider::ModelProvider,
-        types::{CompletionRequest, CompletionResponse},
+        types::{ChatRole, CompletionRequest, CompletionResponse},
     },
     state::ModelRole,
 };
@@ -63,6 +63,7 @@ struct ClaudeMessage {
 #[derive(Deserialize)]
 struct ClaudeResponse {
     content: Vec<ClaudeContentBlock>,
+    stop_reason: Option<String>,
     #[serde(rename = "usage")]
     usage: Option<ClaudeUsage>,
 }
@@ -120,20 +121,32 @@ impl ModelProvider for ClaudeProvider {
         &self,
         request: CompletionRequest,
     ) -> Result<CompletionResponse, ProviderError> {
-        let messages = request
-            .messages
-            .into_iter()
-            .map(|m| ClaudeMessage {
-                role: m.role.as_claude_role().to_string(),
-                content: m.content,
-            })
-            .collect();
+        let mut system_parts: Vec<String> = Vec::new();
+        let mut messages: Vec<ClaudeMessage> = Vec::new();
+        for m in request.messages {
+            match m.role {
+                ChatRole::System => system_parts.push(m.content),
+                ChatRole::User | ChatRole::Assistant => {
+                    let role = if matches!(m.role, ChatRole::User) { "user" } else { "assistant" };
+                    match messages.last_mut() {
+                        Some(last) if last.role == role => {
+                            last.content.push('\n');
+                            last.content.push_str(&m.content);
+                        }
+                        _ => messages.push(ClaudeMessage {
+                            role: role.to_string(),
+                            content: m.content,
+                        }),
+                    }
+                }
+            }
+        }
 
         let req_body = ClaudeRequest {
             model: self.model_id.clone(),
-            max_tokens: request.max_tokens,
+            max_tokens: request.max_tokens.max(1),
             messages,
-            system: None,
+            system: (!system_parts.is_empty()).then(|| system_parts.join("\n\n")),
             stop_reason: None,
         };
 
@@ -149,21 +162,26 @@ impl ModelProvider for ClaudeProvider {
             .map_err(|e| ProviderError::Http(e.to_string()))?;
 
         if !response.status().is_success() {
-            return Err(ProviderError::InferenceFailed(format!(
-                "Anthropic HTTP {}",
-                response.status()
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            return Err(ProviderError::Api(format!(
+                "Anthropic HTTP {status}: {body}"
             )));
         }
 
         let claude_resp: ClaudeResponse =
             response.json().await.map_err(|e| ProviderError::MalformedResponse(e.to_string()))?;
 
-        let text = claude_resp.content.first().and_then(|c| c.text.clone()).unwrap_or_default();
+        let text: String = claude_resp
+            .content
+            .iter()
+            .filter_map(|c| c.text.as_deref())
+            .collect();
         let usage = claude_resp.usage;
 
         Ok(CompletionResponse {
             content: text,
-            finish_reason: Some("end_turn".to_string()),
+            finish_reason: claude_resp.stop_reason,
             prompt_tokens: usage.as_ref().and_then(|u| u.input_tokens),
             completion_tokens: usage.as_ref().and_then(|u| u.output_tokens),
             model: self.model_id.clone(),

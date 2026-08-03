@@ -10,12 +10,6 @@ pub enum ChatRole {
 }
 
 impl ChatRole {
-    pub(crate) fn as_claude_role(&self) -> &'static str {
-        match self {
-            ChatRole::User | ChatRole::System => "user",
-            ChatRole::Assistant => "assistant",
-        }
-    }
 }
 
 /// A single message in a chat conversation.
