@@ -1,0 +1,46 @@
+kernel-evolution {
+  direction right
+
+  Unix {
+    style filled
+    fillcolor #e1f5fe
+    "Monolithic\n1969-1979"
+  }
+
+  BSD {
+    style filled
+    fillcolor #e8f5e9
+    "Monolithic + TCP/IP\n1977-1993"
+  }
+
+  Mach {
+    style filled
+    fillcolor #fff3e0
+    "Microkernel\n1985-1994"
+  }
+
+  Linux {
+    style filled
+    fillcolor #fce4ec
+    "Monolithic + Modules\n1991-Present"
+  }
+
+  XNU {
+    style filled
+    fillcolor #f3e5f5
+    "Hybrid (Mach + BSD)\n1996-Present"
+  }
+
+  NexusAOS {
+    style filled
+    fillcolor #e0f2f1
+    "Governance-First\n2026"
+  }
+
+  Unix -> BSD
+  BSD -> Mach
+  Mach -> Linux
+  Mach -> XNU
+  Linux -> NexusAOS
+  XNU -> NexusAOS
+}

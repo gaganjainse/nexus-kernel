@@ -1,0 +1,20 @@
+graph TD
+    subgraph Era ["Kernel Evolution Timeline"]
+        direction LR
+        U[Unix V7<br/>Monolithic<br/>1969] --> B[BSD 4.4<br/>Monolithic + TCP/IP<br/>1977]
+        B --> M[Mach 3.0<br/>Microkernel<br/>1985]
+        M --> L[Linux<br/>Monolithic + Modules<br/>1991]
+        M --> X[XNU<br/>Hybrid Mach+BSD<br/>1996]
+        L --> N[NexusAOS<br/>Governance-First<br/>2026]
+        X --> N
+    end
+
+    subgraph Comparison ["Architecture Comparison"]
+        direction TB
+        U1["Unix: Everything in kernel space<br/>No memory protection between components<br/>Written in C"]
+        B1["BSD: Added TCP/IP, VM<br/>Still monolithic<br/>Permissive license"]
+        M1["Mach: Microkernel design<br/>IPC-based communication<br/>User-space servers"]
+        L1["Linux: Monolithic + LKMs<br/>Loadable kernel modules<br/>PREEMPT_DYNAMIC"]
+        X1["XNU: Mach + BSD hybrid<br/>I/O Kit drivers<br/>DriverKit user-space"]
+        N1["NexusAOS: Governance-first<br/>Event-sourced audit trail<br/>Model-aware routing"]
+    end
