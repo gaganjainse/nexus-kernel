@@ -358,7 +358,6 @@ impl ToolExecutor for IsolatedWorkerExecutor {
 mod tests {
     use super::*;
     use std::sync::Arc;
-    use std::time::Duration;
 
     use crate::capability::CapabilitySet;
 
