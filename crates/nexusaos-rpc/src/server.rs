@@ -41,50 +41,55 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_server_new() {
+    async fn test_server_new() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
-        let store = Arc::new(WaveStore::open_in_memory().unwrap());
+        let store = Arc::new(WaveStore::open_in_memory()?);
         let handler = Arc::new(RpcHandler::new(broker, store));
         let server = RpcServer::new(handler, PathBuf::from("/tmp/test_server.sock"));
-        assert_eq!(server.socket_path.to_str().unwrap(), "/tmp/test_server.sock");
+        let socket_str = server.socket_path.to_str().ok_or("socket path should be valid UTF-8")?;
+        assert_eq!(socket_str, "/tmp/test_server.sock");
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_server_new_with_relative_path() {
+    async fn test_server_new_with_relative_path() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
-        let store = Arc::new(WaveStore::open_in_memory().unwrap());
+        let store = Arc::new(WaveStore::open_in_memory()?);
         let handler = Arc::new(RpcHandler::new(broker, store));
         let server = RpcServer::new(handler, PathBuf::from("relative/path.sock"));
         assert_eq!(server.socket_path, PathBuf::from("relative/path.sock"));
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_server_new_with_empty_path() {
+    async fn test_server_new_with_empty_path() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
-        let store = Arc::new(WaveStore::open_in_memory().unwrap());
+        let store = Arc::new(WaveStore::open_in_memory()?);
         let handler = Arc::new(RpcHandler::new(broker, store));
         let server = RpcServer::new(handler, PathBuf::from(""));
         assert_eq!(server.socket_path, PathBuf::from(""));
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_server_socket_path_stored_correctly() {
+    async fn test_server_socket_path_stored_correctly() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
-        let store = Arc::new(WaveStore::open_in_memory().unwrap());
+        let store = Arc::new(WaveStore::open_in_memory()?);
         let handler = Arc::new(RpcHandler::new(broker, store));
         let path = PathBuf::from("/var/run/nexusaos/rpc.sock");
         let server = RpcServer::new(handler, path.clone());
         assert_eq!(server.socket_path, path);
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_server_run_creates_listener() {
+    async fn test_server_run_creates_listener() -> Result<(), Box<dyn std::error::Error>> {
         use tempfile::TempDir;
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempDir::new()?;
         let socket_path = temp_dir.path().join("test.sock");
 
         let broker = Broker::new(10);
-        let store = Arc::new(WaveStore::open_in_memory().unwrap());
+        let store = Arc::new(WaveStore::open_in_memory()?);
         let handler = Arc::new(RpcHandler::new(broker, store));
         let server = RpcServer::new(handler, socket_path.clone());
 
@@ -97,5 +102,6 @@ mod tests {
 
         server_handle.abort();
         let _ = tokio::fs::remove_file(&socket_path).await;
+    Ok(())
     }
 }

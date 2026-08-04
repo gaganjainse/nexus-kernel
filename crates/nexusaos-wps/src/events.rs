@@ -81,7 +81,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_wave_event_creation() {
+    fn test_wave_event_creation() -> Result<(), Box<dyn std::error::Error>> {
         let ev = WaveEvent::new("test", vec!["scope1".to_string()], json!({"foo": "bar"}));
         assert_eq!(ev.topic, "test");
         assert_eq!(ev.scopes, vec!["scope1"]);
@@ -93,98 +93,109 @@ mod tests {
 
         let ev3 = ev2.with_persist(5);
         assert_eq!(ev3.persist, 5);
+    Ok(())
     }
 
     #[test]
-    fn test_wave_event_new_with_string_topic() {
+    fn test_wave_event_new_with_string_topic() -> Result<(), Box<dyn std::error::Error>> {
         let topic = String::from("my_topic");
         let ev = WaveEvent::new(topic.clone(), vec![], json!(null));
         assert_eq!(ev.topic, topic);
         assert_eq!(ev.persist, 0);
         assert!(!ev.event_id.is_nil());
         assert!(ev.timestamp <= Utc::now());
+    Ok(())
     }
 
     #[test]
-    fn test_wave_event_new_with_multiple_scopes() {
+    fn test_wave_event_new_with_multiple_scopes() -> Result<(), Box<dyn std::error::Error>> {
         let scopes = vec!["scope1".into(), "scope2".into(), "scope3".into()];
         let ev = WaveEvent::new("topic", scopes.clone(), json!({}));
         assert_eq!(ev.scopes, scopes);
+    Ok(())
     }
 
     #[test]
-    fn test_wave_event_global_creates_empty_scopes() {
+    fn test_wave_event_global_creates_empty_scopes() -> Result<(), Box<dyn std::error::Error>> {
         let ev = WaveEvent::global("topic", json!({"key": "value"}));
         assert!(ev.scopes.is_empty());
         assert_eq!(ev.topic, "topic");
         assert_eq!(ev.data["key"], "value");
         assert_eq!(ev.persist, 0);
+    Ok(())
     }
 
     #[test]
-    fn test_wave_event_with_persist_zero() {
+    fn test_wave_event_with_persist_zero() -> Result<(), Box<dyn std::error::Error>> {
         let ev = WaveEvent::new("topic", vec![], json!(1)).with_persist(0);
         assert_eq!(ev.persist, 0);
+    Ok(())
     }
 
     #[test]
-    fn test_wave_event_with_persist_max_u32() {
+    fn test_wave_event_with_persist_max_u32() -> Result<(), Box<dyn std::error::Error>> {
         let ev = WaveEvent::new("topic", vec![], json!(1)).with_persist(u32::MAX);
         assert_eq!(ev.persist, u32::MAX);
+    Ok(())
     }
 
     #[test]
-    fn test_wave_event_with_persist_chaining() {
+    fn test_wave_event_with_persist_chaining() -> Result<(), Box<dyn std::error::Error>> {
         let ev = WaveEvent::new("topic", vec![], json!(1))
             .with_persist(1)
             .with_persist(2)
             .with_persist(3);
         assert_eq!(ev.persist, 3);
+    Ok(())
     }
 
     #[test]
-    fn test_wave_event_serde_roundtrip() {
+    fn test_wave_event_serde_roundtrip() -> Result<(), Box<dyn std::error::Error>> {
         let ev = WaveEvent::new("test", vec!["scope1".to_string()], json!({"nested": {"a": 1}}))
             .with_persist(42);
-        let json_str = serde_json::to_string(&ev).unwrap();
-        let decoded: WaveEvent = serde_json::from_str(&json_str).unwrap();
+        let json_str = serde_json::to_string(&ev)?;
+        let decoded: WaveEvent = serde_json::from_str(&json_str)?;
         assert_eq!(decoded.topic, ev.topic);
         assert_eq!(decoded.scopes, ev.scopes);
         assert_eq!(decoded.data, ev.data);
         assert_eq!(decoded.persist, 42);
         assert_eq!(decoded.event_id, ev.event_id);
+    Ok(())
     }
 
     #[test]
-    fn test_wave_event_event_id_is_unique() {
+    fn test_wave_event_event_id_is_unique() -> Result<(), Box<dyn std::error::Error>> {
         let ev1 = WaveEvent::new("topic", vec![], json!(1));
         let ev2 = WaveEvent::new("topic", vec![], json!(1));
         assert_ne!(ev1.event_id, ev2.event_id);
+    Ok(())
     }
 
     #[test]
-    fn test_wave_event_timestamps_close() {
+    fn test_wave_event_timestamps_close() -> Result<(), Box<dyn std::error::Error>> {
         let ev1 = WaveEvent::new("topic", vec![], json!(1));
         let ev2 = WaveEvent::new("topic", vec![], json!(1));
         assert!(ev2.timestamp >= ev1.timestamp);
+    Ok(())
     }
 
     #[test]
-    fn test_file_event_data_with_none_data64() {
+    fn test_file_event_data_with_none_data64() -> Result<(), Box<dyn std::error::Error>> {
         let d = FileEventData {
             zone_id: "z1".to_string(),
             file_name: "f1".to_string(),
             file_op: FILE_OP_APPEND.to_string(),
             data64: None,
         };
-        let s = serde_json::to_string(&d).unwrap();
+        let s = serde_json::to_string(&d)?;
         assert!(!s.contains("data64"));
-        let d2: FileEventData = serde_json::from_str(&s).unwrap();
+        let d2: FileEventData = serde_json::from_str(&s)?;
         assert!(d2.data64.is_none());
+    Ok(())
     }
 
     #[test]
-    fn test_file_event_data_all_operations() {
+    fn test_file_event_data_all_operations() -> Result<(), Box<dyn std::error::Error>> {
         for op in [FILE_OP_APPEND, FILE_OP_TRUNCATE, FILE_OP_INVALIDATE] {
             let d = FileEventData {
                 zone_id: "z1".to_string(),
@@ -193,46 +204,50 @@ mod tests {
                 data64: None,
             };
             assert_eq!(d.file_op, op);
-            let s = serde_json::to_string(&d).unwrap();
-            let d2: FileEventData = serde_json::from_str(&s).unwrap();
+            let s = serde_json::to_string(&d)?;
+            let d2: FileEventData = serde_json::from_str(&s)?;
             assert_eq!(d2.file_op, op);
         }
+    Ok(())
     }
 
     #[test]
-    fn test_file_event_data_serde_with_all_fields() {
+    fn test_file_event_data_serde_with_all_fields() -> Result<(), Box<dyn std::error::Error>> {
         let d = FileEventData {
             zone_id: "zone".to_string(),
             file_name: "file.txt".to_string(),
             file_op: FILE_OP_TRUNCATE.to_string(),
             data64: Some("SGVsbG8=".to_string()),
         };
-        let s = serde_json::to_string(&d).unwrap();
-        let d2: FileEventData = serde_json::from_str(&s).unwrap();
+        let s = serde_json::to_string(&d)?;
+        let d2: FileEventData = serde_json::from_str(&s)?;
         assert_eq!(d2.zone_id, "zone");
         assert_eq!(d2.file_name, "file.txt");
         assert_eq!(d2.file_op, FILE_OP_TRUNCATE);
-        assert_eq!(d2.data64.unwrap(), "SGVsbG8=");
+        assert_eq!(d2.data64.ok_or("data64 should be Some")?, "SGVsbG8=");
+    Ok(())
     }
 
     #[test]
-    fn test_subscription_request_construction() {
+    fn test_subscription_request_construction() -> Result<(), Box<dyn std::error::Error>> {
         let req = SubscriptionRequest {
             topic: "test".to_string(),
             scopes: vec!["scope1".to_string(), "scope2".to_string()],
         };
         assert_eq!(req.topic, "test");
         assert_eq!(req.scopes.len(), 2);
+    Ok(())
     }
 
     #[test]
-    fn test_subscription_request_empty_scopes() {
+    fn test_subscription_request_empty_scopes() -> Result<(), Box<dyn std::error::Error>> {
         let req = SubscriptionRequest { topic: "test".to_string(), scopes: vec![] };
         assert!(req.scopes.is_empty());
+    Ok(())
     }
 
     #[test]
-    fn test_file_event_data_clone() {
+    fn test_file_event_data_clone() -> Result<(), Box<dyn std::error::Error>> {
         let d = FileEventData {
             zone_id: "z".to_string(),
             file_name: "f".to_string(),
@@ -244,10 +259,11 @@ mod tests {
         assert_eq!(d.file_name, d2.file_name);
         assert_eq!(d.file_op, d2.file_op);
         assert_eq!(d.data64, d2.data64);
+    Ok(())
     }
 
     #[test]
-    fn test_wave_event_clone() {
+    fn test_wave_event_clone() -> Result<(), Box<dyn std::error::Error>> {
         let ev = WaveEvent::new("t", vec!["s".to_string()], json!(1)).with_persist(10);
         let ev2 = ev.clone();
         assert_eq!(ev.topic, ev2.topic);
@@ -255,5 +271,6 @@ mod tests {
         assert_eq!(ev.data, ev2.data);
         assert_eq!(ev.persist, ev2.persist);
         assert_eq!(ev.event_id, ev2.event_id);
+    Ok(())
     }
 }

@@ -172,8 +172,8 @@ mod tests {
             params: None,
             id: Some("1".to_string()),
         };
-        let json = serde_json::to_string(&req).unwrap();
-        let back: McpRequest = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&req).expect("failed to serialize McpRequest");
+        let back: McpRequest = serde_json::from_str(&json).expect("failed to deserialize McpRequest");
         assert_eq!(back.method, "tools/list");
     }
 
@@ -185,8 +185,8 @@ mod tests {
             error: None,
             id: Some("1".to_string()),
         };
-        let json = serde_json::to_string(&resp).unwrap();
-        let back: McpResponse = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&resp).expect("failed to serialize McpResponse");
+        let back: McpResponse = serde_json::from_str(&json).expect("failed to deserialize McpResponse");
         assert!(back.result.is_some());
     }
 

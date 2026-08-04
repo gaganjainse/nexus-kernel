@@ -278,7 +278,7 @@ mod tests {
         let policy = PolicyEngine::deny_all();
         let caps = CapabilitySet::new();
         let resp = handle_request(&req, &broker, &policy, &caps).await;
-        assert_eq!(resp.result.unwrap(), serde_json::json!({"pong": true}));
+        assert_eq!(resp.result.expect("ping response should have result"), serde_json::json!({"pong": true}));
     }
 
     #[tokio::test]

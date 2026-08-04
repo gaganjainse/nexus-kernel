@@ -242,7 +242,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_broker_pubsub() {
+    async fn test_broker_pubsub() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         let mut rx = broker.receiver();
 
@@ -253,13 +253,14 @@ mod tests {
 
         broker.publish(WaveEvent::global("test.topic", json!(1)));
 
-        let (route, ev) = rx.recv().await.unwrap();
+        let (route, ev) = rx.recv().await?;
         assert_eq!(route, "route1");
         assert_eq!(ev.topic, "test.topic");
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_scoped_subscription() {
+    async fn test_scoped_subscription() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         let mut rx = broker.receiver();
 
@@ -274,13 +275,14 @@ mod tests {
         // Publish to scopeA - should receive
         broker.publish(WaveEvent::new("test", vec!["scopeA".to_string()], json!(2)));
 
-        let (route, ev) = rx.recv().await.unwrap();
+        let (route, ev) = rx.recv().await?;
         assert_eq!(route, "route1");
         assert_eq!(ev.data, json!(2));
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_wildcard_subscription() {
+    async fn test_wildcard_subscription() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         let mut rx = broker.receiver();
 
@@ -291,23 +293,25 @@ mod tests {
 
         broker.publish(WaveEvent::new("test", vec!["any_scope".to_string()], json!(1)));
 
-        let (route, ev) = rx.recv().await.unwrap();
+        let (route, ev) = rx.recv().await?;
         assert_eq!(route, "route1");
         assert_eq!(ev.data, json!(1));
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_unsubscribe() {
+    async fn test_unsubscribe() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         broker
             .subscribe("route1", SubscriptionRequest { topic: "test".to_string(), scopes: vec![] });
         assert_eq!(broker.subscriber_count("test"), 1);
         broker.unsubscribe("route1", "test");
         assert_eq!(broker.subscriber_count("test"), 0);
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_unsubscribe_all() {
+    async fn test_unsubscribe_all() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         broker.subscribe(
             "route1",
@@ -320,10 +324,11 @@ mod tests {
         broker.unsubscribe_all("route1");
         assert_eq!(broker.subscriber_count("test1"), 0);
         assert_eq!(broker.subscriber_count("test2"), 0);
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_history() {
+    async fn test_history() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(2); // max 2
 
         let mut ev1 = WaveEvent::global("test", json!(1));
@@ -342,10 +347,11 @@ mod tests {
         // read_history returns newest first
         assert_eq!(hist[0].data, json!(3));
         assert_eq!(hist[1].data, json!(2));
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_multiple_subscribers() {
+    async fn test_multiple_subscribers() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         let rx1 = broker.receiver();
         let _rx2 = broker.receiver();
@@ -361,12 +367,13 @@ mod tests {
         // Both route1 and route2 matched, so sender.send is called twice.
         // Each receiver gets both messages in order.
         let mut rx1 = rx1;
-        let (r1, _) = rx1.recv().await.unwrap();
-        let (r2, _) = rx1.recv().await.unwrap();
+        let (r1, _) = rx1.recv().await?;
+        let (r2, _) = rx1.recv().await?;
 
         let mut routes = vec![r1, r2];
         routes.sort();
         assert_eq!(routes, vec!["route1", "route2"]);
+    Ok(())
     }
 
     #[test]
@@ -385,17 +392,18 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_subscribe_duplicate_route_id_does_not_duplicate() {
+    async fn test_subscribe_duplicate_route_id_does_not_duplicate() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         broker
             .subscribe("route1", SubscriptionRequest { topic: "test".to_string(), scopes: vec![] });
         broker
             .subscribe("route1", SubscriptionRequest { topic: "test".to_string(), scopes: vec![] });
         assert_eq!(broker.subscriber_count("test"), 1);
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_subscribe_multiple_scopes_same_route() {
+    async fn test_subscribe_multiple_scopes_same_route() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         let mut rx = broker.receiver();
 
@@ -410,17 +418,18 @@ mod tests {
         broker.publish(WaveEvent::new("test", vec!["scopeA".to_string()], json!(1)));
         broker.publish(WaveEvent::new("test", vec!["scopeB".to_string()], json!(2)));
 
-        let (r1, ev1) = rx.recv().await.unwrap();
-        let (r2, ev2) = rx.recv().await.unwrap();
+        let (r1, ev1) = rx.recv().await?;
+        let (r2, ev2) = rx.recv().await?;
 
         assert_eq!(r1, "route1");
         assert_eq!(r2, "route1");
         assert_eq!(ev1.data, json!(1));
         assert_eq!(ev2.data, json!(2));
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_subscribe_with_double_star_wildcard() {
+    async fn test_subscribe_with_double_star_wildcard() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         let mut rx = broker.receiver();
 
@@ -431,13 +440,14 @@ mod tests {
 
         broker.publish(WaveEvent::new("test", vec!["any".to_string()], json!(1)));
 
-        let (route, ev) = rx.recv().await.unwrap();
+        let (route, ev) = rx.recv().await?;
         assert_eq!(route, "route1");
         assert_eq!(ev.data, json!(1));
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_subscribe_mixed_scopes_and_stars() {
+    async fn test_subscribe_mixed_scopes_and_stars() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         let mut rx = broker.receiver();
 
@@ -456,10 +466,11 @@ mod tests {
 
         let mut routes = Vec::new();
         for _ in 0..3 {
-            let (r, _) = rx.recv().await.unwrap();
+            let (r, _) = rx.recv().await?;
             routes.push(r);
         }
         assert!(routes.iter().all(|r| r == "route1"));
+    Ok(())
     }
 
     #[test]
@@ -603,8 +614,8 @@ mod tests {
         }
         let hist = broker.read_history("test", 10);
         assert_eq!(hist.len(), 5);
-        for i in 0..hist.len() {
-            assert_eq!(hist[i].data, json!(4 - i));
+        for (i, item) in hist.iter().enumerate() {
+            assert_eq!(item.data, json!(4 - i));
         }
     }
 
@@ -714,7 +725,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_publish_no_matching_routes() {
+    async fn test_publish_no_matching_routes() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         let mut rx = broker.receiver();
 
@@ -723,10 +734,11 @@ mod tests {
         // rx should timeout because no route matched and no message was sent
         let result = tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv()).await;
         assert!(result.is_err());
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_publish_to_nonexistent_topic() {
+    async fn test_publish_to_nonexistent_topic() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         let mut rx = broker.receiver();
 
@@ -739,10 +751,11 @@ mod tests {
 
         let result = tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv()).await;
         assert!(result.is_err());
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_multiple_receivers_all_get_messages() {
+    async fn test_multiple_receivers_all_get_messages() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         let mut rx1 = broker.receiver();
         let mut rx2 = broker.receiver();
@@ -752,14 +765,15 @@ mod tests {
 
         broker.publish(WaveEvent::global("test", json!(1)));
 
-        let (r1, _) = rx1.recv().await.unwrap();
-        let (r2, _) = rx2.recv().await.unwrap();
+        let (r1, _) = rx1.recv().await?;
+        let (r2, _) = rx2.recv().await?;
         assert_eq!(r1, "route1");
         assert_eq!(r2, "route1");
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_scope_matching_event_scopes_not_in_subscription() {
+    async fn test_scope_matching_event_scopes_not_in_subscription() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         broker.subscribe(
             "route1",
@@ -774,10 +788,11 @@ mod tests {
 
         let result = tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv()).await;
         assert!(result.is_err());
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_star_and_regular_scope_coexist() {
+    async fn test_star_and_regular_scope_coexist() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         broker.subscribe(
             "route1",
@@ -793,14 +808,15 @@ mod tests {
 
         let mut routes = Vec::new();
         for _ in 0..2 {
-            let (r, _) = rx.recv().await.unwrap();
+            let (r, _) = rx.recv().await?;
             routes.push(r);
         }
         assert!(routes.iter().all(|r| r == "route1"));
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_double_star_wildcard_matches_with_scopes() {
+    async fn test_double_star_wildcard_matches_with_scopes() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         let mut rx = broker.receiver();
 
@@ -811,15 +827,16 @@ mod tests {
 
         broker.publish(WaveEvent::new(
             "test",
-            vec!["a", "b", "c"].iter().map(|s| s.to_string()).collect(),
+            ["a", "b", "c"].iter().map(|s| s.to_string()).collect(),
             json!(1),
         ));
-        let (r, _) = rx.recv().await.unwrap();
+        let (r, _) = rx.recv().await?;
         assert_eq!(r, "route1");
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_publish_to_multiple_topics() {
+    async fn test_publish_to_multiple_topics() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         let mut rx = broker.receiver();
 
@@ -837,7 +854,7 @@ mod tests {
 
         let mut received = Vec::new();
         for _ in 0..2 {
-            let (r, ev) = rx.recv().await.unwrap();
+            let (r, ev) = rx.recv().await?;
             received.push((r, ev.topic));
         }
         received.sort();
@@ -845,10 +862,11 @@ mod tests {
             received,
             vec![("route1".into(), "topicA".into()), ("route2".into(), "topicB".into())]
         );
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_history_filters_by_topic() {
+    async fn test_history_filters_by_topic() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         broker.publish(WaveEvent::new("topicA", vec![], json!(1)).with_persist(1));
         broker.publish(WaveEvent::new("topicB", vec![], json!(2)).with_persist(1));
@@ -858,6 +876,7 @@ mod tests {
         assert_eq!(hist.len(), 2);
         assert_eq!(hist[0].data, json!(3));
         assert_eq!(hist[1].data, json!(1));
+    Ok(())
     }
 
     #[test]
@@ -898,7 +917,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_unsubscribe_removes_from_scope_subs() {
+    async fn test_unsubscribe_removes_from_scope_subs() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         broker.subscribe(
             "route1",
@@ -914,10 +933,11 @@ mod tests {
         broker.publish(WaveEvent::new("test", vec!["scopeA".to_string()], json!(1)));
         let result = tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv()).await;
         assert!(result.is_err());
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_unsubscribe_all_does_not_affect_other_routes() {
+    async fn test_unsubscribe_all_does_not_affect_other_routes() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         broker
             .subscribe("route1", SubscriptionRequest { topic: "test".to_string(), scopes: vec![] });
@@ -929,12 +949,13 @@ mod tests {
 
         let mut rx = broker.receiver();
         broker.publish(WaveEvent::global("test", json!(1)));
-        let (r, _) = rx.recv().await.unwrap();
+        let (r, _) = rx.recv().await?;
         assert_eq!(r, "route2");
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_subscriber_count_with_star_subscriptions() {
+    async fn test_subscriber_count_with_star_subscriptions() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         broker.subscribe(
             "route1",
@@ -945,10 +966,11 @@ mod tests {
             SubscriptionRequest { topic: "test".to_string(), scopes: vec!["*".to_string()] },
         );
         assert_eq!(broker.subscriber_count("test"), 2);
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_subscriber_count_with_double_star_subscriptions() {
+    async fn test_subscriber_count_with_double_star_subscriptions() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         broker.subscribe(
             "route1",
@@ -959,17 +981,19 @@ mod tests {
             SubscriptionRequest { topic: "test".to_string(), scopes: vec!["**".to_string()] },
         );
         assert_eq!(broker.subscriber_count("test"), 2);
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_publish_persist_zero_skips_history() {
+    async fn test_publish_persist_zero_skips_history() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         broker.publish(WaveEvent::global("test", json!(1)));
         assert!(broker.read_history("test", 10).is_empty());
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_receiver_subscribe_after_publish() {
+    async fn test_receiver_subscribe_after_publish() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         broker
             .subscribe("route1", SubscriptionRequest { topic: "test".to_string(), scopes: vec![] });
@@ -979,14 +1003,16 @@ mod tests {
         let mut rx2 = broker.receiver();
         let result = tokio::time::timeout(std::time::Duration::from_millis(100), rx2.recv()).await;
         assert!(result.is_err());
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_publish_with_no_subscribers_no_broadcast() {
+    async fn test_publish_with_no_subscribers_no_broadcast() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         // Should not panic
         broker.publish(WaveEvent::global("test", json!(1)));
         assert!(broker.read_history("test", 10).is_empty());
+    Ok(())
     }
 
     #[test]

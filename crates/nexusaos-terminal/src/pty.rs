@@ -141,9 +141,7 @@ mod tests {
     #[test]
     fn test_pty_spawn_different_dimensions() {
         for (cols, rows) in &[(80, 24), (120, 40), (40, 10), (200, 60)] {
-            let result = PtyManager::spawn(*cols, *rows);
-            if result.is_ok() {
-                let pty = result.unwrap();
+            if let Ok(pty) = PtyManager::spawn(*cols, *rows) {
                 assert!(pty.pair.master.process_group_leader().is_some());
             }
         }
@@ -151,18 +149,14 @@ mod tests {
 
     #[test]
     fn test_pty_spawn_zero_dimensions() {
-        let result = PtyManager::spawn(0, 0);
-        if result.is_ok() {
-            let pty = result.unwrap();
+        if let Ok(pty) = PtyManager::spawn(0, 0) {
             assert!(pty.pair.master.process_group_leader().is_some());
         }
     }
 
     #[test]
     fn test_pty_spawn_large_dimensions() {
-        let result = PtyManager::spawn(10000, 10000);
-        if result.is_ok() {
-            let pty = result.unwrap();
+        if let Ok(pty) = PtyManager::spawn(10000, 10000) {
             assert!(pty.pair.master.process_group_leader().is_some());
         }
     }
@@ -212,9 +206,7 @@ mod tests {
 
     #[test]
     fn test_pty_spawn_uses_default_shell() {
-        let result = PtyManager::spawn(80, 24);
-        if result.is_ok() {
-            let pty = result.unwrap();
+        if let Ok(pty) = PtyManager::spawn(80, 24) {
             assert!(pty.pair.master.process_group_leader().is_some());
         }
     }
