@@ -89,6 +89,7 @@ pub fn execute(
             Arc::new(ResourceMonitor),
             Arc::new(ContextManager::new(ContextConfig::default())),
             Arc::new(Scheduler::new(32)),
+            5,
         )
         .await?;
 

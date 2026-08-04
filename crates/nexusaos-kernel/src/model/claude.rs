@@ -98,7 +98,7 @@ impl ModelProvider for ClaudeProvider {
     }
 
     async fn health_check(&self) -> Result<bool, ProviderError> {
-        let url = format!("{}/v1/messages", self.base_url);
+        let url = format!("{}/v1/models", self.base_url);
         let resp = self
             .client
             .get(&url)
@@ -163,7 +163,7 @@ impl ModelProvider for ClaudeProvider {
 
         if !response.status().is_success() {
             let status = response.status();
-            let body = response.text().await.unwrap_or_default();
+            let body = response.text().await.unwrap_or_else(|_| "(failed to read error body)".into());
             return Err(ProviderError::Api(format!(
                 "Anthropic HTTP {status}: {body}"
             )));

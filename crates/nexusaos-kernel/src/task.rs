@@ -47,7 +47,7 @@ pub enum Priority {
 }
 
 /// What the task contains
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum TaskInput {
     Text(String),

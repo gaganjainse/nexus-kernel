@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::collections::HashMap;
 use std::time::Instant;
 
 use chrono::Utc;
@@ -118,6 +119,8 @@ pub struct Kernel {
     resource_monitor: Arc<ResourceMonitor>,
     context_manager: Arc<ContextManager>,
     scheduler: Arc<Scheduler>,
+    dedup_window_secs: u64,
+    dedup_cache: Arc<RwLock<HashMap<TaskInput, (TaskId, chrono::DateTime<chrono::Utc>)>>>,
 }
 
 impl Kernel {
@@ -133,6 +136,7 @@ impl Kernel {
         resource_monitor: Arc<ResourceMonitor>,
         context_manager: Arc<ContextManager>,
         scheduler: Arc<Scheduler>,
+        dedup_window_secs: u64,
     ) -> Result<Self, NexusError> {
         let kernel = Self {
             event_store,
@@ -147,6 +151,8 @@ impl Kernel {
             resource_monitor,
             context_manager,
             scheduler,
+            dedup_window_secs,
+            dedup_cache: Arc::new(RwLock::new(HashMap::new())),
         };
         Ok(kernel)
     }
@@ -181,6 +187,18 @@ impl Kernel {
             return Err(NexusError::Policy(crate::error::PolicyError::Denied {
                 reason: "Task creation denied by policy".into(),
             }));
+        }
+
+        // Task deduplication
+        if self.dedup_window_secs > 0 {
+            let mut cache = self.dedup_cache.write().await;
+            if let Some((existing_id, submitted_at)) = cache.get(&input) {
+                let age = Utc::now().timestamp() - submitted_at.timestamp();
+                if age >= 0 && (age as u64) < self.dedup_window_secs {
+                    return Ok(*existing_id);
+                }
+            }
+            cache.insert(input.clone(), (task_id, Utc::now()));
         }
 
         // Resource budget admission check
@@ -1243,6 +1261,7 @@ mod tests {
             Arc::new(ResourceMonitor),
             Arc::new(ContextManager::new(ContextConfig::default())),
             Arc::new(Scheduler::new(32)),
+            5,
         )
         .await
         .unwrap();
@@ -1445,6 +1464,7 @@ mod tests {
             Arc::new(ResourceMonitor),
             Arc::new(ContextManager::new(ContextConfig::default())),
             Arc::new(Scheduler::new(32)),
+            5,
         )
         .await
         .unwrap();
@@ -1626,6 +1646,7 @@ mod tests {
             Arc::new(ResourceMonitor),
             Arc::new(ContextManager::new(ContextConfig::default())),
             Arc::new(Scheduler::new(32)),
+            5,
         )
         .await
         .unwrap();
@@ -1675,6 +1696,7 @@ mod tests {
             Arc::new(ResourceMonitor),
             Arc::new(ContextManager::new(ContextConfig::default())),
             Arc::new(Scheduler::new(32)),
+            5,
         )
         .await
         .unwrap();

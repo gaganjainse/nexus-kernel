@@ -196,7 +196,7 @@ impl ModelProvider for OpenAiCompatProvider {
             .map_err(|e| ProviderError::Http(e.to_string()))?;
 
         if !resp.status().is_success() {
-            let body = resp.text().await.unwrap_or_default();
+            let body = resp.text().await.unwrap_or_else(|_| "(failed to read error body)".into());
             return Err(ProviderError::Api(body));
         }
 
@@ -238,7 +238,7 @@ impl ModelProvider for OpenAiCompatProvider {
             .map_err(|e| ProviderError::Http(e.to_string()))?;
 
         if !resp.status().is_success() {
-            let body = resp.text().await.unwrap_or_default();
+            let body = resp.text().await.unwrap_or_else(|_| "(failed to read error body)".into());
             return Err(ProviderError::Api(body));
         }
 

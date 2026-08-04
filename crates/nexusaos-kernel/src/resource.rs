@@ -289,7 +289,7 @@ mod tests {
     #[test]
     fn test_snapshot_runs() {
         // This should not panic even if nvidia-smi is unavailable
-        let pressure = ResourceMonitor::snapshot();
+        let pressure = ResourceMonitor::snapshot(std::path::Path::new("/"));
         assert!(pressure.ram_total_mb > 0, "should detect RAM");
     }
 
@@ -404,7 +404,7 @@ mod tests {
 
     #[test]
     fn test_snapshot_returns_reasonable_values() {
-        let pressure = ResourceMonitor::snapshot();
+        let pressure = ResourceMonitor::snapshot(std::path::Path::new("/"));
         assert!(pressure.ram_total_mb > 0, "total RAM should be > 0");
         assert!(pressure.ram_available_mb <= pressure.ram_total_mb, "available <= total");
     }
