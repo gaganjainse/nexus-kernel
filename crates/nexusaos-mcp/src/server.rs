@@ -56,6 +56,7 @@ impl McpServer {
     }
 
     async fn handle_connection(
+        &self,
         stream: tokio::net::UnixStream,
         tool_broker: Arc<ToolBroker>,
         policy: Arc<PolicyEngine>,

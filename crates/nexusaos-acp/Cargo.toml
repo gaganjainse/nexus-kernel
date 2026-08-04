@@ -13,6 +13,8 @@ tracing = { workspace = true }
 thiserror = { workspace = true }
 nexusaos-kernel = { workspace = true }
 nexusaos-rpc = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3"

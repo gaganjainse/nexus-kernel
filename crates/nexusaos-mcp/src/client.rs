@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use serde::{Deserialize, Serialize};
 use tokio::net::UnixStream;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -112,7 +110,7 @@ impl McpClient {
                 "name": tool_name,
                 "arguments": arguments,
             })),
-            id: Some(tool_name),
+            id: Some(tool_name.to_string()),
         };
         let req_json = serde_json::to_string(&req)?;
         writer.write_all(req_json.as_bytes()).await?;

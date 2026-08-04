@@ -2,13 +2,10 @@ pub mod adapter;
 pub mod client;
 pub mod server;
 
-use std::sync::Arc;
-
 use nexusaos_kernel::{
-    capability::{CapabilitySet, Scope},
+    capability::CapabilitySet,
     error::NexusError,
     policy::{PolicyDecision, PolicyEngine},
-    tools::broker::ToolBroker,
 };
 use tracing::info;
 

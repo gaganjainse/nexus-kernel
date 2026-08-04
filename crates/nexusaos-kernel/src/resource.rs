@@ -6,6 +6,98 @@
 use serde::{Deserialize, Serialize};
 use sysinfo::System;
 
+/// Hard resource budget ceilings for the target hardware.
+///
+/// Defaults are calibrated for 16 GB RAM / 6 GB VRAM hardware.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ResourceBudget {
+    /// Maximum RAM usage in MB before refusing new work.
+    pub max_ram_mb: u64,
+
+    /// Maximum VRAM usage in MB before refusing model loads.
+    pub max_vram_mb: u64,
+
+    /// Maximum context tokens for any single inference request.
+    pub max_context_tokens: usize,
+
+    /// Maximum number of tasks in the scheduler queue.
+    pub max_queue_depth: usize,
+
+    /// Minimum free disk space in GB before refusing writes.
+    pub min_disk_free_gb: u64,
+
+    /// Maximum tool output size in bytes before truncation.
+    pub max_tool_output_size: usize,
+}
+
+impl Default for ResourceBudget {
+    fn default() -> Self {
+        Self {
+            max_ram_mb: 14_336,    // 14 GB ceiling for 16 GB hardware
+            max_vram_mb: 5_120,    // 5 GB ceiling for 6 GB hardware
+            max_context_tokens: 32_768,
+            max_queue_depth: 32,
+            min_disk_free_gb: 5,
+            max_tool_output_size: 1_048_576,
+        }
+    }
+}
+
+impl ResourceBudget {
+    /// Check if the system pressure exceeds the RAM budget ceiling.
+    pub fn exceeds_ram_budget(pressure: &SystemPressure, budget: &ResourceBudget) -> bool {
+        pressure.ram_available_mb < budget.max_ram_mb
+    }
+
+    /// Check if the system pressure exceeds the VRAM budget ceiling.
+    pub fn exceeds_vram_budget(pressure: &SystemPressure, budget: &ResourceBudget) -> bool {
+        if pressure.vram_total_mb == 0 {
+            return false;
+        }
+        pressure.vram_available_mb < budget.max_vram_mb
+    }
+
+    /// Check if the queue depth exceeds the budget ceiling.
+    pub fn exceeds_queue_budget(queue_depth: usize, budget: &ResourceBudget) -> bool {
+        queue_depth >= budget.max_queue_depth
+    }
+
+    /// Check if the disk space is below the budget floor.
+    pub fn exceeds_disk_budget(pressure: &SystemPressure, budget: &ResourceBudget) -> bool {
+        pressure.disk_available_gb < budget.min_disk_free_gb
+    }
+
+    /// Check all budget ceilings and return a list of exceeded resources.
+    pub fn check_all(pressure: &SystemPressure, budget: &ResourceBudget) -> Vec<String> {
+        let mut exceeded = Vec::new();
+        if Self::exceeds_ram_budget(pressure, budget) {
+            exceeded.push(format!(
+                "RAM: {} MB available, {} MB ceiling",
+                pressure.ram_available_mb, budget.max_ram_mb
+            ));
+        }
+        if Self::exceeds_vram_budget(pressure, budget) {
+            exceeded.push(format!(
+                "VRAM: {} MB available, {} MB ceiling",
+                pressure.vram_available_mb, budget.max_vram_mb
+            ));
+        }
+        if Self::exceeds_queue_budget(pressure.queue_depth, budget) {
+            exceeded.push(format!(
+                "Queue depth: {} >= {} ceiling",
+                pressure.queue_depth, budget.max_queue_depth
+            ));
+        }
+        if Self::exceeds_disk_budget(pressure, budget) {
+            exceeded.push(format!(
+                "Disk: {} GB available, {} GB floor",
+                pressure.disk_available_gb, budget.min_disk_free_gb
+            ));
+        }
+        exceeded
+    }
+}
+
 /// A snapshot of current system resource pressure.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SystemPressure {

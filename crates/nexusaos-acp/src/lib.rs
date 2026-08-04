@@ -7,7 +7,6 @@ use nexusaos_kernel::{
     capability::{CapabilityLease, CapabilitySet, Scope},
     error::NexusError,
     policy::{PolicyDecision, PolicyEngine},
-    state::ModelRole,
 };
 use tracing::info;
 

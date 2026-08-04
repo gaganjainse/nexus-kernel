@@ -3034,6 +3034,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "nexusaos-acp"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "nexusaos-kernel",
+ "nexusaos-rpc",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.19",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "nexusaos-ai"
 version = "0.1.0"
 dependencies = [
@@ -3104,6 +3121,21 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uuid",
+]
+
+[[package]]
+name = "nexusaos-mcp"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "nexusaos-kernel",
+ "nexusaos-rpc",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.19",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]

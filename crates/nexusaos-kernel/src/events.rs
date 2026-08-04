@@ -55,6 +55,7 @@ pub enum EventKind {
     // Policy
     PolicyChecked,
     PolicyDenied,
+    PolicyDecision,
     ConfirmationRequested,
     ConfirmationGranted,
     ConfirmationDenied,
@@ -64,6 +65,28 @@ pub enum EventKind {
     SystemStarted,
     SystemShutdown,
     Error,
+    // MCP
+    McpRequest,
+    McpResponse,
+    // ACP
+    AcpSessionCreated,
+    AcpSessionTerminated,
+    AcpCapabilityGranted,
+    AcpCapabilityRevoked,
+    // Resource
+    ResourceBudgetExceeded,
+    ResourceBudgetChecked,
+    // Manifest
+    ManifestCreated,
+    ManifestValidated,
+    ManifestSigned,
+    ManifestActivated,
+    ManifestSuperseded,
+    ManifestRetired,
+    // Artifact
+    ArtifactRecorded,
+    // Summary
+    ProjectSummaryUpdated,
 }
 
 /// The payload of an event — what actually happened
@@ -78,9 +101,32 @@ pub enum EventPayload {
     ToolCall { tool_name: String, arguments: serde_json::Value },
     ToolResult { tool_name: String, success: bool, output: String },
     PolicyCheck { action: String, decision: String, reason: Option<String> },
+    PolicyDecision { action: String, decision: String, reason: String, trust_tier: u8 },
     Checkpoint { snapshot_path: String },
     SystemEvent { message: String },
     ErrorEvent { message: String, details: Option<String> },
+    // MCP
+    McpRequest { agent_id: String, tool_name: String, arguments: serde_json::Value },
+    McpResponse { tool_name: String, success: bool, output: String },
+    // ACP
+    AcpSessionCreated { session_id: String, agent_id: String },
+    AcpSessionTerminated { session_id: String, agent_id: String },
+    AcpCapabilityGranted { agent_id: String, capability: String, scope: String },
+    AcpCapabilityRevoked { agent_id: String, capability: String },
+    // Resource
+    ResourceBudgetExceeded { resource: String, requested: u64, limit: u64 },
+    ResourceBudgetChecked { resource: String, available: u64, limit: u64 },
+    // Manifest
+    ManifestCreated { manifest_id: String, version: String },
+    ManifestValidated { manifest_id: String, valid: bool },
+    ManifestSigned { manifest_id: String, signature: String },
+    ManifestActivated { manifest_id: String },
+    ManifestSuperseded { manifest_id: String, by: String },
+    ManifestRetired { manifest_id: String },
+    // Artifact
+    ArtifactRecorded { artifact_id: String, task_id: String, kind: String },
+    // Summary
+    ProjectSummaryUpdated { project_id: String, summary: String },
 }
 
 /// Metadata attached to every event
@@ -205,12 +251,34 @@ mod tests {
                 decision: "allow".to_string(),
                 reason: None,
             },
+            EventPayload::PolicyDecision {
+                action: "mcp.fs.read".to_string(),
+                decision: "allow".to_string(),
+                reason: "matched rule".to_string(),
+                trust_tier: 1,
+            },
             EventPayload::Checkpoint { snapshot_path: "/tmp/a".to_string() },
             EventPayload::SystemEvent { message: "msg".to_string() },
             EventPayload::ErrorEvent {
                 message: "err".to_string(),
                 details: Some("dbg".to_string()),
             },
+            EventPayload::McpRequest { agent_id: "agent-1".to_string(), tool_name: "fs.read".to_string(), arguments: json!({"path": "/tmp"}) },
+            EventPayload::McpResponse { tool_name: "fs.read".to_string(), success: true, output: "content".to_string() },
+            EventPayload::AcpSessionCreated { session_id: "sess-1".to_string(), agent_id: "agent-1".to_string() },
+            EventPayload::AcpSessionTerminated { session_id: "sess-1".to_string(), agent_id: "agent-1".to_string() },
+            EventPayload::AcpCapabilityGranted { agent_id: "agent-1".to_string(), capability: "fs.read".to_string(), scope: "path:/tmp".to_string() },
+            EventPayload::AcpCapabilityRevoked { agent_id: "agent-1".to_string(), capability: "fs.read".to_string() },
+            EventPayload::ResourceBudgetExceeded { resource: "ram".to_string(), requested: 16000, limit: 16000 },
+            EventPayload::ResourceBudgetChecked { resource: "ram".to_string(), available: 8000, limit: 16000 },
+            EventPayload::ManifestCreated { manifest_id: "man-1".to_string(), version: "1.0.0".to_string() },
+            EventPayload::ManifestValidated { manifest_id: "man-1".to_string(), valid: true },
+            EventPayload::ManifestSigned { manifest_id: "man-1".to_string(), signature: "sig-1".to_string() },
+            EventPayload::ManifestActivated { manifest_id: "man-1".to_string() },
+            EventPayload::ManifestSuperseded { manifest_id: "man-1".to_string(), by: "man-2".to_string() },
+            EventPayload::ManifestRetired { manifest_id: "man-1".to_string() },
+            EventPayload::ArtifactRecorded { artifact_id: "art-1".to_string(), task_id: "task-1".to_string(), kind: "tool_output".to_string() },
+            EventPayload::ProjectSummaryUpdated { project_id: "proj-1".to_string(), summary: "summary".to_string() },
         ];
 
         for payload in payloads {
@@ -270,6 +338,7 @@ mod tests {
             EventKind::ToolFailed,
             EventKind::PolicyChecked,
             EventKind::PolicyDenied,
+            EventKind::PolicyDecision,
             EventKind::ConfirmationRequested,
             EventKind::ConfirmationGranted,
             EventKind::ConfirmationDenied,
@@ -278,6 +347,22 @@ mod tests {
             EventKind::SystemStarted,
             EventKind::SystemShutdown,
             EventKind::Error,
+            EventKind::McpRequest,
+            EventKind::McpResponse,
+            EventKind::AcpSessionCreated,
+            EventKind::AcpSessionTerminated,
+            EventKind::AcpCapabilityGranted,
+            EventKind::AcpCapabilityRevoked,
+            EventKind::ResourceBudgetExceeded,
+            EventKind::ResourceBudgetChecked,
+            EventKind::ManifestCreated,
+            EventKind::ManifestValidated,
+            EventKind::ManifestSigned,
+            EventKind::ManifestActivated,
+            EventKind::ManifestSuperseded,
+            EventKind::ManifestRetired,
+            EventKind::ArtifactRecorded,
+            EventKind::ProjectSummaryUpdated,
         ];
         for kind in kinds {
             let debug = format!("{:?}", kind);

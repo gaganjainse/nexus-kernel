@@ -4,14 +4,17 @@
 //! local AI models, enforces policy on every action, and maintains an append-only
 //! audit trail of all state changes.
 
+pub mod artifact;
 pub mod capability;
 pub mod cli;
 pub mod config;
 pub mod context;
 pub mod error;
 pub mod events;
+pub mod manifest;
 pub mod model;
 pub mod policy;
+pub mod project_summary;
 pub mod resource;
 pub mod router;
 pub mod runtime;
@@ -19,6 +22,7 @@ pub mod state;
 pub mod storage;
 pub mod task;
 pub mod tools;
+pub mod worker;
 
 // Re-export commonly used types at crate root
 pub use error::NexusError;

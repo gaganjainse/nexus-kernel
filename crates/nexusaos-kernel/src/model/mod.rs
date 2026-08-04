@@ -5,5 +5,6 @@
 pub mod claude;
 pub mod openai_compat;
 pub mod provider;
+pub mod qwen_vision;
 pub mod registry;
 pub mod types;

@@ -9,7 +9,6 @@ use nexusaos_kernel::{
     capability::{Capability, CapabilityLease, CapabilitySet, Scope},
     error::NexusError,
     policy::{PolicyDecision, PolicyEngine},
-    state::ModelRole,
 };
 
 use crate::{AcpAgent, AcpResult};
