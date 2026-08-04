@@ -293,7 +293,14 @@ impl Kernel {
             })?;
 
         let plan_resp = match self
-            .call_model(*task_id, "Planner", &input_text, "You are a planner.", planner)
+            .call_model_with_fallback(
+                *task_id,
+                "Planner",
+                &input_text,
+                "You are a planner.",
+                planner,
+                None,
+            )
             .await
         {
             Ok(resp) => resp,
@@ -338,7 +345,14 @@ impl Kernel {
             self.transition_task(task_id, TaskState::Executing).await?;
 
             let code_resp = match self
-                .call_model(*task_id, "Coder", &final_output, "You are a coder.", coder)
+                .call_model_with_fallback(
+                    *task_id,
+                    "Coder",
+                    &final_output,
+                    "You are a coder.",
+                    coder,
+                    None,
+                )
                 .await
             {
                 Ok(resp) => resp,
@@ -355,15 +369,16 @@ impl Kernel {
             // Reviewer
             if let Some(reviewer) = self.provider_registry.get(&crate::state::ModelRole::Reviewer) {
                 let rev_resp = match self
-                    .call_model(
+                    .call_model_with_fallback(
                         *task_id,
                         "Reviewer",
                         &final_output,
                         "You are a reviewer.",
                         reviewer,
+                        None,
                     )
                     .await
-                {
+                    {
                     Ok(resp) => resp,
                     Err(e) => {
                         let err_msg = format!("{}", e);
