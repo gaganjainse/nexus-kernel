@@ -132,7 +132,7 @@ impl ResourceMonitor {
     ///
     /// This is a relatively expensive operation (system calls + optional
     /// subprocess for GPU info). Cache the result for a few seconds.
-    pub fn snapshot(data_dir: &std::path::Path) -> SystemPressure {
+    pub fn snapshot(&self, data_dir: &std::path::Path) -> SystemPressure {
         let mut sys = System::new_all();
         sys.refresh_memory();
 
@@ -288,8 +288,8 @@ mod tests {
 
     #[test]
     fn test_snapshot_runs() {
-        // This should not panic even if nvidia-smi is unavailable
-        let pressure = ResourceMonitor::snapshot(std::path::Path::new("/"));
+        let monitor = ResourceMonitor;
+        let pressure = monitor.snapshot(std::path::Path::new("/"));
         assert!(pressure.ram_total_mb > 0, "should detect RAM");
     }
 
@@ -404,7 +404,8 @@ mod tests {
 
     #[test]
     fn test_snapshot_returns_reasonable_values() {
-        let pressure = ResourceMonitor::snapshot(std::path::Path::new("/"));
+        let monitor = ResourceMonitor;
+        let pressure = monitor.snapshot(std::path::Path::new("/"));
         assert!(pressure.ram_total_mb > 0, "total RAM should be > 0");
         assert!(pressure.ram_available_mb <= pressure.ram_total_mb, "available <= total");
     }

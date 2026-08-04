@@ -6,7 +6,7 @@ use tokio::sync::RwLock;
 use tracing::info;
 
 use crate::{
-    config::{AppConfig, ContextConfig},
+    config::AppConfig,
     context::ContextManager,
     error::NexusError,
     manifest::ManifestStore,
@@ -89,7 +89,7 @@ pub fn execute(
             None,
             ResourceBudget::default(),
             Arc::new(ResourceMonitor),
-            Arc::new(ContextManager::new(ContextConfig::default())),
+            Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
             Arc::new(Scheduler::new(32)),
             5,
             Arc::new(ManifestStore::new()),
