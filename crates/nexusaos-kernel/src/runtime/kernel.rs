@@ -596,6 +596,29 @@ impl Kernel {
         Ok(resp)
     }
 
+    /// Validate that vision model output is treated as a structured observation,
+    /// not a direct system action. Vision outputs must be converted to
+    /// observations before use (§6.8 constraint).
+    async fn emit_vision_observation(
+        &self,
+        task_id: TaskId,
+        role: &str,
+        observation: &str,
+    ) -> Result<(), NexusError> {
+        self.emit_event(Event::new(
+            task_id,
+            EventKind::ModelResponded,
+            EventPayload::ModelResponse {
+                role: role.to_string(),
+                response_tokens: 0,
+                content: format!("[VISION OBSERVATION] {}", observation),
+            },
+            "kernel".to_string(),
+        ))
+        .await?;
+        Ok(())
+    }
+
     /// Call a model with fallback support. If the primary provider fails,
     /// retries with the fallback provider for the same role.
     async fn call_model_with_fallback(
