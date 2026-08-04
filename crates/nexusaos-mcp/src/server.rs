@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{atomic::AtomicUsize, Arc};
 
 use nexusaos_kernel::{
     capability::CapabilitySet,
@@ -6,14 +6,15 @@ use nexusaos_kernel::{
     policy::{PolicyDecision, PolicyEngine},
     tools::broker::ToolBroker,
 };
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
-use tokio::net::UnixListener;
-use std::sync::atomic::AtomicUsize;
+use tokio::{
+    io::{AsyncBufReadExt, AsyncWriteExt},
+    net::UnixListener,
+};
 use tracing::info;
 
 use crate::{
     client::{McpRequest, McpResponse},
-    McpServerConfig, McpResult,
+    McpResult, McpServerConfig,
 };
 
 /// An MCP server that exposes NexusAOS tools via the MCP protocol.
@@ -33,14 +34,19 @@ impl McpServer {
         policy: Arc<PolicyEngine>,
         capabilities: Arc<CapabilitySet>,
     ) -> Self {
-        Self { config, tool_broker, policy, capabilities, active_connections: Arc::new(AtomicUsize::new(0)) }
+        Self {
+            config,
+            tool_broker,
+            policy,
+            capabilities,
+            active_connections: Arc::new(AtomicUsize::new(0)),
+        }
     }
 
     /// Run the MCP server, listening for connections on the configured Unix socket.
     pub async fn run(&self) -> McpResult<()> {
         tokio::fs::remove_file(&self.config.socket_path).await.ok();
-        let listener = UnixListener::bind(&self.config.socket_path)
-            .map_err(NexusError::Io)?;
+        let listener = UnixListener::bind(&self.config.socket_path).map_err(NexusError::Io)?;
 
         info!(socket = %self.config.socket_path, "MCP server listening");
 
@@ -48,7 +54,10 @@ impl McpServer {
             let (stream, _addr) = listener.accept().await.map_err(NexusError::Io)?;
             let current = self.active_connections.load(std::sync::atomic::Ordering::Relaxed);
             if current >= self.config.max_connections {
-                tracing::warn!(max = self.config.max_connections, "MCP connection limit reached, rejecting");
+                tracing::warn!(
+                    max = self.config.max_connections,
+                    "MCP connection limit reached, rejecting"
+                );
                 continue;
             }
             self.active_connections.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
@@ -138,21 +147,20 @@ async fn handle_request(
                 .collect();
             McpResponse {
                 jsonrpc: "2.0".to_string(),
-                result: Some(serde_json::to_value(crate::client::McpToolList { tools: tool_infos }).unwrap_or_default()),
+                result: Some(
+                    serde_json::to_value(crate::client::McpToolList { tools: tool_infos })
+                        .unwrap_or_default(),
+                ),
                 error: None,
                 id: req.id.clone(),
             }
         }
         "tools/call" => {
             let params = req.params.as_ref();
-            let tool_name = params
-                .and_then(|p| p.get("name"))
-                .and_then(|v| v.as_str())
-                .unwrap_or("unknown");
-            let arguments = params
-                .and_then(|p| p.get("arguments"))
-                .cloned()
-                .unwrap_or(serde_json::json!({}));
+            let tool_name =
+                params.and_then(|p| p.get("name")).and_then(|v| v.as_str()).unwrap_or("unknown");
+            let arguments =
+                params.and_then(|p| p.get("arguments")).cloned().unwrap_or(serde_json::json!({}));
 
             let decision = super::validate_mcp_request(policy, tool_name, &arguments).await;
             match decision {
@@ -173,14 +181,20 @@ async fn handle_request(
                         McpResponse {
                             jsonrpc: "2.0".to_string(),
                             result: None,
-                            error: Some(crate::client::McpError { code: -32002, message: "Capability check failed".into() }),
+                            error: Some(crate::client::McpError {
+                                code: -32002,
+                                message: "Capability check failed".into(),
+                            }),
                             id: req.id.clone(),
                         }
                     } else {
-                        match broker.execute(&nexusaos_kernel::tools::executor::ToolRequest {
-                            tool_name: tool_name.to_string(),
-                            arguments: arguments.clone(),
-                        }).await {
+                        match broker
+                            .execute(&nexusaos_kernel::tools::executor::ToolRequest {
+                                tool_name: tool_name.to_string(),
+                                arguments: arguments.clone(),
+                            })
+                            .await
+                        {
                             Ok(nexusaos_kernel::tools::broker::BrokerResult::Completed(result)) => {
                                 McpResponse {
                                     jsonrpc: "2.0".to_string(),
@@ -196,26 +210,35 @@ async fn handle_request(
                                 McpResponse {
                                     jsonrpc: "2.0".to_string(),
                                     result: None,
-                                    error: Some(crate::client::McpError { code: -32003, message: reason }),
+                                    error: Some(crate::client::McpError {
+                                        code: -32003,
+                                        message: reason,
+                                    }),
                                     id: req.id.clone(),
                                 }
                             }
-                            Ok(nexusaos_kernel::tools::broker::BrokerResult::RequiresConfirmation(reason)) => {
-                                McpResponse {
-                                    jsonrpc: "2.0".to_string(),
-                                    result: None,
-                                    error: Some(crate::client::McpError { code: -32004, message: reason }),
-                                    id: req.id.clone(),
-                                }
-                            }
-                            Err(e) => {
-                                McpResponse {
-                                    jsonrpc: "2.0".to_string(),
-                                    result: None,
-                                    error: Some(crate::client::McpError { code: -32005, message: e.to_string() }),
-                                    id: req.id.clone(),
-                                }
-                            }
+                            Ok(
+                                nexusaos_kernel::tools::broker::BrokerResult::RequiresConfirmation(
+                                    reason,
+                                ),
+                            ) => McpResponse {
+                                jsonrpc: "2.0".to_string(),
+                                result: None,
+                                error: Some(crate::client::McpError {
+                                    code: -32004,
+                                    message: reason,
+                                }),
+                                id: req.id.clone(),
+                            },
+                            Err(e) => McpResponse {
+                                jsonrpc: "2.0".to_string(),
+                                result: None,
+                                error: Some(crate::client::McpError {
+                                    code: -32005,
+                                    message: e.to_string(),
+                                }),
+                                id: req.id.clone(),
+                            },
                         }
                     }
                 }
@@ -230,7 +253,10 @@ async fn handle_request(
         _ => McpResponse {
             jsonrpc: "2.0".to_string(),
             result: None,
-            error: Some(crate::client::McpError { code: -32601, message: format!("Method not found: {}", req.method) }),
+            error: Some(crate::client::McpError {
+                code: -32601,
+                message: format!("Method not found: {}", req.method),
+            }),
             id: req.id.clone(),
         },
     }

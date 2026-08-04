@@ -4,8 +4,10 @@
 //! and emits ToolResult over stdout. It runs as a separate process
 //! to provide isolation between the kernel and tool execution.
 
-use std::io::{BufRead, BufReader, Write};
-use std::process::{Command, Stdio};
+use std::{
+    io::{BufRead, BufReader, Write},
+    process::{Command, Stdio},
+};
 
 use async_trait::async_trait;
 use clap::Parser;
@@ -48,66 +50,53 @@ impl ToolExecutor for WorkerToolExecutor {
     async fn execute(&self, request: &ToolRequest) -> Result<ToolResult, ToolError> {
         match request.tool_name.as_str() {
             "fs.read" => {
-                let path = request
-                    .arguments
-                    .get("path")
-                    .and_then(|v| v.as_str())
-                    .ok_or_else(|| ToolError::ExecutionFailed {
-                        name: "fs.read".to_string(),
-                        reason: "missing path argument".to_string(),
+                let path =
+                    request.arguments.get("path").and_then(|v| v.as_str()).ok_or_else(|| {
+                        ToolError::ExecutionFailed {
+                            name: "fs.read".to_string(),
+                            reason: "missing path argument".to_string(),
+                        }
                     })?;
 
-                let output = std::fs::read_to_string(path)
-                    .map_err(|e| ToolError::ExecutionFailed {
+                let output =
+                    std::fs::read_to_string(path).map_err(|e| ToolError::ExecutionFailed {
                         name: "fs.read".to_string(),
                         reason: format!("failed to read file: {}", e),
                     })?;
 
-                Ok(ToolResult {
-                    success: true,
-                    output,
-                    data: None,
-                })
+                Ok(ToolResult { success: true, output, data: None })
             }
             "fs.write" => {
-                let path = request
-                    .arguments
-                    .get("path")
-                    .and_then(|v| v.as_str())
-                    .ok_or_else(|| ToolError::ExecutionFailed {
-                        name: "fs.write".to_string(),
-                        reason: "missing path argument".to_string(),
+                let path =
+                    request.arguments.get("path").and_then(|v| v.as_str()).ok_or_else(|| {
+                        ToolError::ExecutionFailed {
+                            name: "fs.write".to_string(),
+                            reason: "missing path argument".to_string(),
+                        }
                     })?;
 
-                let content = request
-                    .arguments
-                    .get("content")
-                    .and_then(|v| v.as_str())
-                    .ok_or_else(|| ToolError::ExecutionFailed {
-                        name: "fs.write".to_string(),
-                        reason: "missing content argument".to_string(),
+                let content =
+                    request.arguments.get("content").and_then(|v| v.as_str()).ok_or_else(|| {
+                        ToolError::ExecutionFailed {
+                            name: "fs.write".to_string(),
+                            reason: "missing content argument".to_string(),
+                        }
                     })?;
 
-                std::fs::write(path, content)
-                    .map_err(|e| ToolError::ExecutionFailed {
-                        name: "fs.write".to_string(),
-                        reason: format!("failed to write file: {}", e),
-                    })?;
+                std::fs::write(path, content).map_err(|e| ToolError::ExecutionFailed {
+                    name: "fs.write".to_string(),
+                    reason: format!("failed to write file: {}", e),
+                })?;
 
-                Ok(ToolResult {
-                    success: true,
-                    output: format!("Wrote to {}", path),
-                    data: None,
-                })
+                Ok(ToolResult { success: true, output: format!("Wrote to {}", path), data: None })
             }
             "terminal.exec" => {
-                let command = request
-                    .arguments
-                    .get("command")
-                    .and_then(|v| v.as_str())
-                    .ok_or_else(|| ToolError::ExecutionFailed {
-                        name: "terminal.exec".to_string(),
-                        reason: "missing command argument".to_string(),
+                let command =
+                    request.arguments.get("command").and_then(|v| v.as_str()).ok_or_else(|| {
+                        ToolError::ExecutionFailed {
+                            name: "terminal.exec".to_string(),
+                            reason: "missing command argument".to_string(),
+                        }
                     })?;
 
                 let output = Command::new("sh")
@@ -123,17 +112,10 @@ impl ToolExecutor for WorkerToolExecutor {
 
                 let stdout = String::from_utf8_lossy(&output.stdout).to_string();
                 let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-                let combined = if stderr.is_empty() {
-                    stdout
-                } else {
-                    format!("{}\n{}", stdout, stderr)
-                };
+                let combined =
+                    if stderr.is_empty() { stdout } else { format!("{}\n{}", stdout, stderr) };
 
-                Ok(ToolResult {
-                    success: output.status.success(),
-                    output: combined,
-                    data: None,
-                })
+                Ok(ToolResult { success: output.status.success(), output: combined, data: None })
             }
             _ => Err(ToolError::ExecutionFailed {
                 name: request.tool_name.clone(),
@@ -186,11 +168,9 @@ async fn main() {
                 let result = executor.execute(&request).await;
                 let result = match result {
                     Ok(r) => r,
-                    Err(e) => ToolResult {
-                        success: false,
-                        output: format!("Error: {}", e),
-                        data: None,
-                    },
+                    Err(e) => {
+                        ToolResult { success: false, output: format!("Error: {}", e), data: None }
+                    }
                 };
 
                 let json = serde_json::to_string(&result).unwrap_or_default();

@@ -52,9 +52,7 @@ fn normalize_lexical(path: &Path) -> Option<PathBuf> {
         match comp {
             Component::CurDir => {}
             Component::ParentDir => {
-                if components
-                    .last()
-                    .is_some_and(|c: &Component| matches!(c, Component::Normal(_)))
+                if components.last().is_some_and(|c: &Component| matches!(c, Component::Normal(_)))
                 {
                     components.pop();
                 } else if components.is_empty() {

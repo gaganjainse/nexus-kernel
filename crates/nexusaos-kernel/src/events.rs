@@ -263,22 +263,67 @@ mod tests {
                 message: "err".to_string(),
                 details: Some("dbg".to_string()),
             },
-            EventPayload::McpRequest { agent_id: "agent-1".to_string(), tool_name: "fs.read".to_string(), arguments: json!({"path": "/tmp"}) },
-            EventPayload::McpResponse { tool_name: "fs.read".to_string(), success: true, output: "content".to_string() },
-            EventPayload::AcpSessionCreated { session_id: "sess-1".to_string(), agent_id: "agent-1".to_string() },
-            EventPayload::AcpSessionTerminated { session_id: "sess-1".to_string(), agent_id: "agent-1".to_string() },
-            EventPayload::AcpCapabilityGranted { agent_id: "agent-1".to_string(), capability: "fs.read".to_string(), scope: "path:/tmp".to_string() },
-            EventPayload::AcpCapabilityRevoked { agent_id: "agent-1".to_string(), capability: "fs.read".to_string() },
-            EventPayload::ResourceBudgetExceeded { resource: "ram".to_string(), requested: 16000, limit: 16000 },
-            EventPayload::ResourceBudgetChecked { resource: "ram".to_string(), available: 8000, limit: 16000 },
-            EventPayload::ManifestCreated { manifest_id: "man-1".to_string(), version: "1.0.0".to_string() },
+            EventPayload::McpRequest {
+                agent_id: "agent-1".to_string(),
+                tool_name: "fs.read".to_string(),
+                arguments: json!({"path": "/tmp"}),
+            },
+            EventPayload::McpResponse {
+                tool_name: "fs.read".to_string(),
+                success: true,
+                output: "content".to_string(),
+            },
+            EventPayload::AcpSessionCreated {
+                session_id: "sess-1".to_string(),
+                agent_id: "agent-1".to_string(),
+            },
+            EventPayload::AcpSessionTerminated {
+                session_id: "sess-1".to_string(),
+                agent_id: "agent-1".to_string(),
+            },
+            EventPayload::AcpCapabilityGranted {
+                agent_id: "agent-1".to_string(),
+                capability: "fs.read".to_string(),
+                scope: "path:/tmp".to_string(),
+            },
+            EventPayload::AcpCapabilityRevoked {
+                agent_id: "agent-1".to_string(),
+                capability: "fs.read".to_string(),
+            },
+            EventPayload::ResourceBudgetExceeded {
+                resource: "ram".to_string(),
+                requested: 16000,
+                limit: 16000,
+            },
+            EventPayload::ResourceBudgetChecked {
+                resource: "ram".to_string(),
+                available: 8000,
+                limit: 16000,
+            },
+            EventPayload::ManifestCreated {
+                manifest_id: "man-1".to_string(),
+                version: "1.0.0".to_string(),
+            },
             EventPayload::ManifestValidated { manifest_id: "man-1".to_string(), valid: true },
-            EventPayload::ManifestSigned { manifest_id: "man-1".to_string(), signature: "sig-1".to_string() },
+            EventPayload::ManifestSigned {
+                manifest_id: "man-1".to_string(),
+                signature: "sig-1".to_string(),
+            },
             EventPayload::ManifestActivated { manifest_id: "man-1".to_string() },
-            EventPayload::ManifestSuperseded { manifest_id: "man-1".to_string(), by: "man-2".to_string() },
+            EventPayload::ManifestSuperseded {
+                manifest_id: "man-1".to_string(),
+                by: "man-2".to_string(),
+            },
             EventPayload::ManifestRetired { manifest_id: "man-1".to_string() },
-            EventPayload::ArtifactRecorded { artifact_id: "art-1".to_string(), task_id: "task-1".to_string(), kind: "tool_output".to_string() },
-            EventPayload::ProjectSummaryUpdated { project_id: "proj-1".to_string(), summary: "summary".to_string() },
+            EventPayload::ArtifactRecorded {
+                artifact_id: "art-1".to_string(),
+                task_id: "task-1".to_string(),
+                kind: "tool_output".to_string(),
+            },
+            EventPayload::ProjectSummaryUpdated {
+                project_id: "proj-1".to_string(),
+                summary: "summary".to_string(),
+            },
         ];
 
         for payload in payloads {

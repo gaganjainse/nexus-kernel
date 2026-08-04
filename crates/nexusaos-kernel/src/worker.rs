@@ -98,10 +98,7 @@ pub struct WorkerProcess {
 
 impl WorkerProcess {
     /// Create a new worker process.
-    pub fn new(
-        worker_id: String,
-        config: WorkerConfig,
-    ) -> Self {
+    pub fn new(worker_id: String, config: WorkerConfig) -> Self {
         Self {
             worker_id,
             child: None,
@@ -164,7 +161,9 @@ impl WorkerProcess {
 
     /// Restart the worker process if it has failed.
     pub fn restart_if_needed(&mut self) -> Result<(), ToolError> {
-        if self.state == WorkerState::Failed && self.restart_count < self.config.max_restart_attempts {
+        if self.state == WorkerState::Failed
+            && self.restart_count < self.config.max_restart_attempts
+        {
             self.restart_count += 1;
             self.terminate();
             self.spawn()?;
@@ -186,10 +185,7 @@ impl WorkerPool {
         let max_workers = config.max_workers;
         let mut workers = Vec::with_capacity(max_workers);
         for i in 0..max_workers {
-            workers.push(WorkerProcess::new(
-                format!("worker-{}", i),
-                config.clone(),
-            ));
+            workers.push(WorkerProcess::new(format!("worker-{}", i), config.clone()));
         }
 
         Self { workers, config }
@@ -270,8 +266,8 @@ impl WorkerPool {
         worker_id: &str,
         request: &ToolRequest,
     ) -> Result<ToolResult, ToolError> {
-        let request_json = serde_json::to_string(request)
-            .map_err(|e| ToolError::ExecutionFailed {
+        let request_json =
+            serde_json::to_string(request).map_err(|e| ToolError::ExecutionFailed {
                 name: worker_id.to_string(),
                 reason: format!("Failed to serialize request: {}", e),
             })?;
@@ -318,12 +314,11 @@ impl WorkerPool {
             reason: format!("Failed to read from worker: {}", e),
         })?;
 
-        let result: ToolResult = serde_json::from_str(result_line.trim()).map_err(|e| {
-            ToolError::ExecutionFailed {
+        let result: ToolResult =
+            serde_json::from_str(result_line.trim()).map_err(|e| ToolError::ExecutionFailed {
                 name: worker_id.to_string(),
                 reason: format!("Failed to parse worker response: {}", e),
-            }
-        })?;
+            })?;
 
         let _ = child.wait();
 
@@ -361,9 +356,7 @@ pub struct IsolatedWorkerExecutor {
 impl IsolatedWorkerExecutor {
     /// Create a new isolated worker executor.
     pub fn new(config: WorkerConfig) -> Self {
-        Self {
-            pool: Arc::new(RwLock::new(WorkerPool::new(config))),
-        }
+        Self { pool: Arc::new(RwLock::new(WorkerPool::new(config))) }
     }
 
     /// Get the worker pool configuration.
@@ -399,9 +392,9 @@ impl ToolExecutor for IsolatedWorkerExecutor {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::sync::Arc;
 
+    use super::*;
     use crate::capability::CapabilitySet;
 
     #[test]
@@ -468,7 +461,10 @@ mod tests {
         let executor = IsolatedWorkerExecutor::new(config);
 
         assert_eq!(executor.name(), "isolated-worker-executor");
-        assert_eq!(executor.description(), "Executes tools in isolated worker processes with capability lease enforcement");
+        assert_eq!(
+            executor.description(),
+            "Executes tools in isolated worker processes with capability lease enforcement"
+        );
     }
 
     #[tokio::test]

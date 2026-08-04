@@ -75,12 +75,7 @@ impl ModelProvider for QwenVisionProvider {
 
     async fn health_check(&self) -> Result<bool, ProviderError> {
         let health_url = format!("{}/health", self.base_url);
-        let response = self
-            .client
-            .get(&health_url)
-            .bearer_auth(&self.api_key)
-            .send()
-            .await;
+        let response = self.client.get(&health_url).bearer_auth(&self.api_key).send().await;
 
         match response {
             Ok(resp) => Ok(resp.status().is_success()),
@@ -112,16 +107,11 @@ impl ModelProvider for QwenVisionProvider {
             .map_err(|e| ProviderError::Http(e.to_string()))?;
 
         if !response.status().is_success() {
-            return Err(ProviderError::Api(format!(
-                "Qwen API error: {}",
-                response.status()
-            )));
+            return Err(ProviderError::Api(format!("Qwen API error: {}", response.status())));
         }
 
-        let body: QwenChatResponse = response
-            .json()
-            .await
-            .map_err(|e| ProviderError::MalformedResponse(e.to_string()))?;
+        let body: QwenChatResponse =
+            response.json().await.map_err(|e| ProviderError::MalformedResponse(e.to_string()))?;
 
         let content = body
             .choices

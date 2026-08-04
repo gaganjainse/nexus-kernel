@@ -6,6 +6,7 @@ use tokio::sync::RwLock;
 use tracing::info;
 
 use crate::{
+    artifact::ArtifactStore,
     config::AppConfig,
     context::ContextManager,
     error::NexusError,
@@ -13,12 +14,13 @@ use crate::{
     model::{openai_compat::OpenAiCompatProvider, registry::ProviderRegistry},
     policy::{PolicyEngine, PolicyRule, TrustTier},
     resource::{ResourceBudget, ResourceMonitor},
-    runtime::kernel::{Kernel, KernelConfig},
-    runtime::scheduler::Scheduler,
+    runtime::{
+        kernel::{Kernel, KernelConfig},
+        scheduler::Scheduler,
+    },
     storage::SqliteEventStore,
     task::TaskInput,
     tools::{broker::ToolBroker, filesystem::FilesystemTool, git::GitTool, terminal::TerminalTool},
-    artifact::ArtifactStore,
 };
 
 /// Execute a task through the kernel.

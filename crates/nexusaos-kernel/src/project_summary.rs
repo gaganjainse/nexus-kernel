@@ -84,10 +84,7 @@ pub struct ProjectSummaryStore {
 impl ProjectSummaryStore {
     /// Create a new project summary store.
     pub fn new(default_ttl_seconds: u64) -> Self {
-        Self {
-            summaries: Arc::new(RwLock::new(Vec::new())),
-            default_ttl_seconds,
-        }
+        Self { summaries: Arc::new(RwLock::new(Vec::new())), default_ttl_seconds }
     }
 
     /// Get or create a summary for a project.
@@ -141,8 +138,10 @@ impl Default for ProjectSummaryStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::events::{Event, EventId, EventKind, EventPayload, SequenceNumber};
-    use crate::task::TaskId;
+    use crate::{
+        events::{Event, EventId, EventKind, EventPayload, SequenceNumber},
+        task::TaskId,
+    };
 
     #[test]
     fn test_project_summary_creation() {
@@ -155,23 +154,21 @@ mod tests {
     #[test]
     fn test_project_summary_update() {
         let mut summary = ProjectSummary::new("proj-1".to_string(), 3600);
-        let events = vec![
-            Event {
-                id: EventId::new(),
-                task_id: Some(TaskId::new()),
-                sequence: SequenceNumber(1),
-                kind: EventKind::TaskStateChanged,
-                payload: EventPayload::StateChanged {
-                    from: "Received".to_string(),
-                    to: "Completed".to_string(),
-                },
-                metadata: crate::events::EventMetadata {
-                    source: "test".to_string(),
-                    correlation_id: None,
-                },
-                timestamp: Utc::now(),
+        let events = vec![Event {
+            id: EventId::new(),
+            task_id: Some(TaskId::new()),
+            sequence: SequenceNumber(1),
+            kind: EventKind::TaskStateChanged,
+            payload: EventPayload::StateChanged {
+                from: "Received".to_string(),
+                to: "Completed".to_string(),
             },
-        ];
+            metadata: crate::events::EventMetadata {
+                source: "test".to_string(),
+                correlation_id: None,
+            },
+            timestamp: Utc::now(),
+        }];
         summary.update(&events);
         assert_eq!(summary.completed_tasks, 1);
         assert!(summary.summary.contains("completed"));
@@ -194,23 +191,21 @@ mod tests {
     #[tokio::test]
     async fn test_summary_store_update() {
         let store = ProjectSummaryStore::new(3600);
-        let events = vec![
-            Event {
-                id: EventId::new(),
-                task_id: Some(TaskId::new()),
-                sequence: SequenceNumber(1),
-                kind: EventKind::TaskStateChanged,
-                payload: EventPayload::StateChanged {
-                    from: "Received".to_string(),
-                    to: "Completed".to_string(),
-                },
-                metadata: crate::events::EventMetadata {
-                    source: "test".to_string(),
-                    correlation_id: None,
-                },
-                timestamp: Utc::now(),
+        let events = vec![Event {
+            id: EventId::new(),
+            task_id: Some(TaskId::new()),
+            sequence: SequenceNumber(1),
+            kind: EventKind::TaskStateChanged,
+            payload: EventPayload::StateChanged {
+                from: "Received".to_string(),
+                to: "Completed".to_string(),
             },
-        ];
+            metadata: crate::events::EventMetadata {
+                source: "test".to_string(),
+                correlation_id: None,
+            },
+            timestamp: Utc::now(),
+        }];
         let summary = store.update_summary("proj-1", &events).await;
         assert_eq!(summary.completed_tasks, 1);
     }

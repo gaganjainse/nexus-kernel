@@ -1,9 +1,10 @@
-use serde::{Deserialize, Serialize};
-use tokio::net::UnixStream;
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tracing::info;
-
 use nexusaos_kernel::error::NexusError;
+use serde::{Deserialize, Serialize};
+use tokio::{
+    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    net::UnixStream,
+};
+use tracing::info;
 
 /// MCP protocol version.
 pub const MCP_VERSION: &str = "2024-10-01";
@@ -88,7 +89,9 @@ impl McpClient {
             }
             None => {
                 let msg = resp.error.map(|e| e.message).unwrap_or_else(|| "unknown error".into());
-                Err(NexusError::Provider(nexusaos_kernel::error::ProviderError::Unavailable { name: msg }))
+                Err(NexusError::Provider(nexusaos_kernel::error::ProviderError::Unavailable {
+                    name: msg,
+                }))
             }
         }
     }
@@ -125,7 +128,9 @@ impl McpClient {
             Some(val) => Ok(val),
             None => {
                 let msg = resp.error.map(|e| e.message).unwrap_or_else(|| "unknown error".into());
-                Err(NexusError::Provider(nexusaos_kernel::error::ProviderError::Unavailable { name: msg }))
+                Err(NexusError::Provider(nexusaos_kernel::error::ProviderError::Unavailable {
+                    name: msg,
+                }))
             }
         }
     }

@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
+use nexusaos_kernel::error::NexusError;
 use tokio::net::UnixListener;
 use tracing::info;
-
-use nexusaos_kernel::error::NexusError;
 
 use crate::{session::AcpSessionManager, AcpResult};
 
@@ -16,10 +15,7 @@ pub struct AcpServerConfig {
 
 impl Default for AcpServerConfig {
     fn default() -> Self {
-        Self {
-            socket_path: "/tmp/nexusaos-acp.sock".to_string(),
-            max_connections: 16,
-        }
+        Self { socket_path: "/tmp/nexusaos-acp.sock".to_string(), max_connections: 16 }
     }
 }
 
@@ -38,8 +34,7 @@ impl AcpServer {
     /// Run the ACP server, listening for connections on the configured Unix socket.
     pub async fn run(&self) -> AcpResult<()> {
         tokio::fs::remove_file(&self.config.socket_path).await.ok();
-        let listener = UnixListener::bind(&self.config.socket_path)
-            .map_err(NexusError::Io)?;
+        let listener = UnixListener::bind(&self.config.socket_path).map_err(NexusError::Io)?;
 
         info!(socket = %self.config.socket_path, "ACP server listening");
 

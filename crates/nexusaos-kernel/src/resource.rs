@@ -33,8 +33,8 @@ pub struct ResourceBudget {
 impl Default for ResourceBudget {
     fn default() -> Self {
         Self {
-            max_ram_mb: 14_336,    // 14 GB ceiling for 16 GB hardware
-            max_vram_mb: 5_120,    // 5 GB ceiling for 6 GB hardware
+            max_ram_mb: 14_336, // 14 GB ceiling for 16 GB hardware
+            max_vram_mb: 5_120, // 5 GB ceiling for 6 GB hardware
             max_context_tokens: 32_768,
             max_queue_depth: 32,
             min_disk_free_gb: 5,
@@ -74,17 +74,11 @@ impl ResourceBudget {
         let mut exceeded = Vec::new();
         if Self::exceeds_ram_budget(pressure, budget) {
             let used_mb = pressure.ram_total_mb.saturating_sub(pressure.ram_available_mb);
-            exceeded.push(format!(
-                "RAM: {} MB used, {} MB ceiling",
-                used_mb, budget.max_ram_mb
-            ));
+            exceeded.push(format!("RAM: {} MB used, {} MB ceiling", used_mb, budget.max_ram_mb));
         }
         if Self::exceeds_vram_budget(pressure, budget) {
             let used_mb = pressure.vram_total_mb.saturating_sub(pressure.vram_available_mb);
-            exceeded.push(format!(
-                "VRAM: {} MB used, {} MB ceiling",
-                used_mb, budget.max_vram_mb
-            ));
+            exceeded.push(format!("VRAM: {} MB used, {} MB ceiling", used_mb, budget.max_vram_mb));
         }
         if Self::exceeds_queue_budget(pressure.queue_depth, budget) {
             exceeded.push(format!(
@@ -227,9 +221,7 @@ impl ResourceMonitor {
         let data_dir = data_dir.canonicalize().unwrap_or_else(|_| data_dir.to_path_buf());
 
         let disks = sysinfo::Disks::new_with_refreshed_list();
-        if let Some(disk) = disks.iter().find(|d| {
-            data_dir.starts_with(d.mount_point())
-        }) {
+        if let Some(disk) = disks.iter().find(|d| data_dir.starts_with(d.mount_point())) {
             return disk.available_space() / (1024 * 1024 * 1024);
         }
 

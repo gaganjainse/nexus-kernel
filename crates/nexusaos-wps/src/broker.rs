@@ -20,7 +20,7 @@ struct TopicSubs {
 #[derive(Debug, Clone)]
 struct HistoryEntry {
     event: WaveEvent,
-    }
+}
 
 struct EventHistory {
     entries: Vec<HistoryEntry>,
@@ -196,7 +196,7 @@ impl Broker {
         }
 
         if event.persist > 0 {
-            let seq = self.sequence.fetch_add(1, Ordering::SeqCst);
+            let _seq = self.sequence.fetch_add(1, Ordering::SeqCst);
             let mut hist = self.history.write().unwrap_or_else(|e| e.into_inner());
             hist.push(HistoryEntry { event });
         }

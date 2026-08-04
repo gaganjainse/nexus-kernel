@@ -39,6 +39,7 @@ regex = "1"
 ratatui = "0.29"
 crossterm = { version = "0.28", features = ["event-stream"] }
 portable-pty = "0.8"
+sha2 = "0.10"
 # rusqlite uses the "bundled" feature to compile SQLite from source.
 # This ensures consistent behavior across platforms without requiring
 # system SQLite libraries. Trade-off: longer build times and larger binaries.

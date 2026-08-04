@@ -12,10 +12,7 @@ pub struct SearchFetchTool {
 
 impl SearchFetchTool {
     pub fn new(allowed_domains: Vec<String>, denied_patterns: Vec<String>) -> Self {
-        Self {
-            allowed_domains,
-            denied_patterns,
-        }
+        Self { allowed_domains, denied_patterns }
     }
 
     fn is_url_allowed(&self, url: &str) -> bool {
@@ -53,48 +50,34 @@ impl ToolExecutor for SearchFetchTool {
     }
 
     async fn execute(&self, request: &ToolRequest) -> Result<ToolResult, ToolError> {
-        let url = request
-            .arguments
-            .get("url")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| ToolError::ExecutionFailed {
+        let url = request.arguments.get("url").and_then(|v| v.as_str()).ok_or_else(|| {
+            ToolError::ExecutionFailed {
                 name: self.name().to_string(),
                 reason: "Missing 'url' argument".to_string(),
-            })?;
+            }
+        })?;
 
         if !self.is_url_allowed(url) {
-            return Err(ToolError::PathDenied {
-                path: url.to_string(),
-            });
+            return Err(ToolError::PathDenied { path: url.to_string() });
         }
 
-        let query = request
-            .arguments
-            .get("query")
-            .and_then(|v| v.as_str())
-            .unwrap_or("");
+        let query = request.arguments.get("query").and_then(|v| v.as_str()).unwrap_or("");
 
         info!(url = %url, query = %query, "Search/fetch tool executing");
 
         let client = reqwest::Client::new();
-        let response = client
-            .get(url)
-            .query(&[("q", query)])
-            .send()
-            .await
-            .map_err(|e| ToolError::ExecutionFailed {
+        let response = client.get(url).query(&[("q", query)]).send().await.map_err(|e| {
+            ToolError::ExecutionFailed {
                 name: self.name().to_string(),
                 reason: format!("Fetch failed: {}", e),
-            })?;
+            }
+        })?;
 
         let status = response.status();
-        let body = response
-            .text()
-            .await
-            .map_err(|e| ToolError::ExecutionFailed {
-                name: self.name().to_string(),
-                reason: format!("Failed to read response: {}", e),
-            })?;
+        let body = response.text().await.map_err(|e| ToolError::ExecutionFailed {
+            name: self.name().to_string(),
+            reason: format!("Failed to read response: {}", e),
+        })?;
 
         let truncated = if body.len() > 10_000 {
             format!("{}... [truncated, {} bytes total]", &body[..10_000], body.len())

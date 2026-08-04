@@ -1,13 +1,12 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use tracing::info;
-
 use nexusaos_kernel::{
-    tools::executor::{ToolExecutor, ToolRequest, ToolResult},
     capability::CapabilitySet,
     error::ToolError,
+    tools::executor::{ToolExecutor, ToolRequest, ToolResult},
 };
+use tracing::info;
 
 /// An MCP tool adapter that wraps a ToolExecutor for MCP protocol exposure.
 ///
@@ -20,10 +19,7 @@ pub struct McpToolAdapter {
 
 impl McpToolAdapter {
     /// Create a new MCP tool adapter wrapping an existing ToolExecutor.
-    pub fn new(
-        inner: Arc<dyn ToolExecutor>,
-        capabilities: Arc<CapabilitySet>,
-    ) -> Self {
+    pub fn new(inner: Arc<dyn ToolExecutor>, capabilities: Arc<CapabilitySet>) -> Self {
         Self { inner, capabilities }
     }
 

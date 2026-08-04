@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
-use serde::{Deserialize, Serialize};
-use tokio::net::UnixStream;
-use tokio::sync::RwLock;
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tracing::info;
-
 use nexusaos_kernel::error::NexusError;
+use serde::{Deserialize, Serialize};
+use tokio::{
+    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    net::UnixStream,
+    sync::RwLock,
+};
+use tracing::info;
 
 use crate::{AcpAgent, AcpAgentInfo, AcpResult, CapabilitySet};
 
@@ -17,7 +18,7 @@ pub const ACP_VERSION: &str = "2024-10-01";
 #[derive(Debug, Clone)]
 pub struct AcpClient {
     socket_path: String,
-        agent_id: String,
+    agent_id: String,
 }
 
 /// An ACP request message.
@@ -63,10 +64,7 @@ pub struct CapabilityGrantResponse {
 impl AcpClient {
     /// Create a new ACP client.
     pub fn new(socket_path: impl Into<String>, agent_id: impl Into<String>) -> Self {
-        Self {
-            socket_path: socket_path.into(),
-            agent_id: agent_id.into(),
-        }
+        Self { socket_path: socket_path.into(), agent_id: agent_id.into() }
     }
 
     /// Authenticate with the ACP server and receive initial capabilities.
@@ -105,7 +103,8 @@ impl AcpClient {
                 Ok(agent)
             }
             None => {
-                let msg = resp.error.map(|e| e.message).unwrap_or_else(|| "authentication failed".into());
+                let msg =
+                    resp.error.map(|e| e.message).unwrap_or_else(|| "authentication failed".into());
                 Err(NexusError::Policy(nexusaos_kernel::error::PolicyError::Denied { reason: msg }))
             }
         }
@@ -148,7 +147,10 @@ impl AcpClient {
                 Ok(grant)
             }
             None => {
-                let msg = resp.error.map(|e| e.message).unwrap_or_else(|| "capability grant failed".into());
+                let msg = resp
+                    .error
+                    .map(|e| e.message)
+                    .unwrap_or_else(|| "capability grant failed".into());
                 Err(NexusError::Policy(nexusaos_kernel::error::PolicyError::Denied { reason: msg }))
             }
         }

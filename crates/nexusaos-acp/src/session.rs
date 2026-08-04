@@ -1,15 +1,14 @@
 use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
-use tokio::sync::RwLock;
-use tracing::info;
-
 use nexusaos_kernel::{
     capability::{Capability, CapabilityLease, CapabilitySet, Scope},
     error::NexusError,
     policy::{PolicyDecision, PolicyEngine},
 };
+use serde::{Deserialize, Serialize};
+use tokio::sync::RwLock;
+use tracing::info;
 
 use crate::{AcpAgent, AcpResult};
 
@@ -137,11 +136,7 @@ pub struct AcpSessionManager {
 
 impl AcpSessionManager {
     /// Create a new ACP session manager.
-    pub fn new(
-        max_sessions: usize,
-        default_ttl_seconds: u64,
-        policy: Arc<PolicyEngine>,
-    ) -> Self {
+    pub fn new(max_sessions: usize, default_ttl_seconds: u64, policy: Arc<PolicyEngine>) -> Self {
         Self {
             sessions: Arc::new(RwLock::new(Vec::new())),
             max_sessions,
@@ -205,11 +200,7 @@ impl AcpSessionManager {
     }
 
     /// Evaluate a policy decision for an ACP action.
-    pub async fn evaluate_policy(
-        &self,
-        agent_id: &str,
-        action: &str,
-    ) -> PolicyDecision {
+    pub async fn evaluate_policy(&self, agent_id: &str, action: &str) -> PolicyDecision {
         let full_action = format!("acp.{}.{}", agent_id, action);
         self.policy.evaluate(&full_action)
     }
@@ -217,8 +208,9 @@ impl AcpSessionManager {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use nexusaos_kernel::capability::{Capability, Scope};
+
+    use super::*;
 
     fn test_agent() -> AcpAgent {
         AcpAgent {

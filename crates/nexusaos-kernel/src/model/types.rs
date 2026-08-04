@@ -9,8 +9,7 @@ pub enum ChatRole {
     Assistant,
 }
 
-impl ChatRole {
-}
+impl ChatRole {}
 
 /// A single message in a chat conversation.
 #[derive(Debug, Clone, Serialize, Deserialize)]

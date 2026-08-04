@@ -96,11 +96,7 @@ pub struct ArtifactStore {
 impl ArtifactStore {
     /// Create a new artifact store.
     pub fn new(max_age_seconds: u64, max_size_bytes: u64) -> Self {
-        Self {
-            artifacts: Arc::new(RwLock::new(Vec::new())),
-            max_age_seconds,
-            max_size_bytes,
-        }
+        Self { artifacts: Arc::new(RwLock::new(Vec::new())), max_age_seconds, max_size_bytes }
     }
 
     /// Store an artifact.
@@ -112,7 +108,9 @@ impl ArtifactStore {
         if total_size + artifact.size_bytes > self.max_size_bytes as usize {
             // Remove oldest artifacts to make room
             artifacts.sort_by_key(|a| a.created_at);
-            while total_size + artifact.size_bytes > self.max_size_bytes as usize && !artifacts.is_empty() {
+            while total_size + artifact.size_bytes > self.max_size_bytes as usize
+                && !artifacts.is_empty()
+            {
                 let removed = artifacts.remove(0);
                 info!(artifact = %removed.id, "Artifact removed due to size limit");
             }
@@ -131,11 +129,7 @@ impl ArtifactStore {
     /// Get all artifacts for a task.
     pub async fn get_by_task(&self, task_id: &TaskId) -> Vec<Artifact> {
         let artifacts = self.artifacts.read().await;
-        artifacts
-            .iter()
-            .filter(|a| a.task_id == *task_id && !a.is_expired())
-            .cloned()
-            .collect()
+        artifacts.iter().filter(|a| a.task_id == *task_id && !a.is_expired()).cloned().collect()
     }
 
     /// Get all non-expired artifacts.

@@ -12,10 +12,7 @@ pub struct DockerTool {
 
 impl DockerTool {
     pub fn new(allowed_images: Vec<String>, denied_images: Vec<String>) -> Self {
-        Self {
-            allowed_images,
-            denied_images,
-        }
+        Self { allowed_images, denied_images }
     }
 
     /// Parse a Docker image reference into normalized components.
@@ -29,11 +26,8 @@ impl DockerTool {
             (image, None)
         };
 
-        let (registry, name) = if let Some(idx) = image.find('/') {
-            image.split_at(idx)
-        } else {
-            ("", image)
-        };
+        let (registry, name) =
+            if let Some(idx) = image.find('/') { image.split_at(idx) } else { ("", image) };
 
         (registry, name, tag)
     }
@@ -86,20 +80,14 @@ impl ToolExecutor for DockerTool {
     }
 
     async fn execute(&self, request: &ToolRequest) -> Result<ToolResult, ToolError> {
-        let action = request
-            .arguments
-            .get("action")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| ToolError::ExecutionFailed {
+        let action = request.arguments.get("action").and_then(|v| v.as_str()).ok_or_else(|| {
+            ToolError::ExecutionFailed {
                 name: self.name().to_string(),
                 reason: "Missing 'action' argument".to_string(),
-            })?;
+            }
+        })?;
 
-        let image = request
-            .arguments
-            .get("image")
-            .and_then(|v| v.as_str())
-            .unwrap_or("");
+        let image = request.arguments.get("image").and_then(|v| v.as_str()).unwrap_or("");
 
         if !image.is_empty() && !self.is_image_allowed(image) {
             return Err(ToolError::ExecutionFailed {
@@ -116,26 +104,18 @@ impl ToolExecutor for DockerTool {
                 self.run_docker_command(&cmd).await?
             }
             "stop" => {
-                let container_id = request
-                    .arguments
-                    .get("container_id")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("");
+                let container_id =
+                    request.arguments.get("container_id").and_then(|v| v.as_str()).unwrap_or("");
                 let cmd = format!("docker stop {}", container_id);
                 self.run_docker_command(&cmd).await?
             }
             "inspect" => {
-                let container_id = request
-                    .arguments
-                    .get("container_id")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("");
+                let container_id =
+                    request.arguments.get("container_id").and_then(|v| v.as_str()).unwrap_or("");
                 let cmd = format!("docker inspect {}", container_id);
                 self.run_docker_command(&cmd).await?
             }
-            "ps" => {
-                self.run_docker_command("docker ps").await?
-            }
+            "ps" => self.run_docker_command("docker ps").await?,
             _ => {
                 return Err(ToolError::ExecutionFailed {
                     name: self.name().to_string(),
@@ -157,14 +137,12 @@ impl ToolExecutor for DockerTool {
 
 impl DockerTool {
     async fn run_docker_command(&self, cmd: &str) -> Result<String, ToolError> {
-        let output = tokio::process::Command::new("sh")
-            .arg("-c")
-            .arg(cmd)
-            .output()
-            .await
-            .map_err(|e| ToolError::ExecutionFailed {
-                name: self.name().to_string(),
-                reason: format!("Docker command failed: {}", e),
+        let output =
+            tokio::process::Command::new("sh").arg("-c").arg(cmd).output().await.map_err(|e| {
+                ToolError::ExecutionFailed {
+                    name: self.name().to_string(),
+                    reason: format!("Docker command failed: {}", e),
+                }
             })?;
 
         let stdout = String::from_utf8_lossy(&output.stdout).to_string();

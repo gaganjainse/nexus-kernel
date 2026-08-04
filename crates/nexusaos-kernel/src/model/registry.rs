@@ -150,12 +150,12 @@ mod tests {
                 _r: CompletionRequest,
             ) -> Result<CompletionResponse, ProviderError> {
                 Ok(CompletionResponse {
-                content: "mock".into(),
-                finish_reason: None,
-                prompt_tokens: None,
-                completion_tokens: None,
-                model: "mock".into(),
-            })
+                    content: "mock".into(),
+                    finish_reason: None,
+                    prompt_tokens: None,
+                    completion_tokens: None,
+                    model: "mock".into(),
+                })
             }
             async fn cancel(&self) -> Result<(), ProviderError> {
                 Ok(())
@@ -200,12 +200,12 @@ mod tests {
                 _r: CompletionRequest,
             ) -> Result<CompletionResponse, ProviderError> {
                 Ok(CompletionResponse {
-                content: "mock".into(),
-                finish_reason: None,
-                prompt_tokens: None,
-                completion_tokens: None,
-                model: "mock".into(),
-            })
+                    content: "mock".into(),
+                    finish_reason: None,
+                    prompt_tokens: None,
+                    completion_tokens: None,
+                    model: "mock".into(),
+                })
             }
             async fn cancel(&self) -> Result<(), ProviderError> {
                 Ok(())
@@ -260,12 +260,12 @@ mod tests {
                 _r: CompletionRequest,
             ) -> Result<CompletionResponse, ProviderError> {
                 Ok(CompletionResponse {
-                content: "mock".into(),
-                finish_reason: None,
-                prompt_tokens: None,
-                completion_tokens: None,
-                model: "mock".into(),
-            })
+                    content: "mock".into(),
+                    finish_reason: None,
+                    prompt_tokens: None,
+                    completion_tokens: None,
+                    model: "mock".into(),
+                })
             }
             async fn cancel(&self) -> Result<(), ProviderError> {
                 Ok(())
@@ -314,12 +314,12 @@ mod tests {
                 _r: CompletionRequest,
             ) -> Result<CompletionResponse, ProviderError> {
                 Ok(CompletionResponse {
-                content: "mock".into(),
-                finish_reason: None,
-                prompt_tokens: None,
-                completion_tokens: None,
-                model: "mock".into(),
-            })
+                    content: "mock".into(),
+                    finish_reason: None,
+                    prompt_tokens: None,
+                    completion_tokens: None,
+                    model: "mock".into(),
+                })
             }
             async fn cancel(&self) -> Result<(), ProviderError> {
                 Ok(())

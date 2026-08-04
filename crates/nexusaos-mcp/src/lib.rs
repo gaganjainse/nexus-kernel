@@ -29,10 +29,7 @@ pub struct McpServerConfig {
 
 impl Default for McpServerConfig {
     fn default() -> Self {
-        Self {
-            socket_path: "/tmp/nexusaos-mcp.sock".to_string(),
-            max_connections: 16,
-        }
+        Self { socket_path: "/tmp/nexusaos-mcp.sock".to_string(), max_connections: 16 }
     }
 }
 

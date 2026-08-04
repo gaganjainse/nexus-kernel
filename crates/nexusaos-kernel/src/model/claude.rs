@@ -133,10 +133,8 @@ impl ModelProvider for ClaudeProvider {
                             last.content.push('\n');
                             last.content.push_str(&m.content);
                         }
-                        _ => messages.push(ClaudeMessage {
-                            role: role.to_string(),
-                            content: m.content,
-                        }),
+                        _ => messages
+                            .push(ClaudeMessage { role: role.to_string(), content: m.content }),
                     }
                 }
             }
@@ -163,20 +161,15 @@ impl ModelProvider for ClaudeProvider {
 
         if !response.status().is_success() {
             let status = response.status();
-            let body = response.text().await.unwrap_or_else(|_| "(failed to read error body)".into());
-            return Err(ProviderError::Api(format!(
-                "Anthropic HTTP {status}: {body}"
-            )));
+            let body =
+                response.text().await.unwrap_or_else(|_| "(failed to read error body)".into());
+            return Err(ProviderError::Api(format!("Anthropic HTTP {status}: {body}")));
         }
 
         let claude_resp: ClaudeResponse =
             response.json().await.map_err(|e| ProviderError::MalformedResponse(e.to_string()))?;
 
-        let text: String = claude_resp
-            .content
-            .iter()
-            .filter_map(|c| c.text.as_deref())
-            .collect();
+        let text: String = claude_resp.content.iter().filter_map(|c| c.text.as_deref()).collect();
         let usage = claude_resp.usage;
 
         Ok(CompletionResponse {

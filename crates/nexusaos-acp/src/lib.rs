@@ -1,18 +1,16 @@
 pub mod client;
-pub mod session;
 pub mod server;
+pub mod session;
 
 use std::sync::Arc;
-
-use serde::Deserialize;
-
-use tokio::sync::RwLock;
 
 use nexusaos_kernel::{
     capability::{CapabilityLease, CapabilitySet, Scope},
     error::NexusError,
     policy::{PolicyDecision, PolicyEngine},
 };
+use serde::Deserialize;
+use tokio::sync::RwLock;
 use tracing::info;
 
 /// Result type for ACP operations.
@@ -42,10 +40,7 @@ pub struct AcpSessionConfig {
 
 impl Default for AcpSessionConfig {
     fn default() -> Self {
-        Self {
-            max_sessions: 100,
-            default_ttl_seconds: 3600,
-        }
+        Self { max_sessions: 100, default_ttl_seconds: 3600 }
     }
 }
 
@@ -62,10 +57,7 @@ pub async fn validate_acp_request(
 }
 
 /// Checks if the agent's capability set permits the requested operation.
-pub async fn check_acp_capabilities(
-    agent: &AcpAgent,
-    scope: &Scope,
-) -> bool {
+pub async fn check_acp_capabilities(agent: &AcpAgent, scope: &Scope) -> bool {
     let caps = agent.capabilities.read().await;
     for lease in &caps.leases {
         if !lease.is_valid() {

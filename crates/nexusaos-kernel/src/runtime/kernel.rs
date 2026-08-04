@@ -1,10 +1,10 @@
-use std::sync::Arc;
-use std::collections::HashMap;
-use std::time::Instant;
+use std::{collections::HashMap, sync::Arc, time::Instant};
 
 use chrono::Utc;
 use tokio::sync::RwLock;
 use tracing::warn;
+
+type DedupCache = HashMap<TaskInput, (TaskId, chrono::DateTime<chrono::Utc>)>;
 
 use crate::{
     artifact::ArtifactStore,
@@ -75,10 +75,8 @@ impl PerformanceMonitor {
         let times = self.model_load_times.read().await;
         if let Some((_, max_time)) = times.iter().max_by_key(|(_, t)| *t) {
             if *max_time > 5000 {
-                warnings.push(format!(
-                    "Model loading bottleneck: {}ms exceeds 5s threshold",
-                    max_time
-                ));
+                warnings
+                    .push(format!("Model loading bottleneck: {}ms exceeds 5s threshold", max_time));
             }
         }
 
@@ -95,10 +93,8 @@ impl PerformanceMonitor {
         let latencies = self.tool_latencies.read().await;
         if let Some((_, max_lat)) = latencies.iter().max_by_key(|(_, l)| *l) {
             if *max_lat > 10000 {
-                warnings.push(format!(
-                    "Tool latency bottleneck: {}ms exceeds 10s threshold",
-                    max_lat
-                ));
+                warnings
+                    .push(format!("Tool latency bottleneck: {}ms exceeds 10s threshold", max_lat));
             }
         }
 
@@ -136,12 +132,13 @@ pub struct Kernel {
     performance_monitor: Arc<PerformanceMonitor>,
     resource_budget: ResourceBudget,
     resource_monitor: Arc<ResourceMonitor>,
+    #[allow(dead_code)]
     context_manager: Arc<ContextManager>,
     scheduler: Arc<Scheduler>,
     manifest_store: Arc<ManifestStore>,
     artifact_store: Arc<ArtifactStore>,
     dedup_window_secs: u64,
-    dedup_cache: Arc<RwLock<HashMap<TaskInput, (TaskId, chrono::DateTime<chrono::Utc>)>>>,
+    dedup_cache: Arc<RwLock<DedupCache>>,
 }
 
 impl Kernel {
@@ -188,16 +185,16 @@ impl Kernel {
     async fn system_pressure(&self) -> SystemPressure {
         let data_dir = std::path::Path::new(".");
         let monitor = self.resource_monitor.clone();
-        tokio::task::spawn_blocking(move || monitor.snapshot(data_dir))
-            .await
-            .unwrap_or_else(|_| SystemPressure {
+        tokio::task::spawn_blocking(move || monitor.snapshot(data_dir)).await.unwrap_or_else(|_| {
+            SystemPressure {
                 ram_available_mb: 0,
                 ram_total_mb: 0,
                 vram_available_mb: 0,
                 vram_total_mb: 0,
                 disk_available_gb: 0,
                 queue_depth: self.scheduler.queue_depth(),
-            })
+            }
+        })
     }
 
     /// Check if the system has sufficient resources for a model load.
@@ -272,7 +269,8 @@ impl Kernel {
         }
 
         // Queue depth check
-        if ResourceBudget::exceeds_queue_budget(self.scheduler.queue_depth(), &self.resource_budget) {
+        if ResourceBudget::exceeds_queue_budget(self.scheduler.queue_depth(), &self.resource_budget)
+        {
             return Err(NexusError::Resource(crate::error::ResourceError::QueueFull {
                 max_depth: self.resource_budget.max_queue_depth,
             }));
@@ -466,12 +464,7 @@ impl Kernel {
         // If the task was routed to the vision model, treat its output
         // as a structured observation, not a direct action (§6.8).
         if task.assigned_role == Some(crate::state::ModelRole::Vision) {
-            self.emit_vision_observation(
-                *task_id,
-                "Vision",
-                &plan_resp.content,
-            )
-            .await?;
+            self.emit_vision_observation(*task_id, "Vision", &plan_resp.content).await?;
         }
 
         let plan = plan_resp.content.to_lowercase();
@@ -531,7 +524,7 @@ impl Kernel {
                         None,
                     )
                     .await
-                    {
+                {
                     Ok(resp) => resp,
                     Err(e) => {
                         let err_msg = format!("{}", e);
@@ -593,7 +586,8 @@ impl Kernel {
             // Enforce Coder constraint: coder should not decide product scope
             // or architecture direction without planner input for large tasks (§6.10)
             if task.assigned_role == Some(crate::state::ModelRole::Coder) {
-                let scope_keywords = ["architecture", "design", "scope", "product direction", "plan"];
+                let scope_keywords =
+                    ["architecture", "design", "scope", "product direction", "plan"];
                 let output_lower = final_output.to_lowercase();
                 let has_scope_keyword = scope_keywords.iter().any(|kw| output_lower.contains(kw));
                 if has_scope_keyword {
@@ -619,17 +613,14 @@ impl Kernel {
             }
 
             // Create checkpoint before risky tool execution
-            self.create_checkpoint(*task_id, &tool_call.tool_name, &tool_call.arguments)
-                .await?;
+            self.create_checkpoint(*task_id, &tool_call.tool_name, &tool_call.arguments).await?;
 
             self.emit_tool_requested(*task_id, &tool_call.tool_name, tool_call.arguments).await?;
 
             let tool_start = Instant::now();
             let broker_result = self.tool_broker.execute(&tool_req).await;
             let tool_duration = tool_start.elapsed().as_millis();
-            self.performance_monitor
-                .record_tool_latency(&tool_call.tool_name, tool_duration)
-                .await;
+            self.performance_monitor.record_tool_latency(&tool_call.tool_name, tool_duration).await;
 
             match broker_result {
                 Ok(crate::tools::broker::BrokerResult::Completed(res)) => {
@@ -756,16 +747,10 @@ impl Kernel {
 
     /// Redact common secret patterns from strings before storing in events.
     /// Prevents secrets from leaking into the audit log.
+    #[allow(clippy::manual_pattern_char_comparison)]
     fn redact_secrets(text: &str) -> String {
         let mut result = text.to_string();
-        let secret_patterns = [
-            "api_key=",
-            "apikey=",
-            "secret=",
-            "token=",
-            "password=",
-            "passwd=",
-        ];
+        let secret_patterns = ["api_key=", "apikey=", "secret=", "token=", "password=", "passwd="];
         for pattern in &secret_patterns {
             if let Some(pos) = result.find(pattern) {
                 let end = result[pos..]
@@ -776,14 +761,8 @@ impl Kernel {
             }
         }
         // Also handle JSON-style key-value pairs like "api_key": "value"
-        let json_patterns = [
-            "\"api_key\"",
-            "\"apikey\"",
-            "\"secret\"",
-            "\"token\"",
-            "\"password\"",
-            "\"passwd\"",
-        ];
+        let json_patterns =
+            ["\"api_key\"", "\"apikey\"", "\"secret\"", "\"token\"", "\"password\"", "\"passwd\""];
         for pattern in &json_patterns {
             if let Some(pos) = result.find(pattern) {
                 // Find the value after the colon
@@ -861,7 +840,7 @@ impl Kernel {
     ) -> Result<(), NexusError> {
         let max_size = self.max_tool_output_size;
         let truncated = truncate_output(output, max_size);
-        let redacted = Self::redact_secrets(&truncated[..]);
+        let redacted = Self::redact_secrets(truncated);
         self.emit_event(Event::new(
             task_id,
             kind,
@@ -1043,10 +1022,7 @@ impl Kernel {
         primary: &dyn ModelProvider,
         fallback: Option<&dyn ModelProvider>,
     ) -> Result<CompletionResponse, crate::error::ProviderError> {
-        match self
-            .call_model(task_id, role_label, user_content, system_prompt, primary)
-            .await
-        {
+        match self.call_model(task_id, role_label, user_content, system_prompt, primary).await {
             Ok(resp) => Ok(resp),
             Err(primary_err) => {
                 if let Some(fb) = fallback {
@@ -1068,8 +1044,7 @@ impl Kernel {
                     ))
                     .await
                     .map_err(|e| crate::error::ProviderError::InferenceFailed(e.to_string()))?;
-                    self.call_model(task_id, role_label, user_content, system_prompt, fb)
-                        .await
+                    self.call_model(task_id, role_label, user_content, system_prompt, fb).await
                 } else {
                     Err(primary_err)
                 }
@@ -1117,10 +1092,7 @@ impl Kernel {
                 *task_id,
                 EventKind::Error,
                 EventPayload::ErrorEvent {
-                    message: format!(
-                        "Task {} recovered from incomplete state on startup",
-                        task_id
-                    ),
+                    message: format!("Task {} recovered from incomplete state on startup", task_id),
                     details: None,
                 },
                 "kernel".to_string(),
@@ -1275,9 +1247,23 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(KernelConfig { event_store: store, policy: Arc::new(RwLock::new(policy)), provider_registry: registry, tool_broker: broker, max_tool_output_size: 1_048_576, snapshot_store: None, resource_budget: ResourceBudget::default(), resource_monitor: Arc::new(ResourceMonitor), context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())), scheduler: Arc::new(Scheduler::new(32)), dedup_window_secs: 5, manifest_store: Arc::new(ManifestStore::new()), artifact_store: Arc::new(ArtifactStore::default()) })
-            .await
-            .unwrap();
+        let kernel = Kernel::new(KernelConfig {
+            event_store: store,
+            policy: Arc::new(RwLock::new(policy)),
+            provider_registry: registry,
+            tool_broker: broker,
+            max_tool_output_size: 1_048_576,
+            snapshot_store: None,
+            resource_budget: ResourceBudget::default(),
+            resource_monitor: Arc::new(ResourceMonitor),
+            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            scheduler: Arc::new(Scheduler::new(32)),
+            dedup_window_secs: 5,
+            manifest_store: Arc::new(ManifestStore::new()),
+            artifact_store: Arc::new(ArtifactStore::default()),
+        })
+        .await
+        .unwrap();
 
         let id = kernel.submit_task(TaskInput::Text("test".into())).await.unwrap();
         let state = kernel.task_state(&id).await.unwrap();
@@ -1290,9 +1276,23 @@ mod tests {
         let policy = PolicyEngine::deny_all();
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(KernelConfig { event_store: store, policy: Arc::new(RwLock::new(policy)), provider_registry: registry, tool_broker: broker, max_tool_output_size: 1_048_576, snapshot_store: None, resource_budget: ResourceBudget::default(), resource_monitor: Arc::new(ResourceMonitor), context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())), scheduler: Arc::new(Scheduler::new(32)), dedup_window_secs: 5, manifest_store: Arc::new(ManifestStore::new()), artifact_store: Arc::new(ArtifactStore::default()) })
-            .await
-            .unwrap();
+        let kernel = Kernel::new(KernelConfig {
+            event_store: store,
+            policy: Arc::new(RwLock::new(policy)),
+            provider_registry: registry,
+            tool_broker: broker,
+            max_tool_output_size: 1_048_576,
+            snapshot_store: None,
+            resource_budget: ResourceBudget::default(),
+            resource_monitor: Arc::new(ResourceMonitor),
+            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            scheduler: Arc::new(Scheduler::new(32)),
+            dedup_window_secs: 5,
+            manifest_store: Arc::new(ManifestStore::new()),
+            artifact_store: Arc::new(ArtifactStore::default()),
+        })
+        .await
+        .unwrap();
 
         let result = kernel.submit_task(TaskInput::Text("test".into())).await;
         assert!(matches!(result, Err(NexusError::Policy(_))));
@@ -1311,9 +1311,23 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(KernelConfig { event_store: store, policy: Arc::new(RwLock::new(policy)), provider_registry: registry, tool_broker: broker, max_tool_output_size: 1_048_576, snapshot_store: None, resource_budget: ResourceBudget::default(), resource_monitor: Arc::new(ResourceMonitor), context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())), scheduler: Arc::new(Scheduler::new(32)), dedup_window_secs: 5, manifest_store: Arc::new(ManifestStore::new()), artifact_store: Arc::new(ArtifactStore::default()) })
-            .await
-            .unwrap();
+        let kernel = Kernel::new(KernelConfig {
+            event_store: store,
+            policy: Arc::new(RwLock::new(policy)),
+            provider_registry: registry,
+            tool_broker: broker,
+            max_tool_output_size: 1_048_576,
+            snapshot_store: None,
+            resource_budget: ResourceBudget::default(),
+            resource_monitor: Arc::new(ResourceMonitor),
+            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            scheduler: Arc::new(Scheduler::new(32)),
+            dedup_window_secs: 5,
+            manifest_store: Arc::new(ManifestStore::new()),
+            artifact_store: Arc::new(ArtifactStore::default()),
+        })
+        .await
+        .unwrap();
 
         let id = kernel.submit_task(TaskInput::Text("test".into())).await.unwrap();
         kernel.transition_task(&id, TaskState::Planned).await.unwrap();
@@ -1333,9 +1347,23 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(KernelConfig { event_store: store, policy: Arc::new(RwLock::new(policy)), provider_registry: registry, tool_broker: broker, max_tool_output_size: 1_048_576, snapshot_store: None, resource_budget: ResourceBudget::default(), resource_monitor: Arc::new(ResourceMonitor), context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())), scheduler: Arc::new(Scheduler::new(32)), dedup_window_secs: 5, manifest_store: Arc::new(ManifestStore::new()), artifact_store: Arc::new(ArtifactStore::default()) })
-            .await
-            .unwrap();
+        let kernel = Kernel::new(KernelConfig {
+            event_store: store,
+            policy: Arc::new(RwLock::new(policy)),
+            provider_registry: registry,
+            tool_broker: broker,
+            max_tool_output_size: 1_048_576,
+            snapshot_store: None,
+            resource_budget: ResourceBudget::default(),
+            resource_monitor: Arc::new(ResourceMonitor),
+            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            scheduler: Arc::new(Scheduler::new(32)),
+            dedup_window_secs: 5,
+            manifest_store: Arc::new(ManifestStore::new()),
+            artifact_store: Arc::new(ArtifactStore::default()),
+        })
+        .await
+        .unwrap();
 
         let id = kernel.submit_task(TaskInput::Text("test".into())).await.unwrap();
         // Classified -> Completed is invalid
@@ -1414,9 +1442,23 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(KernelConfig { event_store: store, policy: Arc::new(RwLock::new(policy)), provider_registry: registry, tool_broker: broker, max_tool_output_size: 1_048_576, snapshot_store: None, resource_budget: ResourceBudget::default(), resource_monitor: Arc::new(ResourceMonitor), context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())), scheduler: Arc::new(Scheduler::new(32)), dedup_window_secs: 5, manifest_store: Arc::new(ManifestStore::new()), artifact_store: Arc::new(ArtifactStore::default()) })
-            .await
-            .unwrap();
+        let kernel = Kernel::new(KernelConfig {
+            event_store: store,
+            policy: Arc::new(RwLock::new(policy)),
+            provider_registry: registry,
+            tool_broker: broker,
+            max_tool_output_size: 1_048_576,
+            snapshot_store: None,
+            resource_budget: ResourceBudget::default(),
+            resource_monitor: Arc::new(ResourceMonitor),
+            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            scheduler: Arc::new(Scheduler::new(32)),
+            dedup_window_secs: 5,
+            manifest_store: Arc::new(ManifestStore::new()),
+            artifact_store: Arc::new(ArtifactStore::default()),
+        })
+        .await
+        .unwrap();
 
         let fake_id = TaskId::new();
         let result = kernel.task_state(&fake_id).await;
@@ -1440,9 +1482,23 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(KernelConfig { event_store: store, policy: Arc::new(RwLock::new(policy)), provider_registry: registry, tool_broker: broker, max_tool_output_size: 1_048_576, snapshot_store: None, resource_budget: ResourceBudget::default(), resource_monitor: Arc::new(ResourceMonitor), context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())), scheduler: Arc::new(Scheduler::new(32)), dedup_window_secs: 5, manifest_store: Arc::new(ManifestStore::new()), artifact_store: Arc::new(ArtifactStore::default()) })
-            .await
-            .unwrap();
+        let kernel = Kernel::new(KernelConfig {
+            event_store: store,
+            policy: Arc::new(RwLock::new(policy)),
+            provider_registry: registry,
+            tool_broker: broker,
+            max_tool_output_size: 1_048_576,
+            snapshot_store: None,
+            resource_budget: ResourceBudget::default(),
+            resource_monitor: Arc::new(ResourceMonitor),
+            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            scheduler: Arc::new(Scheduler::new(32)),
+            dedup_window_secs: 5,
+            manifest_store: Arc::new(ManifestStore::new()),
+            artifact_store: Arc::new(ArtifactStore::default()),
+        })
+        .await
+        .unwrap();
 
         let id1 = kernel.submit_task(TaskInput::Text("task1".into())).await.unwrap();
         let id2 = kernel.submit_task(TaskInput::Text("task2".into())).await.unwrap();
@@ -1469,9 +1525,23 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(KernelConfig { event_store: store, policy: Arc::new(RwLock::new(policy)), provider_registry: registry, tool_broker: broker, max_tool_output_size: 1_048_576, snapshot_store: None, resource_budget: ResourceBudget::default(), resource_monitor: Arc::new(ResourceMonitor), context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())), scheduler: Arc::new(Scheduler::new(32)), dedup_window_secs: 5, manifest_store: Arc::new(ManifestStore::new()), artifact_store: Arc::new(ArtifactStore::default()) })
-            .await
-            .unwrap();
+        let kernel = Kernel::new(KernelConfig {
+            event_store: store,
+            policy: Arc::new(RwLock::new(policy)),
+            provider_registry: registry,
+            tool_broker: broker,
+            max_tool_output_size: 1_048_576,
+            snapshot_store: None,
+            resource_budget: ResourceBudget::default(),
+            resource_monitor: Arc::new(ResourceMonitor),
+            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            scheduler: Arc::new(Scheduler::new(32)),
+            dedup_window_secs: 5,
+            manifest_store: Arc::new(ManifestStore::new()),
+            artifact_store: Arc::new(ArtifactStore::default()),
+        })
+        .await
+        .unwrap();
 
         assert_eq!(kernel.task_count().await, 0);
         kernel.submit_task(TaskInput::Text("t1".into())).await.unwrap();
@@ -1493,9 +1563,23 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(KernelConfig { event_store: store, policy: Arc::new(RwLock::new(policy)), provider_registry: registry, tool_broker: broker, max_tool_output_size: 1_048_576, snapshot_store: None, resource_budget: ResourceBudget::default(), resource_monitor: Arc::new(ResourceMonitor), context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())), scheduler: Arc::new(Scheduler::new(32)), dedup_window_secs: 5, manifest_store: Arc::new(ManifestStore::new()), artifact_store: Arc::new(ArtifactStore::default()) })
-            .await
-            .unwrap();
+        let kernel = Kernel::new(KernelConfig {
+            event_store: store,
+            policy: Arc::new(RwLock::new(policy)),
+            provider_registry: registry,
+            tool_broker: broker,
+            max_tool_output_size: 1_048_576,
+            snapshot_store: None,
+            resource_budget: ResourceBudget::default(),
+            resource_monitor: Arc::new(ResourceMonitor),
+            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            scheduler: Arc::new(Scheduler::new(32)),
+            dedup_window_secs: 5,
+            manifest_store: Arc::new(ManifestStore::new()),
+            artifact_store: Arc::new(ArtifactStore::default()),
+        })
+        .await
+        .unwrap();
 
         let fake_id = TaskId::new();
         let result = kernel.transition_task(&fake_id, TaskState::Planned).await;
@@ -1515,9 +1599,23 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(KernelConfig { event_store: store, policy: Arc::new(RwLock::new(policy)), provider_registry: registry, tool_broker: broker, max_tool_output_size: 1_048_576, snapshot_store: None, resource_budget: ResourceBudget::default(), resource_monitor: Arc::new(ResourceMonitor), context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())), scheduler: Arc::new(Scheduler::new(32)), dedup_window_secs: 5, manifest_store: Arc::new(ManifestStore::new()), artifact_store: Arc::new(ArtifactStore::default()) })
-            .await
-            .unwrap();
+        let kernel = Kernel::new(KernelConfig {
+            event_store: store,
+            policy: Arc::new(RwLock::new(policy)),
+            provider_registry: registry,
+            tool_broker: broker,
+            max_tool_output_size: 1_048_576,
+            snapshot_store: None,
+            resource_budget: ResourceBudget::default(),
+            resource_monitor: Arc::new(ResourceMonitor),
+            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            scheduler: Arc::new(Scheduler::new(32)),
+            dedup_window_secs: 5,
+            manifest_store: Arc::new(ManifestStore::new()),
+            artifact_store: Arc::new(ArtifactStore::default()),
+        })
+        .await
+        .unwrap();
 
         let id = kernel.submit_task(TaskInput::Text("do something".into())).await.unwrap();
         let result = kernel.execute_task(&id).await;
@@ -1541,24 +1639,23 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel =
-            Kernel::new(KernelConfig {
-                event_store: store.clone(),
-                policy: Arc::new(RwLock::new(policy)),
-                provider_registry: registry,
-                tool_broker: broker,
-                max_tool_output_size: 1_048_576,
-                snapshot_store: None,
-                resource_budget: ResourceBudget::default(),
-                resource_monitor: Arc::new(ResourceMonitor),
-                context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
-                scheduler: Arc::new(Scheduler::new(32)),
-                dedup_window_secs: 5,
-                manifest_store: Arc::new(ManifestStore::new()),
-                artifact_store: Arc::new(ArtifactStore::default()),
-            })
-                .await
-                .unwrap();
+        let kernel = Kernel::new(KernelConfig {
+            event_store: store.clone(),
+            policy: Arc::new(RwLock::new(policy)),
+            provider_registry: registry,
+            tool_broker: broker,
+            max_tool_output_size: 1_048_576,
+            snapshot_store: None,
+            resource_budget: ResourceBudget::default(),
+            resource_monitor: Arc::new(ResourceMonitor),
+            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            scheduler: Arc::new(Scheduler::new(32)),
+            dedup_window_secs: 5,
+            manifest_store: Arc::new(ManifestStore::new()),
+            artifact_store: Arc::new(ArtifactStore::default()),
+        })
+        .await
+        .unwrap();
 
         let _id = kernel.submit_task(TaskInput::Text("test".into())).await.unwrap();
 
@@ -1639,9 +1736,23 @@ mod tests {
         let policy = PolicyEngine::deny_all();
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(KernelConfig { event_store: store, policy: Arc::new(RwLock::new(policy)), provider_registry: registry, tool_broker: broker, max_tool_output_size: 1_048_576, snapshot_store: None, resource_budget: ResourceBudget::default(), resource_monitor: Arc::new(ResourceMonitor), context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())), scheduler: Arc::new(Scheduler::new(32)), dedup_window_secs: 5, manifest_store: Arc::new(ManifestStore::new()), artifact_store: Arc::new(ArtifactStore::default()) })
-            .await
-            .unwrap();
+        let kernel = Kernel::new(KernelConfig {
+            event_store: store,
+            policy: Arc::new(RwLock::new(policy)),
+            provider_registry: registry,
+            tool_broker: broker,
+            max_tool_output_size: 1_048_576,
+            snapshot_store: None,
+            resource_budget: ResourceBudget::default(),
+            resource_monitor: Arc::new(ResourceMonitor),
+            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            scheduler: Arc::new(Scheduler::new(32)),
+            dedup_window_secs: 5,
+            manifest_store: Arc::new(ManifestStore::new()),
+            artifact_store: Arc::new(ArtifactStore::default()),
+        })
+        .await
+        .unwrap();
         assert_eq!(kernel.task_count().await, 0);
     }
 
@@ -1658,9 +1769,23 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(KernelConfig { event_store: store, policy: Arc::new(RwLock::new(policy)), provider_registry: registry, tool_broker: broker, max_tool_output_size: 1_048_576, snapshot_store: None, resource_budget: ResourceBudget::default(), resource_monitor: Arc::new(ResourceMonitor), context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())), scheduler: Arc::new(Scheduler::new(32)), dedup_window_secs: 5, manifest_store: Arc::new(ManifestStore::new()), artifact_store: Arc::new(ArtifactStore::default()) })
-            .await
-            .unwrap();
+        let kernel = Kernel::new(KernelConfig {
+            event_store: store,
+            policy: Arc::new(RwLock::new(policy)),
+            provider_registry: registry,
+            tool_broker: broker,
+            max_tool_output_size: 1_048_576,
+            snapshot_store: None,
+            resource_budget: ResourceBudget::default(),
+            resource_monitor: Arc::new(ResourceMonitor),
+            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            scheduler: Arc::new(Scheduler::new(32)),
+            dedup_window_secs: 5,
+            manifest_store: Arc::new(ManifestStore::new()),
+            artifact_store: Arc::new(ArtifactStore::default()),
+        })
+        .await
+        .unwrap();
 
         let id = kernel.submit_task(TaskInput::Text("test".into())).await.unwrap();
         assert_eq!(kernel.task_state(&id).await.unwrap(), TaskState::Classified);
@@ -1695,9 +1820,23 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(KernelConfig { event_store: store, policy: Arc::new(RwLock::new(policy)), provider_registry: registry, tool_broker: broker, max_tool_output_size: 1_048_576, snapshot_store: None, resource_budget: ResourceBudget::default(), resource_monitor: Arc::new(ResourceMonitor), context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())), scheduler: Arc::new(Scheduler::new(32)), dedup_window_secs: 5, manifest_store: Arc::new(ManifestStore::new()), artifact_store: Arc::new(ArtifactStore::default()) })
-            .await
-            .unwrap();
+        let kernel = Kernel::new(KernelConfig {
+            event_store: store,
+            policy: Arc::new(RwLock::new(policy)),
+            provider_registry: registry,
+            tool_broker: broker,
+            max_tool_output_size: 1_048_576,
+            snapshot_store: None,
+            resource_budget: ResourceBudget::default(),
+            resource_monitor: Arc::new(ResourceMonitor),
+            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            scheduler: Arc::new(Scheduler::new(32)),
+            dedup_window_secs: 5,
+            manifest_store: Arc::new(ManifestStore::new()),
+            artifact_store: Arc::new(ArtifactStore::default()),
+        })
+        .await
+        .unwrap();
 
         let id = kernel
             .submit_task(TaskInput::Vision {
@@ -1722,9 +1861,23 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(KernelConfig { event_store: store, policy: Arc::new(RwLock::new(policy)), provider_registry: registry, tool_broker: broker, max_tool_output_size: 1_048_576, snapshot_store: None, resource_budget: ResourceBudget::default(), resource_monitor: Arc::new(ResourceMonitor), context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())), scheduler: Arc::new(Scheduler::new(32)), dedup_window_secs: 5, manifest_store: Arc::new(ManifestStore::new()), artifact_store: Arc::new(ArtifactStore::default()) })
-            .await
-            .unwrap();
+        let kernel = Kernel::new(KernelConfig {
+            event_store: store,
+            policy: Arc::new(RwLock::new(policy)),
+            provider_registry: registry,
+            tool_broker: broker,
+            max_tool_output_size: 1_048_576,
+            snapshot_store: None,
+            resource_budget: ResourceBudget::default(),
+            resource_monitor: Arc::new(ResourceMonitor),
+            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            scheduler: Arc::new(Scheduler::new(32)),
+            dedup_window_secs: 5,
+            manifest_store: Arc::new(ManifestStore::new()),
+            artifact_store: Arc::new(ArtifactStore::default()),
+        })
+        .await
+        .unwrap();
 
         let input = TaskInput::Multi {
             parts: vec![TaskInput::Text("part1".into()), TaskInput::Text("part2".into())],
@@ -1746,24 +1899,23 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel =
-            Kernel::new(KernelConfig {
-                event_store: store.clone(),
-                policy: Arc::new(RwLock::new(policy)),
-                provider_registry: registry,
-                tool_broker: broker,
-                max_tool_output_size: 1_048_576,
-                snapshot_store: None,
-                resource_budget: ResourceBudget::default(),
-                resource_monitor: Arc::new(ResourceMonitor),
-                context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
-                scheduler: Arc::new(Scheduler::new(32)),
-                dedup_window_secs: 5,
-                manifest_store: Arc::new(ManifestStore::new()),
-                artifact_store: Arc::new(ArtifactStore::default()),
-            })
-                .await
-                .unwrap();
+        let kernel = Kernel::new(KernelConfig {
+            event_store: store.clone(),
+            policy: Arc::new(RwLock::new(policy)),
+            provider_registry: registry,
+            tool_broker: broker,
+            max_tool_output_size: 1_048_576,
+            snapshot_store: None,
+            resource_budget: ResourceBudget::default(),
+            resource_monitor: Arc::new(ResourceMonitor),
+            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            scheduler: Arc::new(Scheduler::new(32)),
+            dedup_window_secs: 5,
+            manifest_store: Arc::new(ManifestStore::new()),
+            artifact_store: Arc::new(ArtifactStore::default()),
+        })
+        .await
+        .unwrap();
 
         let id = kernel.submit_task(TaskInput::Text("test".into())).await.unwrap();
 
@@ -1836,9 +1988,8 @@ mod tests {
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
         let snapshot_dir = tempfile::tempdir().unwrap();
-        let snapshot_store = Arc::new(crate::storage::SnapshotStore::new(
-            snapshot_dir.path().to_path_buf(),
-        ));
+        let snapshot_store =
+            Arc::new(crate::storage::SnapshotStore::new(snapshot_dir.path().to_path_buf()));
         let kernel = Kernel::new(KernelConfig {
             event_store: store.clone(),
             policy: Arc::new(RwLock::new(policy)),
@@ -1859,10 +2010,8 @@ mod tests {
 
         let id = kernel.submit_task(TaskInput::Text("test checkpoint".into())).await.unwrap();
         let events = store.get_task_events(&id).await.unwrap();
-        let _checkpoint_events: Vec<_> = events
-            .iter()
-            .filter(|e| matches!(e.kind, EventKind::CheckpointCreated))
-            .collect();
+        let _checkpoint_events: Vec<_> =
+            events.iter().filter(|e| matches!(e.kind, EventKind::CheckpointCreated)).collect();
         // Checkpoint events are created when tools are executed during execute_task,
         // not during submit_task. This test verifies the snapshot store is configured.
         assert!(snapshot_store.list().await.unwrap().is_empty());
@@ -1873,15 +2022,9 @@ mod tests {
         let monitor = crate::runtime::kernel::PerformanceMonitor::new();
 
         // Simulate a slow model load
-        monitor
-            .record_model_load("slow-model", 6000)
-            .await;
-        monitor
-            .record_context_size("planner", 9000)
-            .await;
-        monitor
-            .record_tool_latency("fs.read", 11000)
-            .await;
+        monitor.record_model_load("slow-model", 6000).await;
+        monitor.record_context_size("planner", 9000).await;
+        monitor.record_tool_latency("fs.read", 11000).await;
 
         let warnings = monitor.check_bottlenecks().await;
         assert_eq!(warnings.len(), 3);

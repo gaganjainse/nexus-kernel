@@ -96,20 +96,12 @@ impl Manifest {
     }
 
     /// Transition the manifest to a new state.
-    pub fn transition_to(
-        &mut self,
-        new_state: ManifestState,
-    ) -> Result<(), NexusError> {
+    pub fn transition_to(&mut self, new_state: ManifestState) -> Result<(), NexusError> {
         if !self.state.can_transition_to(&new_state) {
-            return Err(NexusError::Storage(crate::error::StorageError::Io(
-                std::io::Error::new(
-                    std::io::ErrorKind::InvalidInput,
-                    format!(
-                        "Invalid manifest state transition: {:?} -> {:?}",
-                        self.state, new_state
-                    ),
-                ),
-            )));
+            return Err(NexusError::Storage(crate::error::StorageError::Io(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!("Invalid manifest state transition: {:?} -> {:?}", self.state, new_state),
+            ))));
         }
 
         if new_state.is_immutable() && self.state != new_state {
@@ -130,12 +122,10 @@ impl Manifest {
     /// Sign the manifest with a simple hash-based signature.
     pub fn sign(&mut self) -> Result<(), NexusError> {
         if self.state != ManifestState::Signed && self.state != ManifestState::Validated {
-            return Err(NexusError::Storage(crate::error::StorageError::Io(
-                std::io::Error::new(
-                    std::io::ErrorKind::InvalidInput,
-                    "Manifest must be in Signed or Validated state before signing",
-                ),
-            )));
+            return Err(NexusError::Storage(crate::error::StorageError::Io(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "Manifest must be in Signed or Validated state before signing",
+            ))));
         }
 
         let content_str = serde_json::to_string(&self.content).unwrap_or_default();
@@ -145,6 +135,21 @@ impl Manifest {
         self.updated_at = Utc::now();
 
         info!(manifest = %self.id, "Manifest signed");
+        Ok(())
+    }
+
+    /// Supersede this manifest with a newer version.
+    pub fn supersede(&mut self, by: String) -> Result<(), NexusError> {
+        if self.state != ManifestState::Active {
+            return Err(NexusError::Storage(crate::error::StorageError::Io(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "Only active manifests can be superseded",
+            ))));
+        }
+        self.state = ManifestState::Superseded;
+        self.superseded_by = Some(by);
+        self.updated_at = Utc::now();
+        info!(manifest = %self.id, "Manifest superseded");
         Ok(())
     }
 
@@ -162,16 +167,13 @@ impl Manifest {
     /// Validate the manifest against a schema.
     pub fn validate(&self) -> bool {
         // Basic validation: check that required fields are present
-        !self.version.is_empty()
-            && !self.content.is_null()
-            && !self.schema_version.is_empty()
+        !self.version.is_empty() && !self.content.is_null() && !self.schema_version.is_empty()
     }
 }
 
 /// Compute a simple hash for manifest signing.
 fn compute_simple_hash(content: &str) -> String {
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::Hasher;
+    use std::{collections::hash_map::DefaultHasher, hash::Hasher};
     let mut hasher = DefaultHasher::new();
     hasher.write(content.as_bytes());
     hasher.finish().to_string()
@@ -226,8 +228,9 @@ impl Default for ManifestStore {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use serde_json::json;
+
+    use super::*;
 
     #[test]
     fn test_manifest_creation() {
@@ -327,12 +330,8 @@ mod tests {
 
     #[test]
     fn test_manifest_validate_empty() {
-        let manifest = Manifest::new(
-            "".to_string(),
-            json!({}),
-            "".to_string(),
-            "admin".to_string(),
-        );
+        let manifest =
+            Manifest::new("".to_string(), json!({}), "".to_string(), "admin".to_string());
         assert!(!manifest.validate());
     }
 
