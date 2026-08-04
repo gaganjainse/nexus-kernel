@@ -80,9 +80,21 @@ pub fn execute(
         let broker = Arc::new(broker);
 
         // 5. Initialize Kernel
-        let kernel = Kernel::new(
-            store,
-            Arc::new(RwLock::new(policy)),
+        let kernel = Kernel::new(KernelConfig {
+            event_store: store,
+            policy: Arc::new(RwLock::new(policy)),
+            provider_registry: registry,
+            tool_broker: broker,
+            max_tool_output_size: 1_048_576,
+            snapshot_store: None,
+            resource_budget: ResourceBudget::default(),
+            resource_monitor: Arc::new(ResourceMonitor),
+            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            scheduler: Arc::new(Scheduler::new(32)),
+            dedup_window_secs: 5,
+            manifest_store: Arc::new(ManifestStore::new()),
+            artifact_store: Arc::new(ArtifactStore::default()),
+        })),
             registry,
             broker,
             config.resource_limits.max_tool_output_size,

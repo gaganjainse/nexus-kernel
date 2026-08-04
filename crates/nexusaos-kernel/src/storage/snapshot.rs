@@ -134,8 +134,9 @@ impl SnapshotStore {
             }
         }
 
-        snapshots.sort_unstable_by(|a, b| b.0.cmp(&a.0));
-        for (_, path) in snapshots.into_iter().skip(max_count) {
+        snapshots.sort_unstable_by_key(|(ts, _)| *ts);
+        let delete_count = snapshots.len().saturating_sub(max_count);
+        for (_, path) in snapshots.into_iter().take(delete_count) {
             let _ = fs::remove_file(path).await;
         }
 

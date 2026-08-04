@@ -72,9 +72,10 @@ impl ToolBroker {
                 Ok(BrokerResult::RequiresConfirmation(reason))
             }
             PolicyDecision::Allow => {
-                let executor = self.executors.get(&request.tool_name).or_else(|| {
-                    self.default_executor.as_ref()
-                }).ok_or_else(|| {
+                let executor = self.executors
+                    .get(&request.tool_name)
+                    .or(self.default_executor.as_ref())
+                    .ok_or_else(|| {
                     error!(tool = %request.tool_name, "Tool not found");
                     ToolError::NotFound { name: request.tool_name.clone() }
                 })?;

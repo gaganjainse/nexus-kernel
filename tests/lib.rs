@@ -36,7 +36,7 @@ use tempfile::TempDir;
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
         
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(crate::config::ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::default())).await.unwrap();
+        let kernel = Kernel::new(KernelConfig { event_store: store, policy: Arc::new(RwLock::new(policy)), provider_registry: registry, tool_broker: broker, max_tool_output_size: 1_048_576, snapshot_store: None, resource_budget: ResourceBudget::default(), resource_monitor: Arc::new(ResourceMonitor), context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())), scheduler: Arc::new(Scheduler::new(32)), dedup_window_secs: 5, manifest_store: Arc::new(ManifestStore::new()), artifact_store: Arc::new(ArtifactStore::default()) }).await.unwrap();
         
         (kernel, temp_dir)
     }

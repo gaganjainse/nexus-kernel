@@ -17,8 +17,7 @@ pub const ACP_VERSION: &str = "2024-10-01";
 #[derive(Debug, Clone)]
 pub struct AcpClient {
     socket_path: String,
-    #[allow(dead_code)]
-    agent_id: String,
+        agent_id: String,
 }
 
 /// An ACP request message.
@@ -79,7 +78,10 @@ impl AcpClient {
         let req = AcpRequest {
             jsonrpc: "2.0".to_string(),
             method: "authenticate".to_string(),
-            params: Some(credentials),
+            params: Some(serde_json::json!({
+                "agent_id": self.agent_id,
+                "credentials": credentials,
+            })),
             id: Some("auth".to_string()),
         };
         let req_json = serde_json::to_string(&req)?;
