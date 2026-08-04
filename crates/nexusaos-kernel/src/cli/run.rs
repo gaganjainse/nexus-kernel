@@ -9,6 +9,7 @@ use crate::{
     config::{AppConfig, ContextConfig},
     context::ContextManager,
     error::NexusError,
+    manifest::ManifestStore,
     model::{openai_compat::OpenAiCompatProvider, registry::ProviderRegistry},
     policy::{PolicyEngine, PolicyRule, TrustTier},
     resource::{ResourceBudget, ResourceMonitor},
@@ -17,6 +18,7 @@ use crate::{
     storage::SqliteEventStore,
     task::TaskInput,
     tools::{broker::ToolBroker, filesystem::FilesystemTool, git::GitTool, terminal::TerminalTool},
+    artifact::ArtifactStore,
 };
 
 /// Execute a task through the kernel.
@@ -90,6 +92,8 @@ pub fn execute(
             Arc::new(ContextManager::new(ContextConfig::default())),
             Arc::new(Scheduler::new(32)),
             5,
+            Arc::new(ManifestStore::new()),
+            Arc::new(ArtifactStore::new()),
         )
         .await?;
 

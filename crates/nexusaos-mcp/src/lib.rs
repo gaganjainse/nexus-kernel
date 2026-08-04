@@ -51,7 +51,7 @@ pub async fn validate_mcp_request(
 /// Checks if the given capability set permits the MCP tool operation.
 pub fn check_mcp_capabilities(
     capabilities: &CapabilitySet,
-    tool_name: &str,
+    _tool_name: &str,
     arguments: &serde_json::Value,
 ) -> bool {
     if let Some(path) = arguments.get("path").and_then(|v| v.as_str()) {
