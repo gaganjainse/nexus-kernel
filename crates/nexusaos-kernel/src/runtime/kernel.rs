@@ -177,7 +177,24 @@ impl Kernel {
             dedup_window_secs,
             dedup_cache: Arc::new(RwLock::new(HashMap::new())),
         };
+
+        for role in kernel.provider_registry.available_roles() {
+            if let Some(provider) = kernel.provider_registry.get(&role) {
+                provider.warmup().await.map_err(NexusError::Provider)?;
+            }
+        }
+
         Ok(kernel)
+    }
+
+    /// Shut down the kernel and release provider resources.
+    pub async fn shutdown(&self) -> Result<(), NexusError> {
+        for role in self.provider_registry.available_roles() {
+            if let Some(provider) = self.provider_registry.get(&role) {
+                provider.unload().await?;
+            }
+        }
+        Ok(())
     }
 
     /// Take a system pressure snapshot without blocking the async runtime.
@@ -1058,6 +1075,7 @@ impl Kernel {
 
     /// Call a model with fallback support. If the primary provider fails,
     /// retries with the fallback provider for the same role.
+    #[allow(clippy::too_many_arguments)]
     async fn call_model_with_fallback(
         &self,
         task_id: TaskId,

@@ -14,55 +14,60 @@ pub const LAVENDER: Color = Color::from_rgb(180.0 / 255.0, 190.0 / 255.0, 254.0 
 pub const PEACH: Color = Color::from_rgb(250.0 / 255.0, 179.0 / 255.0, 135.0 / 255.0);
 
 // --- Sidebar: the narrow icon rail on the left ---
-pub fn sidebar_style(_theme: &Theme) -> container::Style {
+pub fn sidebar_style(theme: &Theme) -> container::Style {
+    let palette = theme.extended_palette();
     container::Style {
-        background: Some(Background::Color(CRUST)),
-        text_color: Some(SUBTEXT0),
-        border: Border { color: SURFACE0, width: 0.0, radius: iced::border::Radius::from(0.0) },
+        background: Some(Background::Color(palette.background.strongest.color)),
+        text_color: Some(palette.background.strongest.text),
+        border: Border { color: palette.background.neutral.color, width: 0.0, radius: iced::border::Radius::from(0.0) },
         shadow: Shadow::default(),
         ..Default::default()
     }
 }
 
 // --- Main content area: wraps the terminal panes ---
-pub fn main_area_style(_theme: &Theme) -> container::Style {
+pub fn main_area_style(theme: &Theme) -> container::Style {
+    let palette = theme.extended_palette();
     container::Style {
-        background: Some(Background::Color(BASE)),
-        text_color: Some(TEXT),
-        border: Border { color: SURFACE0, width: 0.0, radius: iced::border::Radius::from(0.0) },
+        background: Some(Background::Color(palette.background.base.color)),
+        text_color: Some(palette.background.base.text),
+        border: Border { color: palette.background.neutral.color, width: 0.0, radius: iced::border::Radius::from(0.0) },
         shadow: Shadow::default(),
         ..Default::default()
     }
 }
 
 // --- Tab bar sitting above the terminal ---
-pub fn tab_bar_style(_theme: &Theme) -> container::Style {
+pub fn tab_bar_style(theme: &Theme) -> container::Style {
+    let palette = theme.extended_palette();
     container::Style {
-        background: Some(Background::Color(MANTLE)),
-        text_color: Some(SUBTEXT0),
-        border: Border { color: SURFACE0, width: 0.0, radius: iced::border::Radius::from(0.0) },
+        background: Some(Background::Color(palette.background.stronger.color)),
+        text_color: Some(palette.background.stronger.text),
+        border: Border { color: palette.background.neutral.color, width: 0.0, radius: iced::border::Radius::from(0.0) },
         shadow: Shadow::default(),
         ..Default::default()
     }
 }
 
 // --- Terminal pane: the darkest region where shell output renders ---
-pub fn terminal_pane_style(_theme: &Theme) -> container::Style {
+pub fn terminal_pane_style(theme: &Theme) -> container::Style {
+    let palette = theme.extended_palette();
     container::Style {
-        background: Some(Background::Color(MANTLE)),
-        text_color: Some(GREEN),
-        border: Border { color: SURFACE0, width: 1.0, radius: iced::border::Radius::from(6.0) },
+        background: Some(Background::Color(palette.background.stronger.color)),
+        text_color: Some(palette.success.base.color),
+        border: Border { color: palette.background.neutral.color, width: 1.0, radius: iced::border::Radius::from(6.0) },
         shadow: Shadow::default(),
         ..Default::default()
     }
 }
 
 // --- Status bar at the bottom ---
-pub fn status_bar_style(_theme: &Theme) -> container::Style {
+pub fn status_bar_style(theme: &Theme) -> container::Style {
+    let palette = theme.extended_palette();
     container::Style {
-        background: Some(Background::Color(CRUST)),
-        text_color: Some(SUBTEXT0),
-        border: Border { color: SURFACE0, width: 0.0, radius: iced::border::Radius::from(0.0) },
+        background: Some(Background::Color(palette.background.strongest.color)),
+        text_color: Some(palette.background.strongest.text),
+        border: Border { color: palette.background.neutral.color, width: 0.0, radius: iced::border::Radius::from(0.0) },
         shadow: Shadow::default(),
         ..Default::default()
     }

@@ -44,6 +44,7 @@ pub struct TerminalScreen {
     cells: Vec<Vec<Cell>>,
     scrollback: VecDeque<Vec<Cell>>,
     max_scrollback: usize,
+    title: String,
 }
 
 impl TerminalScreen {
@@ -59,6 +60,7 @@ impl TerminalScreen {
             cells,
             scrollback: VecDeque::with_capacity(max_scrollback),
             max_scrollback,
+            title: String::new(),
         }
     }
 
@@ -288,7 +290,17 @@ impl<'a> vte::Perform for ScreenPerformer<'a> {
         }
     }
 
-    fn osc_dispatch(&mut self, _params: &[&[u8]], _bell_terminated: bool) {}
+    fn osc_dispatch(&mut self, params: &[&[u8]], _bell_terminated: bool) {
+        if params.is_empty() {
+            return;
+        }
+        let cmd = std::str::from_utf8(params[0]).unwrap_or("");
+        if matches!(cmd, "0" | "1" | "2") {
+            if let Some(title) = params.get(1).and_then(|b| std::str::from_utf8(b).ok()) {
+                self.screen.title = title.to_string();
+            }
+        }
+    }
 }
 
 /// Terminal emulator that combines a vte parser with a screen.

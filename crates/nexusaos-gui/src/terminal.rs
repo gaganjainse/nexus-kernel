@@ -86,6 +86,8 @@ pub struct TermPerformer {
     /// Dirty line tracking for optimized rendering.
     /// A line is dirty if any cell in it has changed since last render.
     pub dirty_lines: Vec<bool>,
+    /// Whether a hook sequence is currently active.
+    hook_active: bool,
 }
 
 impl TermPerformer {
@@ -105,6 +107,7 @@ impl TermPerformer {
             saved_cursor: (0, 0),
             saved_attr: CellAttr::default(),
             dirty_lines: vec![true; rows], // Initially all lines are dirty
+            hook_active: false,
         }
     }
 
@@ -513,9 +516,17 @@ impl Perform for TermPerformer {
         }
     }
 
-    fn hook(&mut self, _params: &Params, _intermediates: &[u8], _ignore: bool, _action: char) {}
-    fn put(&mut self, _byte: u8) {}
-    fn unhook(&mut self) {}
+    fn hook(&mut self, _params: &Params, _intermediates: &[u8], _ignore: bool, _action: char) {
+        self.hook_active = true;
+    }
+    fn put(&mut self, byte: u8) {
+        if byte >= 0x20 && byte != 0x7F {
+            self.print(byte as char);
+        }
+    }
+    fn unhook(&mut self) {
+        self.hook_active = false;
+    }
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
