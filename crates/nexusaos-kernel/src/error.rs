@@ -190,6 +190,12 @@ pub enum ResourceError {
 
     #[error("Context budget refused: requested {requested} tokens, max allowed {max_allowed}")]
     ContextBudgetExceeded { requested: usize, max_allowed: usize },
+
+    #[error("Resource budget exceeded: {reason}")]
+    BudgetExceeded { reason: String },
+
+    #[error("Task queue full: max depth is {max_depth}")]
+    QueueFull { max_depth: usize },
 }
 
 #[cfg(test)]

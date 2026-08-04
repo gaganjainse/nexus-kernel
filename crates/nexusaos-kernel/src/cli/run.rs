@@ -6,11 +6,14 @@ use tokio::sync::RwLock;
 use tracing::info;
 
 use crate::{
-    config::AppConfig,
+    config::{AppConfig, ContextConfig},
+    context::ContextManager,
     error::NexusError,
     model::{openai_compat::OpenAiCompatProvider, registry::ProviderRegistry},
     policy::{PolicyEngine, PolicyRule, TrustTier},
+    resource::{ResourceBudget, ResourceMonitor},
     runtime::kernel::Kernel,
+    runtime::scheduler::Scheduler,
     storage::SqliteEventStore,
     task::TaskInput,
     tools::{broker::ToolBroker, filesystem::FilesystemTool, git::GitTool, terminal::TerminalTool},
@@ -82,6 +85,10 @@ pub fn execute(
             broker,
             config.resource_limits.max_tool_output_size,
             None,
+            ResourceBudget::default(),
+            Arc::new(ResourceMonitor),
+            Arc::new(ContextManager::new(ContextConfig::default())),
+            Arc::new(Scheduler::new(32)),
         )
         .await?;
 
