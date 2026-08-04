@@ -8,7 +8,7 @@ use nexusaos_kernel::{
 };
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
 use tokio::net::UnixListener;
-use tokio::sync::AtomicUsize;
+use std::sync::atomic::AtomicUsize;
 use tracing::info;
 
 use crate::{

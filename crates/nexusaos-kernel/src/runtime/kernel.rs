@@ -1234,7 +1234,7 @@ mod tests {
             1_048_576,
             None,
             ResourceBudget::default(),
-            Arc::new(ResourceMonitor::new()),
+            Arc::new(ResourceMonitor),
             Arc::new(ContextManager::new(ContextConfig::default())),
             Arc::new(Scheduler::new(32)),
         )
@@ -1436,7 +1436,7 @@ mod tests {
             1_048_576,
             None,
             ResourceBudget::default(),
-            Arc::new(ResourceMonitor::new()),
+            Arc::new(ResourceMonitor),
             Arc::new(ContextManager::new(ContextConfig::default())),
             Arc::new(Scheduler::new(32)),
         )
@@ -1617,7 +1617,7 @@ mod tests {
             1_048_576,
             None,
             ResourceBudget::default(),
-            Arc::new(ResourceMonitor::new()),
+            Arc::new(ResourceMonitor),
             Arc::new(ContextManager::new(ContextConfig::default())),
             Arc::new(Scheduler::new(32)),
         )
@@ -1665,6 +1665,10 @@ mod tests {
             broker,
             1_048_576,
             Some(snapshot_store.clone()),
+            ResourceBudget::default(),
+            Arc::new(ResourceMonitor),
+            Arc::new(ContextManager::new(ContextConfig::default())),
+            Arc::new(Scheduler::new(32)),
         )
         .await
         .unwrap();

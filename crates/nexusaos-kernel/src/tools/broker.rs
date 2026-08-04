@@ -23,17 +23,23 @@ pub enum BrokerResult {
 pub struct ToolBroker {
     executors: HashMap<String, Arc<dyn ToolExecutor>>,
     policy: Arc<PolicyEngine>,
+    default_executor: Option<Arc<dyn ToolExecutor>>,
 }
 
 impl ToolBroker {
     pub fn new(policy: Arc<PolicyEngine>) -> Self {
-        Self { executors: HashMap::new(), policy }
+        Self { executors: HashMap::new(), policy, default_executor: None }
     }
 
     /// Register a tool executor.
     pub fn register(&mut self, executor: Arc<dyn ToolExecutor>) {
         let name = executor.name().to_string();
         self.executors.insert(name, executor);
+    }
+
+    /// Set the default executor used when no specific executor is registered for a tool.
+    pub fn set_default_executor(&mut self, executor: Arc<dyn ToolExecutor>) {
+        self.default_executor = Some(executor);
     }
 
     /// Execute a tool call with policy checks.
@@ -59,7 +65,9 @@ impl ToolBroker {
                 Ok(BrokerResult::RequiresConfirmation(reason))
             }
             PolicyDecision::Allow => {
-                let executor = self.executors.get(&request.tool_name).ok_or_else(|| {
+                let executor = self.executors.get(&request.tool_name).or_else(|| {
+                    self.default_executor.as_ref()
+                }).ok_or_else(|| {
                     error!(tool = %request.tool_name, "Tool not found");
                     ToolError::NotFound { name: request.tool_name.clone() }
                 })?;

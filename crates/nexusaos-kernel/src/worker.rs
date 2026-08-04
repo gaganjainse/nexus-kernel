@@ -270,21 +270,64 @@ impl WorkerPool {
         worker_id: &str,
         request: &ToolRequest,
     ) -> Result<ToolResult, ToolError> {
-        // In a production implementation, this would communicate
-        // with the worker process via stdin/stdout pipes.
-        // For now, we simulate the execution.
-        info!(
-            worker = %worker_id,
-            tool = %request.tool_name,
-            "Executing tool in isolated worker"
-        );
+        let request_json = serde_json::to_string(request)
+            .map_err(|e| ToolError::ExecutionFailed {
+                name: worker_id.to_string(),
+                reason: format!("Failed to serialize request: {}", e),
+            })?;
 
-        // Simulate tool execution result
-        Ok(ToolResult {
-            success: true,
-            output: format!("Tool {} executed in worker {}", request.tool_name, worker_id),
-            data: Some(serde_json::json!({"worker_id": worker_id})),
-        })
+        let mut child = std::process::Command::new("nexusaos-worker")
+            .arg("--worker-id")
+            .arg(worker_id)
+            .arg("--working-dir")
+            .arg(&self.config.working_directory)
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+            .map_err(|e| ToolError::ExecutionFailed {
+                name: worker_id.to_string(),
+                reason: format!("Failed to spawn worker: {}", e),
+            })?;
+
+        let mut stdin = child.stdin.take().ok_or_else(|| ToolError::ExecutionFailed {
+            name: worker_id.to_string(),
+            reason: "Failed to open worker stdin".to_string(),
+        })?;
+
+        let mut stdout = child.stdout.take().ok_or_else(|| ToolError::ExecutionFailed {
+            name: worker_id.to_string(),
+            reason: "Failed to open worker stdout".to_string(),
+        })?;
+
+        use std::io::Write;
+        stdin.write_all(request_json.as_bytes()).map_err(|e| ToolError::ExecutionFailed {
+            name: worker_id.to_string(),
+            reason: format!("Failed to write to worker: {}", e),
+        })?;
+        stdin.write_all(b"\n").map_err(|e| ToolError::ExecutionFailed {
+            name: worker_id.to_string(),
+            reason: format!("Failed to write to worker: {}", e),
+        })?;
+        drop(stdin);
+
+        let mut result_line = String::new();
+        use std::io::Read;
+        stdout.read_to_string(&mut result_line).map_err(|e| ToolError::ExecutionFailed {
+            name: worker_id.to_string(),
+            reason: format!("Failed to read from worker: {}", e),
+        })?;
+
+        let result: ToolResult = serde_json::from_str(result_line.trim()).map_err(|e| {
+            ToolError::ExecutionFailed {
+                name: worker_id.to_string(),
+                reason: format!("Failed to parse worker response: {}", e),
+            }
+        })?;
+
+        let _ = child.wait();
+
+        Ok(result)
     }
 
     /// Get the status of all workers.

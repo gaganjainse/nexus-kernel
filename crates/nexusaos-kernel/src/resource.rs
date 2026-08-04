@@ -46,7 +46,8 @@ impl Default for ResourceBudget {
 impl ResourceBudget {
     /// Check if the system pressure exceeds the RAM budget ceiling.
     pub fn exceeds_ram_budget(pressure: &SystemPressure, budget: &ResourceBudget) -> bool {
-        pressure.ram_available_mb < budget.max_ram_mb
+        let used_mb = pressure.ram_total_mb.saturating_sub(pressure.ram_available_mb);
+        used_mb > budget.max_ram_mb
     }
 
     /// Check if the system pressure exceeds the VRAM budget ceiling.
@@ -54,7 +55,8 @@ impl ResourceBudget {
         if pressure.vram_total_mb == 0 {
             return false;
         }
-        pressure.vram_available_mb < budget.max_vram_mb
+        let used_mb = pressure.vram_total_mb.saturating_sub(pressure.vram_available_mb);
+        used_mb > budget.max_vram_mb
     }
 
     /// Check if the queue depth exceeds the budget ceiling.
@@ -71,15 +73,17 @@ impl ResourceBudget {
     pub fn check_all(pressure: &SystemPressure, budget: &ResourceBudget) -> Vec<String> {
         let mut exceeded = Vec::new();
         if Self::exceeds_ram_budget(pressure, budget) {
+            let used_mb = pressure.ram_total_mb.saturating_sub(pressure.ram_available_mb);
             exceeded.push(format!(
-                "RAM: {} MB available, {} MB ceiling",
-                pressure.ram_available_mb, budget.max_ram_mb
+                "RAM: {} MB used, {} MB ceiling",
+                used_mb, budget.max_ram_mb
             ));
         }
         if Self::exceeds_vram_budget(pressure, budget) {
+            let used_mb = pressure.vram_total_mb.saturating_sub(pressure.vram_available_mb);
             exceeded.push(format!(
-                "VRAM: {} MB available, {} MB ceiling",
-                pressure.vram_available_mb, budget.max_vram_mb
+                "VRAM: {} MB used, {} MB ceiling",
+                used_mb, budget.max_vram_mb
             ));
         }
         if Self::exceeds_queue_budget(pressure.queue_depth, budget) {

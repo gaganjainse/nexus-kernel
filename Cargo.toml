@@ -16,6 +16,7 @@ members = [
     "crates/nexusaos-mcp",
     "crates/nexusaos-acp",
     "bin/nexusaos-cli",
+    "bin/nexusaos-worker",
 ]
 
 [workspace.dependencies]
