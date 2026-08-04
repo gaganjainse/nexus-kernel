@@ -17,6 +17,7 @@ pub const ACP_VERSION: &str = "2024-10-01";
 #[derive(Debug, Clone)]
 pub struct AcpClient {
     socket_path: String,
+    #[allow(dead_code)]
     agent_id: String,
 }
 

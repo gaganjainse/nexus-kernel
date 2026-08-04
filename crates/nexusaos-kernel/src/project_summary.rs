@@ -174,7 +174,7 @@ mod tests {
         ];
         summary.update(&events);
         assert_eq!(summary.completed_tasks, 1);
-        assert!(summary.summary.contains("Completed"));
+        assert!(summary.summary.contains("completed"));
     }
 
     #[test]

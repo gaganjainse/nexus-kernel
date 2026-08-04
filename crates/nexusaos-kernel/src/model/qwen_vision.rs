@@ -14,7 +14,7 @@ use crate::{
     error::ProviderError,
     model::{
         provider::ModelProvider,
-        types::{ChatMessage, ChatRole, CompletionRequest, CompletionResponse},
+        types::{ChatMessage, CompletionRequest, CompletionResponse},
     },
     state::ModelRole,
 };

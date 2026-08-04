@@ -263,11 +263,12 @@ mod tests {
     #[tokio::test]
     async fn test_artifact_store_cleanup_expired() {
         let store = ArtifactStore::new(0, 100_000);
-        let artifact = Artifact::new(
+        let artifact = Artifact::new_with_ttl(
             TaskId::new(),
             ArtifactKind::ToolOutput,
             "test output".to_string(),
             serde_json::json!({"tool": "test"}),
+            0,
         );
         store.store(artifact).await.unwrap();
         store.cleanup_expired().await;

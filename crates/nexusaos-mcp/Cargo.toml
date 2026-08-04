@@ -16,6 +16,8 @@ nexusaos-rpc = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3"
+nexusaos-wps = { workspace = true }
+nexusaos-waveobj = { workspace = true }
 
 [lints]
 workspace = true

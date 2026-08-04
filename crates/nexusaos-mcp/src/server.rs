@@ -38,7 +38,7 @@ impl McpServer {
     pub async fn run(&self) -> McpResult<()> {
         tokio::fs::remove_file(&self.config.socket_path).await.ok();
         let listener = UnixListener::bind(&self.config.socket_path)
-            .map_err(|e| NexusError::Io(e))?;
+            .map_err(NexusError::Io)?;
 
         info!(socket = %self.config.socket_path, "MCP server listening");
 
@@ -127,7 +127,7 @@ async fn handle_request(
                 .collect();
             McpResponse {
                 jsonrpc: "2.0".to_string(),
-                result: Some(serde_json::to_value(crate::client::McpToolList { tools: tool_infos }).unwrap()),
+                result: Some(serde_json::to_value(crate::client::McpToolList { tools: tool_infos }).unwrap_or_default()),
                 error: None,
                 id: req.id.clone(),
             }
@@ -228,8 +228,6 @@ async fn handle_request(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use nexusaos_wps::broker::Broker;
-    use nexusaos_waveobj::store::WaveStore;
 
     #[tokio::test]
     async fn test_handle_request_ping() {

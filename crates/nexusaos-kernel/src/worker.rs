@@ -431,9 +431,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_worker_pool_terminate_all() {
-        let caps = Arc::new(CapabilitySet::new());
+        let _caps = Arc::new(CapabilitySet::new());
         let config = WorkerConfig::default();
-        let mut pool = WorkerPool::new(config, caps);
+        let mut pool = WorkerPool::new(config);
         pool.terminate_all();
 
         for worker in &pool.workers {

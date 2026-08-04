@@ -209,7 +209,7 @@ mod tests {
         AcpAgent {
             id: "test-agent".to_string(),
             name: "Test Agent".to_string(),
-            capabilities: Arc::new(CapabilitySet::new()),
+            capabilities: Arc::new(RwLock::new(CapabilitySet::new())),
         }
     }
 
@@ -260,17 +260,17 @@ mod tests {
         let agent1 = AcpAgent {
             id: "agent-1".to_string(),
             name: "Agent 1".to_string(),
-            capabilities: Arc::new(CapabilitySet::new()),
+            capabilities: Arc::new(RwLock::new(CapabilitySet::new())),
         };
         let agent2 = AcpAgent {
             id: "agent-2".to_string(),
             name: "Agent 2".to_string(),
-            capabilities: Arc::new(CapabilitySet::new()),
+            capabilities: Arc::new(RwLock::new(CapabilitySet::new())),
         };
         let agent3 = AcpAgent {
             id: "agent-3".to_string(),
             name: "Agent 3".to_string(),
-            capabilities: Arc::new(CapabilitySet::new()),
+            capabilities: Arc::new(RwLock::new(CapabilitySet::new())),
         };
 
         manager.create_session(agent1).await.unwrap();

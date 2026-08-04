@@ -295,6 +295,8 @@ mod tests {
             "1.0".to_string(),
             "admin".to_string(),
         );
+        manifest.transition_to(ManifestState::Validated).unwrap();
+        manifest.transition_to(ManifestState::Signed).unwrap();
         manifest.transition_to(ManifestState::Active).unwrap();
         assert!(ManifestState::Active.is_immutable());
     }
@@ -359,6 +361,8 @@ mod tests {
             "1.0".to_string(),
             "admin".to_string(),
         );
+        manifest.transition_to(ManifestState::Validated).unwrap();
+        manifest.transition_to(ManifestState::Signed).unwrap();
         manifest.transition_to(ManifestState::Active).unwrap();
         store.store(manifest).await.unwrap();
 

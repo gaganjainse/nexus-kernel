@@ -3130,6 +3130,8 @@ dependencies = [
  "async-trait",
  "nexusaos-kernel",
  "nexusaos-rpc",
+ "nexusaos-waveobj",
+ "nexusaos-wps",
  "serde",
  "serde_json",
  "tempfile",
