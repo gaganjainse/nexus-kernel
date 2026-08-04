@@ -3120,6 +3120,7 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
+ "url",
  "uuid",
 ]
 
@@ -3259,6 +3260,7 @@ dependencies = [
 name = "nexusaos-worker"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "clap",
  "nexusaos-kernel",
  "serde",

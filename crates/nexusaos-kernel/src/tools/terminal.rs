@@ -16,7 +16,7 @@ pub struct TerminalTool {
 
 impl TerminalTool {
     pub fn new(timeout_secs: u64, denied_prefixes: Vec<String>) -> Self {
-        Self { timeout_secs, denied_prefixes, require_sandbox: false }
+        Self { timeout_secs, denied_prefixes, require_sandbox: true }
     }
 
     /// Resolve the bwrap binary through PATH.

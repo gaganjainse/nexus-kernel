@@ -19,13 +19,18 @@ impl SearchFetchTool {
     }
 
     fn is_url_allowed(&self, url: &str) -> bool {
+        let host = match url::Url::parse(url) {
+            Ok(u) => u.host_str().unwrap_or("").to_string(),
+            Err(_) => return false,
+        };
+
         for pattern in &self.denied_patterns {
-            if url.contains(pattern) {
+            if host == pattern.as_str() {
                 return false;
             }
         }
         for domain in &self.allowed_domains {
-            if url.contains(domain) {
+            if host == domain.as_str() {
                 return true;
             }
         }

@@ -18,18 +18,56 @@ impl DockerTool {
         }
     }
 
+    /// Parse a Docker image reference into normalized components.
+    /// Returns (registry, name, tag) where registry may be empty.
+    fn parse_image(image: &str) -> (&str, &str, Option<&str>) {
+        let (image, tag) = if let Some(idx) = image.rfind(':') {
+            let (name, tag_part) = image.split_at(idx);
+            let tag = tag_part.strip_prefix(':').filter(|t| !t.is_empty() && !t.contains('/'));
+            (name, tag)
+        } else {
+            (image, None)
+        };
+
+        let (registry, name) = if let Some(idx) = image.find('/') {
+            image.split_at(idx)
+        } else {
+            ("", image)
+        };
+
+        (registry, name, tag)
+    }
+
     fn is_image_allowed(&self, image: &str) -> bool {
+        let normalized = Self::normalize_image(image);
         for pattern in &self.denied_images {
-            if image.contains(pattern) {
+            let pattern_normalized = Self::normalize_image(pattern);
+            if normalized == pattern_normalized {
                 return false;
             }
         }
         for allowed in &self.allowed_images {
-            if image.contains(allowed) {
+            let allowed_normalized = Self::normalize_image(allowed);
+            if normalized == allowed_normalized {
                 return true;
             }
         }
         false
+    }
+
+    /// Normalize an image reference for comparison.
+    /// Adds implicit library/ prefix for official Docker Hub images.
+    fn normalize_image(image: &str) -> String {
+        let (registry, name, tag) = Self::parse_image(image);
+        let name = if registry.is_empty() && !name.starts_with("library/") {
+            format!("library/{}", name)
+        } else {
+            name.to_string()
+        };
+        match tag {
+            Some(t) => format!("{}{}:{}", registry, name, t),
+            None => format!("{}{}", registry, name),
+        }
     }
 }
 

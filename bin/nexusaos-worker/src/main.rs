@@ -7,6 +7,7 @@
 use std::io::{BufRead, BufReader, Write};
 use std::process::{Command, Stdio};
 
+use async_trait::async_trait;
 use clap::Parser;
 use nexusaos_kernel::{
     error::ToolError,
@@ -30,7 +31,7 @@ struct Args {
 /// In production, this would be replaced with proper tool implementations.
 struct WorkerToolExecutor;
 
-#[async_trait::async_trait]
+#[async_trait]
 impl ToolExecutor for WorkerToolExecutor {
     fn name(&self) -> &str {
         "worker-tool-executor"
@@ -51,7 +52,7 @@ impl ToolExecutor for WorkerToolExecutor {
                     .arguments
                     .get("path")
                     .and_then(|v| v.as_str())
-                    .ok_or_else(|| ToolError::InvalidArguments {
+                    .ok_or_else(|| ToolError::ExecutionFailed {
                         name: "fs.read".to_string(),
                         reason: "missing path argument".to_string(),
                     })?;
@@ -73,7 +74,7 @@ impl ToolExecutor for WorkerToolExecutor {
                     .arguments
                     .get("path")
                     .and_then(|v| v.as_str())
-                    .ok_or_else(|| ToolError::InvalidArguments {
+                    .ok_or_else(|| ToolError::ExecutionFailed {
                         name: "fs.write".to_string(),
                         reason: "missing path argument".to_string(),
                     })?;
@@ -82,7 +83,7 @@ impl ToolExecutor for WorkerToolExecutor {
                     .arguments
                     .get("content")
                     .and_then(|v| v.as_str())
-                    .ok_or_else(|| ToolError::InvalidArguments {
+                    .ok_or_else(|| ToolError::ExecutionFailed {
                         name: "fs.write".to_string(),
                         reason: "missing content argument".to_string(),
                     })?;
@@ -104,7 +105,7 @@ impl ToolExecutor for WorkerToolExecutor {
                     .arguments
                     .get("command")
                     .and_then(|v| v.as_str())
-                    .ok_or_else(|| ToolError::InvalidArguments {
+                    .ok_or_else(|| ToolError::ExecutionFailed {
                         name: "terminal.exec".to_string(),
                         reason: "missing command argument".to_string(),
                     })?;

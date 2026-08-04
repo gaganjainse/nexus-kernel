@@ -44,6 +44,7 @@ portable-pty = "0.8"
 # system SQLite libraries. Trade-off: longer build times and larger binaries.
 rusqlite = { version = "0.32", features = ["bundled", "backup"] }
 notify = "6.1"
+url = "2"
 
 # Internal workspace crates
 nexusaos-waveobj = { path = "crates/nexusaos-waveobj" }
