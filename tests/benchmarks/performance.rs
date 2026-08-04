@@ -2,7 +2,7 @@ use criterion::{black_box, criterion_group, Criterion};
 use nexusaos_gui::terminal::{TermPerformer};
 use vte::Parser;
 use nexusaos_kernel::{
-    runtime::kernel::Kernel,
+    runtime::kernel::{Kernel, KernelConfig},
     storage::event_store::EventStore,
     model::registry::ProviderRegistry,
     policy::{PolicyEngine, PolicyRule, TrustTier},
@@ -93,7 +93,7 @@ fn bench_kernel_task_submission(c: &mut Criterion) {
     let registry = Arc::new(ProviderRegistry::new());
     let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
     
-    let kernel = rt.block_on(Kernel::new(store, policy: Arc::new(RwLock::new(policy)), provider_registry: registry, tool_broker: broker, max_tool_output_size: 1_048_576, snapshot_store: None, resource_budget: ResourceBudget::default(), resource_monitor: Arc::new(ResourceMonitor), context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())), scheduler: Arc::new(Scheduler::new(32)), dedup_window_secs: 5, manifest_store: Arc::new(ManifestStore::new()), artifact_store: Arc::new(ArtifactStore::default()) ).unwrap();
+    let kernel = rt.block_on(Kernel::new(KernelConfig { event_store: store, policy: Arc::new(RwLock::new(policy)), provider_registry: registry, tool_broker: broker, max_tool_output_size: 1_048_576, snapshot_store: None, resource_budget: ResourceBudget::default(), resource_monitor: Arc::new(ResourceMonitor), context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())), scheduler: Arc::new(Scheduler::new(32)), dedup_window_secs: 5, manifest_store: Arc::new(ManifestStore::new()), artifact_store: Arc::new(ArtifactStore::default()) }).unwrap();
     
     let mut group = c.benchmark_group("kernel_task_submission");
     

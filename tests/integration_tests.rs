@@ -12,7 +12,7 @@ use nexusaos_kernel::{
     events::{Event, EventKind, EventPayload},
     model::registry::ProviderRegistry,
     policy::{PolicyEngine, PolicyRule, TrustTier},
-    runtime::{kernel::Kernel, replay::ReplayEngine},
+    runtime::{kernel::{Kernel, KernelConfig}, replay::ReplayEngine},
     state::TaskState,
     storage::event_store::EventStore,
     task::{Priority, TaskId, TaskInput},
@@ -163,7 +163,7 @@ async fn test_policy_enforcement_denied_action() {
     let registry = Arc::new(ProviderRegistry::new());
     let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
 
-    let kernel = Kernel::new(store.clone(), policy: Arc::new(RwLock::new(policy)), provider_registry: registry, tool_broker: broker, max_tool_output_size: 1_048_576, snapshot_store: None, resource_budget: ResourceBudget::default(), resource_monitor: Arc::new(ResourceMonitor), context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())), scheduler: Arc::new(Scheduler::new(32)), dedup_window_secs: 5, manifest_store: Arc::new(ManifestStore::new()), artifact_store: Arc::new(ArtifactStore::default()) ).await.unwrap();
+    let kernel = Kernel::new(KernelConfig { event_store: store.clone(), policy: Arc::new(RwLock::new(policy)), provider_registry: registry, tool_broker: broker, max_tool_output_size: 1_048_576, snapshot_store: None, resource_budget: ResourceBudget::default(), resource_monitor: Arc::new(ResourceMonitor), context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())), scheduler: Arc::new(Scheduler::new(32)), dedup_window_secs: 5, manifest_store: Arc::new(ManifestStore::new()), artifact_store: Arc::new(ArtifactStore::default()) }).await.unwrap();
 
     let input = TaskInput::Text("Dangerous command execution".to_string());
     let result = kernel.submit_task(input).await;

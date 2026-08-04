@@ -13,7 +13,7 @@ use crate::{
     model::{openai_compat::OpenAiCompatProvider, registry::ProviderRegistry},
     policy::{PolicyEngine, PolicyRule, TrustTier},
     resource::{ResourceBudget, ResourceMonitor},
-    runtime::kernel::Kernel,
+    runtime::kernel::{Kernel, KernelConfig},
     runtime::scheduler::Scheduler,
     storage::SqliteEventStore,
     task::TaskInput,
@@ -85,7 +85,7 @@ pub fn execute(
             policy: Arc::new(RwLock::new(policy)),
             provider_registry: registry,
             tool_broker: broker,
-            max_tool_output_size: 1_048_576,
+            max_tool_output_size: config.resource_limits.max_tool_output_size,
             snapshot_store: None,
             resource_budget: ResourceBudget::default(),
             resource_monitor: Arc::new(ResourceMonitor),
@@ -94,19 +94,7 @@ pub fn execute(
             dedup_window_secs: 5,
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
-        ),
-            registry,
-            broker,
-            config.resource_limits.max_tool_output_size,
-            None,
-            ResourceBudget::default(),
-            Arc::new(ResourceMonitor),
-            Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
-            Arc::new(Scheduler::new(32)),
-            5,
-            Arc::new(ManifestStore::new()),
-            Arc::new(ArtifactStore::default()),
-        )
+        })
         .await?;
 
         // Recover incomplete tasks from previous sessions

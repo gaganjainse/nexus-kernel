@@ -99,7 +99,7 @@ max_context = 4096
 #[tokio::test]
 async fn test_task_submission_and_event_persistence() {
     use nexusaos_kernel::{
-        runtime::kernel::{Kernel, EventStore as EventStoreTrait},
+        runtime::kernel::{Kernel, KernelConfig, EventStore as EventStoreTrait},
         storage::event_store::EventStore,
         model::registry::ProviderRegistry,
         policy::{PolicyEngine, PolicyRule, TrustTier},
@@ -127,7 +127,7 @@ async fn test_task_submission_and_event_persistence() {
     let registry = Arc::new(ProviderRegistry::new());
 let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
       
-      let kernel = Kernel::new(store.clone(), policy: Arc::new(RwLock::new(policy)), provider_registry: registry, tool_broker: broker, max_tool_output_size: 1_048_576, snapshot_store: None, resource_budget: ResourceBudget::default(), resource_monitor: Arc::new(ResourceMonitor), context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())), scheduler: Arc::new(Scheduler::new(32)), dedup_window_secs: 5, manifest_store: Arc::new(ManifestStore::new()), artifact_store: Arc::new(ArtifactStore::default()) ).await.unwrap();
+      let kernel = Kernel::new(KernelConfig { event_store: store.clone(), policy: Arc::new(RwLock::new(policy)), provider_registry: registry, tool_broker: broker, max_tool_output_size: 1_048_576, snapshot_store: None, resource_budget: ResourceBudget::default(), resource_monitor: Arc::new(ResourceMonitor), context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())), scheduler: Arc::new(Scheduler::new(32)), dedup_window_secs: 5, manifest_store: Arc::new(ManifestStore::new()), artifact_store: Arc::new(ArtifactStore::default()) }).await.unwrap();
       
       // Submit a task
     let task_id = kernel.submit_task(TaskInput::Text("test task".to_string())).await.unwrap();
@@ -145,7 +145,7 @@ let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
 #[tokio::test]
 async fn test_kernel_state_transitions() {
     use nexusaos_kernel::{
-        runtime::kernel::{Kernel, EventStore as EventStoreTrait},
+        runtime::kernel::{Kernel, KernelConfig, EventStore as EventStoreTrait},
         storage::event_store::EventStore,
         model::registry::ProviderRegistry,
         policy::{PolicyEngine, PolicyRule, TrustTier},
@@ -173,7 +173,7 @@ async fn test_kernel_state_transitions() {
     let registry = Arc::new(ProviderRegistry::new());
 let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
       
-      let kernel = Kernel::new(store.clone(), policy: Arc::new(RwLock::new(policy)), provider_registry: registry, tool_broker: broker, max_tool_output_size: 1_048_576, snapshot_store: None, resource_budget: ResourceBudget::default(), resource_monitor: Arc::new(ResourceMonitor), context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())), scheduler: Arc::new(Scheduler::new(32)), dedup_window_secs: 5, manifest_store: Arc::new(ManifestStore::new()), artifact_store: Arc::new(ArtifactStore::default()) ).await.unwrap();
+      let kernel = Kernel::new(KernelConfig { event_store: store.clone(), policy: Arc::new(RwLock::new(policy)), provider_registry: registry, tool_broker: broker, max_tool_output_size: 1_048_576, snapshot_store: None, resource_budget: ResourceBudget::default(), resource_monitor: Arc::new(ResourceMonitor), context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())), scheduler: Arc::new(Scheduler::new(32)), dedup_window_secs: 5, manifest_store: Arc::new(ManifestStore::new()), artifact_store: Arc::new(ArtifactStore::default()) }).await.unwrap();
       
       // Submit task
     let task_id = kernel.submit_task(TaskInput::Text("test".to_string())).await.unwrap();
