@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use chrono::Utc;
 use tokio::sync::RwLock;
+use tracing::warn;
 
 use crate::{
     error::{NexusError, TaskError},
@@ -543,6 +544,7 @@ impl Kernel {
     }
 
     /// Call a model provider with the given prompt, emitting telemetry events.
+    /// If the provider fails and a fallback is available, retries with the fallback.
     async fn call_model(
         &self,
         task_id: TaskId,
@@ -592,6 +594,91 @@ impl Kernel {
             ))
         })?;
         Ok(resp)
+    }
+
+    /// Call a model with fallback support. If the primary provider fails,
+    /// retries with the fallback provider for the same role.
+    async fn call_model_with_fallback(
+        &self,
+        task_id: TaskId,
+        role_label: &str,
+        user_content: &str,
+        system_prompt: &str,
+        primary: &dyn ModelProvider,
+        fallback: Option<&dyn ModelProvider>,
+    ) -> Result<CompletionResponse, crate::error::ProviderError> {
+        match self
+            .call_model(task_id, role_label, user_content, system_prompt, primary)
+            .await
+        {
+            Ok(resp) => Ok(resp),
+            Err(primary_err) => {
+                if let Some(fb) = fallback {
+                    warn!(
+                        role = role_label,
+                        primary = primary.name(),
+                        fallback = fb.name(),
+                        error = %primary_err,
+                        "Primary model failed, falling back"
+                    );
+                    self.emit_event(Event::new(
+                        task_id,
+                        EventKind::ModelFailed,
+                        EventPayload::ModelFailure {
+                            role: role_label.to_string(),
+                            error: format!("{} (fallback attempted)", primary_err),
+                        },
+                        "kernel".to_string(),
+                    ))
+                    .await
+                    .map_err(|e| crate::error::ProviderError::InferenceFailed(e.to_string()))?;
+                    self.call_model(task_id, role_label, user_content, system_prompt, fb)
+                        .await
+                } else {
+                    Err(primary_err)
+                }
+            }
+        }
+    }
+
+    /// Recover incomplete tasks from the event store on startup.
+    /// Scans for tasks that are in non-terminal states and attempts to
+    /// restore them or mark them as failed.
+    pub async fn recover_incomplete_tasks(&self) -> Result<Vec<TaskId>, NexusError> {
+        let events = self.event_store.get_all_events().await?;
+        let mut incomplete = Vec::new();
+
+        for event in &events {
+            if let EventPayload::StateChanged { to, .. } = &event.payload {
+                if matches!(
+                    to.as_str(),
+                    "Executing" | "AwaitingConfirmation" | "Blocked" | "Planned"
+                ) {
+                    if let Some(task_id) = event.task_id {
+                        incomplete.push(task_id);
+                    }
+                }
+            }
+        }
+
+        for task_id in &incomplete {
+            self.transition_task(task_id, TaskState::Failed).await?;
+            self.emit_event(Event::new(
+                *task_id,
+                EventKind::Error,
+                EventPayload::ErrorEvent {
+                    message: format!(
+                        "Task {} recovered from incomplete state on startup",
+                        task_id
+                    ),
+                    details: None,
+                },
+                "kernel".to_string(),
+            ))
+            .await?;
+        }
+
+        Ok(incomplete)
     }
 }
 

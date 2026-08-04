@@ -85,6 +85,12 @@ pub fn execute(
         )
         .await?;
 
+        // Recover incomplete tasks from previous sessions
+        let recovered = kernel.recover_incomplete_tasks().await?;
+        if !recovered.is_empty() {
+            println!("Recovered {} incomplete task(s) from previous session.", recovered.len());
+        }
+
         // 6. Submit Task
         println!("Submitting task: {}", task);
         let task_input = TaskInput::Text(task.to_string());
