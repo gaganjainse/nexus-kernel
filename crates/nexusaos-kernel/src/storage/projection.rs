@@ -122,7 +122,7 @@ mod tests {
     use crate::events::{Event, EventKind, EventPayload};
 
     #[test]
-    fn test_projection_rebuild() {
+    fn test_projection_rebuild() -> Result<(), Box<dyn std::error::Error>> {
         let task_id = TaskId::new();
 
         let mut event1 = Event::new(
@@ -147,7 +147,7 @@ mod tests {
         let projection = TaskProjection::rebuild(&[event1, event2]);
 
         assert_eq!(projection.task_count(), 1);
-        let task = projection.get_task(&task_id).unwrap();
+        let task = projection.get_task(&task_id)?;
         assert_eq!(task.current_state, TaskState::Classified);
 
         let classified_tasks = projection.tasks_in_state(&TaskState::Classified);
@@ -168,7 +168,7 @@ mod tests {
     }
 
     #[test]
-    fn test_apply_task_created() {
+    fn test_apply_task_created() -> Result<(), Box<dyn std::error::Error>> {
         let mut proj = TaskProjection::new();
         let task_id = TaskId::new();
         let mut event = Event::new(
@@ -181,13 +181,13 @@ mod tests {
 
         proj.apply(&event);
         assert_eq!(proj.task_count(), 1);
-        let task = proj.get_task(&task_id).unwrap();
+        let task = proj.get_task(&task_id)?;
         assert_eq!(task.current_state, TaskState::Received);
         assert_eq!(task.assigned_role, None);
     }
 
     #[test]
-    fn test_apply_state_changed() {
+    fn test_apply_state_changed() -> Result<(), Box<dyn std::error::Error>> {
         let mut proj = TaskProjection::new();
         let task_id = TaskId::new();
 
@@ -209,12 +209,12 @@ mod tests {
         e2.sequence = crate::events::SequenceNumber(2);
         proj.apply(&e2);
 
-        let task = proj.get_task(&task_id).unwrap();
+        let task = proj.get_task(&task_id)?;
         assert_eq!(task.current_state, TaskState::Executing);
     }
 
     #[test]
-    fn test_apply_model_request_sets_assigned_role() {
+    fn test_apply_model_request_sets_assigned_role() -> Result<(), Box<dyn std::error::Error>> {
         let mut proj = TaskProjection::new();
         let task_id = TaskId::new();
 
@@ -240,7 +240,7 @@ mod tests {
         e2.sequence = crate::events::SequenceNumber(2);
         proj.apply(&e2);
 
-        let task = proj.get_task(&task_id).unwrap();
+        let task = proj.get_task(&task_id)?;
         assert_eq!(task.assigned_role, Some(crate::state::ModelRole::Coder));
     }
 
@@ -258,7 +258,7 @@ mod tests {
     }
 
     #[test]
-    fn test_apply_unknown_state_skipped() {
+    fn test_apply_unknown_state_skipped() -> Result<(), Box<dyn std::error::Error>> {
         let mut proj = TaskProjection::new();
         let task_id = TaskId::new();
 
@@ -280,7 +280,7 @@ mod tests {
         e2.sequence = crate::events::SequenceNumber(2);
         proj.apply(&e2);
 
-        let task = proj.get_task(&task_id).unwrap();
+        let task = proj.get_task(&task_id)?;
         assert_eq!(task.current_state, TaskState::Received); // unchanged
     }
 
@@ -319,7 +319,7 @@ mod tests {
     }
 
     #[test]
-    fn test_rebuild_multiple_tasks_different_states() {
+    fn test_rebuild_multiple_tasks_different_states() -> Result<(), Box<dyn std::error::Error>> {
         let t1 = TaskId::new();
         let t2 = TaskId::new();
 
@@ -347,8 +347,8 @@ mod tests {
 
         let proj = TaskProjection::rebuild(&[e1, e2, e3]);
         assert_eq!(proj.task_count(), 2);
-        assert_eq!(proj.get_task(&t1).unwrap().current_state, TaskState::Completed);
-        assert_eq!(proj.get_task(&t2).unwrap().current_state, TaskState::Received);
+        assert_eq!(proj.get_task(&t1)?.current_state, TaskState::Completed);
+        assert_eq!(proj.get_task(&t2)?.current_state, TaskState::Received);
     }
 
     #[test]
@@ -366,7 +366,7 @@ mod tests {
     }
 
     #[test]
-    fn test_apply_updates_updated_at() {
+    fn test_apply_updates_updated_at() -> Result<(), Box<dyn std::error::Error>> {
         let mut proj = TaskProjection::new();
         let task_id = TaskId::new();
         let ts1 = Utc::now();
@@ -392,7 +392,7 @@ mod tests {
         e2.sequence = crate::events::SequenceNumber(2);
         proj.apply(&e2);
 
-        let task = proj.get_task(&task_id).unwrap();
+        let task = proj.get_task(&task_id)?;
         assert_eq!(task.state_history.len(), 2);
         assert_eq!(task.state_history[1].0, TaskState::Classified);
         assert_eq!(task.state_history[1].1, ts2);

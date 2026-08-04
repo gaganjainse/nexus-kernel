@@ -125,15 +125,15 @@ mod tests {
     }
 
     #[test]
-    fn test_pty_translate_input_enter() {
-        let pty = PtyManager::spawn(80, 24).unwrap();
+    fn test_pty_translate_input_enter() -> Result<(), Box<dyn std::error::Error>> {
+        let pty = PtyManager::spawn(80, 24)?;
         let translated = pty.translate_input(b"\n");
         assert_eq!(translated, vec![b'\r']);
     }
 
     #[test]
-    fn test_pty_translate_input_ctrl_c() {
-        let pty = PtyManager::spawn(80, 24).unwrap();
+    fn test_pty_translate_input_ctrl_c() -> Result<(), Box<dyn std::error::Error>> {
+        let pty = PtyManager::spawn(80, 24)?;
         let translated = pty.translate_input(b"\x03");
         assert_eq!(translated, vec![b'\x03']);
     }
@@ -162,12 +162,12 @@ mod tests {
     }
 
     #[test]
-    fn test_pty_read_output() {
+    fn test_pty_read_output() -> Result<(), Box<dyn std::error::Error>> {
         if let Ok(mut pty) = PtyManager::spawn(80, 24) {
             let mut buf = [0u8; 1024];
             let n = pty.read_output(&mut buf);
             assert!(n.is_ok());
-            assert!(n.unwrap() <= buf.len());
+            assert!(n? <= buf.len());
         }
     }
 

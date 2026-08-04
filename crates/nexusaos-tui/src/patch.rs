@@ -63,10 +63,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_patch_engine_apply() {
-        let temp = TempDir::new().unwrap();
+    fn test_patch_engine_apply() -> Result<(), Box<dyn std::error::Error>> {
+        let temp = TempDir::new()?;
         let file_path = temp.path().join("test.txt");
-        fs::write(&file_path, "line 1\nline 2\nline 3").unwrap();
+        fs::write(&file_path, "line 1\nline 2\nline 3")?;
 
         let patch = vec![
             " line 1".to_string(),
@@ -75,8 +75,8 @@ mod tests {
             " line 3".to_string(),
         ];
 
-        PatchEngine::apply_patch(&file_path, &patch).unwrap();
-        let updated = fs::read_to_string(&file_path).unwrap();
+        PatchEngine::apply_patch(&file_path, &patch)?;
+        let updated = fs::read_to_string(&file_path)?;
         assert!(updated.contains("line 2 modified"));
     }
 
@@ -88,42 +88,42 @@ mod tests {
     }
 
     #[test]
-    fn test_patch_engine_add_lines() {
-        let temp = TempDir::new().unwrap();
+    fn test_patch_engine_add_lines() -> Result<(), Box<dyn std::error::Error>> {
+        let temp = TempDir::new()?;
         let file_path = temp.path().join("test.txt");
-        fs::write(&file_path, "line 1\nline 2").unwrap();
+        fs::write(&file_path, "line 1\nline 2")?;
 
         let patch = vec!["+new line 1".to_string(), "+new line 2".to_string()];
 
-        PatchEngine::apply_patch(&file_path, &patch).unwrap();
-        let updated = fs::read_to_string(&file_path).unwrap();
+        PatchEngine::apply_patch(&file_path, &patch)?;
+        let updated = fs::read_to_string(&file_path)?;
         assert!(updated.contains("new line 1"));
         assert!(updated.contains("new line 2"));
     }
 
     #[test]
-    fn test_patch_engine_delete_all() {
-        let temp = TempDir::new().unwrap();
+    fn test_patch_engine_delete_all() -> Result<(), Box<dyn std::error::Error>> {
+        let temp = TempDir::new()?;
         let file_path = temp.path().join("test.txt");
-        fs::write(&file_path, "line 1\nline 2\nline 3").unwrap();
+        fs::write(&file_path, "line 1\nline 2\nline 3")?;
 
         let patch = vec!["-line 1".to_string(), "-line 2".to_string(), "-line 3".to_string()];
 
-        PatchEngine::apply_patch(&file_path, &patch).unwrap();
-        let updated = fs::read_to_string(&file_path).unwrap();
+        PatchEngine::apply_patch(&file_path, &patch)?;
+        let updated = fs::read_to_string(&file_path)?;
         assert!(updated.is_empty());
     }
 
     #[test]
-    fn test_patch_engine_no_changes() {
-        let temp = TempDir::new().unwrap();
+    fn test_patch_engine_no_changes() -> Result<(), Box<dyn std::error::Error>> {
+        let temp = TempDir::new()?;
         let file_path = temp.path().join("test.txt");
-        fs::write(&file_path, "line 1\nline 2").unwrap();
+        fs::write(&file_path, "line 1\nline 2")?;
 
         let patch = vec![];
 
-        PatchEngine::apply_patch(&file_path, &patch).unwrap();
-        let updated = fs::read_to_string(&file_path).unwrap();
+        PatchEngine::apply_patch(&file_path, &patch)?;
+        let updated = fs::read_to_string(&file_path)?;
         assert_eq!(updated, "line 1\nline 2");
     }
 }

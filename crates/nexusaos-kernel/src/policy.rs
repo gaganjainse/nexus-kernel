@@ -325,10 +325,10 @@ mod tests {
     }
 
     #[test]
-    fn test_serde_roundtrip() {
+    fn test_serde_roundtrip() -> Result<(), Box<dyn std::error::Error>> {
         let decision = PolicyDecision::RequireConfirmation("test".to_string());
-        let json = serde_json::to_string(&decision).expect("serialize");
-        let back: PolicyDecision = serde_json::from_str(&json).expect("deserialize");
+        let json = serde_json::to_string(&decision)?;
+        let back: PolicyDecision = serde_json::from_str(&json)?;
         assert_eq!(decision, back);
     }
 
@@ -384,13 +384,13 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_decision_unknown() {
+    fn test_parse_decision_unknown() -> Result<(), Box<dyn std::error::Error>> {
         let engine = PolicyEngine::new(vec![], TrustTier::Autonomous);
         let decision = engine.parse_decision("maybe", "bad-rule");
         assert!(decision.is_denied());
         let msg = match decision {
             PolicyDecision::Deny(msg) => msg,
-            _ => panic!("expected deny"),
+            _ => unreachable!("expected deny"),
         };
         assert!(msg.contains("maybe"));
         assert!(msg.contains("bad-rule"));
@@ -447,7 +447,7 @@ mod tests {
     }
 
     #[test]
-    fn test_policy_rule_serde_roundtrip() {
+    fn test_policy_rule_serde_roundtrip() -> Result<(), Box<dyn std::error::Error>> {
         let rule = PolicyRule {
             name: "test".into(),
             action_pattern: "test.*".into(),
@@ -455,8 +455,8 @@ mod tests {
             trust_tier: 2,
             description: Some("desc".to_string()),
         };
-        let json = serde_json::to_string(&rule).unwrap();
-        let back: PolicyRule = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&rule)?;
+        let back: PolicyRule = serde_json::from_str(&json)?;
         assert_eq!(rule.name, back.name);
         assert_eq!(rule.trust_tier, back.trust_tier);
     }
@@ -475,15 +475,15 @@ mod tests {
     }
 
     #[test]
-    fn test_policy_decision_serde_all_variants() {
+    fn test_policy_decision_serde_all_variants() -> Result<(), Box<dyn std::error::Error>> {
         let decisions = vec![
             PolicyDecision::Allow,
             PolicyDecision::Deny("reason".into()),
             PolicyDecision::RequireConfirmation("confirm".into()),
         ];
         for d in decisions {
-            let json = serde_json::to_string(&d).unwrap();
-            let back: PolicyDecision = serde_json::from_str(&json).unwrap();
+            let json = serde_json::to_string(&d)?;
+            let back: PolicyDecision = serde_json::from_str(&json)?;
             assert_eq!(d, back);
         }
     }
@@ -504,11 +504,11 @@ mod tests {
     }
 
     #[test]
-    fn test_require_confirmation_decision_message() {
+    fn test_require_confirmation_decision_message() -> Result<(), Box<dyn std::error::Error>> {
         let decision = PolicyDecision::RequireConfirmation("need-approval".into());
         let msg = match decision {
             PolicyDecision::RequireConfirmation(msg) => msg,
-            _ => panic!("expected require confirmation"),
+            _ => unreachable!("expected require confirmation"),
         };
         assert!(msg.contains("need-approval"));
     }

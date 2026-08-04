@@ -234,7 +234,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_registry_health_check_all() {
+    async fn test_registry_health_check_all() -> Result<(), Box<dyn std::error::Error>> {
         let mut registry = ProviderRegistry::new();
         registry.register(Box::new(MockProvider));
 
@@ -279,16 +279,16 @@ mod tests {
         assert_eq!(results.len(), 2);
         match results.get(&ModelRole::Planner) {
             Some(Ok(true)) => {}
-            _ => panic!("Expected planner to be healthy"),
+            _ => unreachable!("Expected planner to be healthy"),
         }
         match results.get(&ModelRole::Coder) {
             Some(Ok(true)) => {}
-            _ => panic!("Expected coder to be healthy"),
+            _ => unreachable!("Expected coder to be healthy"),
         }
     }
 
     #[tokio::test]
-    async fn test_registry_health_check_all_with_failure() {
+    async fn test_registry_health_check_all_with_failure() -> Result<(), Box<dyn std::error::Error>> {
         struct FailingProvider;
         #[async_trait]
         impl ModelProvider for FailingProvider {
@@ -335,11 +335,11 @@ mod tests {
         assert_eq!(results.len(), 2);
         match results.get(&ModelRole::Planner) {
             Some(Ok(_)) => {}
-            _ => panic!("Expected planner to be ok"),
+            _ => unreachable!("Expected planner to be ok"),
         }
         match results.get(&ModelRole::Reviewer) {
             Some(Err(_)) => {}
-            _ => panic!("Expected reviewer to be err"),
+            _ => unreachable!("Expected reviewer to be err"),
         }
     }
 

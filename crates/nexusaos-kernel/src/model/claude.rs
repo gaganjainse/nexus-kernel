@@ -191,13 +191,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_claude_provider_construction() {
+    fn test_claude_provider_construction() -> Result<(), Box<dyn std::error::Error>> {
         let provider = ClaudeProvider::new(
             "dummy_key".to_string(),
             "claude-3-7-sonnet".to_string(),
             ModelRole::Coder,
         )
-        .unwrap();
+        ?;
         assert_eq!(provider.name(), "anthropic-claude-claude-3-7-sonnet");
         assert_eq!(provider.role(), ModelRole::Coder);
         assert_eq!(provider.max_context(), 200_000);
@@ -205,62 +205,62 @@ mod tests {
     }
 
     #[test]
-    fn test_claude_provider_different_roles() {
+    fn test_claude_provider_different_roles() -> Result<(), Box<dyn std::error::Error>> {
         let planner =
-            ClaudeProvider::new("key".into(), "claude-opus".into(), ModelRole::Planner).unwrap();
+            ClaudeProvider::new("key".into(), "claude-opus".into(), ModelRole::Planner)?;
         assert_eq!(planner.role(), ModelRole::Planner);
         assert!(planner.supports_vision());
 
         let vision =
-            ClaudeProvider::new("key".into(), "claude-sonnet".into(), ModelRole::Vision).unwrap();
+            ClaudeProvider::new("key".into(), "claude-sonnet".into(), ModelRole::Vision)?;
         assert_eq!(vision.role(), ModelRole::Vision);
         assert!(vision.supports_vision());
 
         let reviewer =
-            ClaudeProvider::new("key".into(), "claude-haiku".into(), ModelRole::Reviewer).unwrap();
+            ClaudeProvider::new("key".into(), "claude-haiku".into(), ModelRole::Reviewer)?;
         assert_eq!(reviewer.role(), ModelRole::Reviewer);
         assert!(reviewer.supports_vision());
     }
 
     #[test]
-    fn test_claude_provider_max_context_constant() {
+    fn test_claude_provider_max_context_constant() -> Result<(), Box<dyn std::error::Error>> {
         let provider =
-            ClaudeProvider::new("key".into(), "any-model".into(), ModelRole::Coder).unwrap();
+            ClaudeProvider::new("key".into(), "any-model".into(), ModelRole::Coder)?;
         assert_eq!(provider.max_context(), 200_000);
     }
 
     #[test]
-    fn test_claude_provider_health_check_with_key() {
+    fn test_claude_provider_health_check_with_key() -> Result<(), Box<dyn std::error::Error>> {
         let provider =
-            ClaudeProvider::new("valid-key".into(), "claude-3".into(), ModelRole::Coder).unwrap();
+            ClaudeProvider::new("valid-key".into(), "claude-3".into(), ModelRole::Coder)?;
         // health_check checks if api_key is non-empty
         // We can't easily test the async method synchronously, but we can test the field
         assert!(!provider.api_key.is_empty());
     }
 
     #[test]
-    fn test_claude_provider_name_format() {
+    fn test_claude_provider_name_format() -> Result<(), Box<dyn std::error::Error>> {
         let provider = ClaudeProvider::new(
             "key".into(),
             "claude-3-5-sonnet-20240620".into(),
             ModelRole::Planner,
         )
-        .unwrap();
+        ?;
         assert_eq!(provider.name(), "anthropic-claude-claude-3-5-sonnet-20240620");
     }
 
     #[test]
-    fn test_claude_provider_empty_api_key() {
+    fn test_claude_provider_empty_api_key() -> Result<(), Box<dyn std::error::Error>> {
         let provider =
-            ClaudeProvider::new(String::new(), "model".into(), ModelRole::Coder).unwrap();
+            ClaudeProvider::new(String::new(), "model".into(), ModelRole::Coder)?;
         assert!(provider.api_key.is_empty());
         assert!(provider.supports_vision());
     }
 
     #[test]
-    fn test_claude_provider_always_supports_vision() {
+    fn test_claude_provider_always_supports_vision() -> Result<(), Box<dyn std::error::Error>> {
         for role in [ModelRole::Planner, ModelRole::Coder, ModelRole::Vision, ModelRole::Reviewer] {
-            let provider = ClaudeProvider::new("key".into(), "model".into(), role).unwrap();
+            let provider = ClaudeProvider::new("key".into(), "model".into(), role)?;
             assert!(
                 provider.supports_vision(),
                 "Claude should always support vision for role {:?}",
@@ -270,8 +270,8 @@ mod tests {
     }
 
     #[test]
-    fn test_claude_provider_client_built() {
+    fn test_claude_provider_client_built() -> Result<(), Box<dyn std::error::Error>> {
         let _provider =
-            ClaudeProvider::new("key".into(), "model".into(), ModelRole::Coder).unwrap();
+            ClaudeProvider::new("key".into(), "model".into(), ModelRole::Coder)?;
     }
 }

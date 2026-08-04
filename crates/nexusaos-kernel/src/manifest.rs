@@ -246,7 +246,7 @@ mod tests {
     }
 
     #[test]
-    fn test_manifest_state_transitions() {
+    fn test_manifest_state_transitions() -> Result<(), Box<dyn std::error::Error>> {
         let mut manifest = Manifest::new(
             "1.0.0".to_string(),
             json!({"key": "value"}),
@@ -255,24 +255,24 @@ mod tests {
         );
 
         // Draft -> Validated
-        manifest.transition_to(ManifestState::Validated).unwrap();
+        manifest.transition_to(ManifestState::Validated)?;
         assert_eq!(manifest.state, ManifestState::Validated);
 
         // Validated -> Signed
-        manifest.transition_to(ManifestState::Signed).unwrap();
+        manifest.transition_to(ManifestState::Signed)?;
         assert_eq!(manifest.state, ManifestState::Signed);
 
         // Signed -> Active
-        manifest.transition_to(ManifestState::Active).unwrap();
+        manifest.transition_to(ManifestState::Active)?;
         assert_eq!(manifest.state, ManifestState::Active);
         assert!(manifest.activated_at.is_some());
 
         // Active -> Superseded
-        manifest.transition_to(ManifestState::Superseded).unwrap();
+        manifest.transition_to(ManifestState::Superseded)?;
         assert_eq!(manifest.state, ManifestState::Superseded);
 
         // Superseded -> Retired
-        manifest.transition_to(ManifestState::Retired).unwrap();
+        manifest.transition_to(ManifestState::Retired)?;
         assert_eq!(manifest.state, ManifestState::Retired);
     }
 
@@ -291,29 +291,29 @@ mod tests {
     }
 
     #[test]
-    fn test_manifest_immutable_when_active() {
+    fn test_manifest_immutable_when_active() -> Result<(), Box<dyn std::error::Error>> {
         let mut manifest = Manifest::new(
             "1.0.0".to_string(),
             json!({"key": "value"}),
             "1.0".to_string(),
             "admin".to_string(),
         );
-        manifest.transition_to(ManifestState::Validated).unwrap();
-        manifest.transition_to(ManifestState::Signed).unwrap();
-        manifest.transition_to(ManifestState::Active).unwrap();
+        manifest.transition_to(ManifestState::Validated)?;
+        manifest.transition_to(ManifestState::Signed)?;
+        manifest.transition_to(ManifestState::Active)?;
         assert!(ManifestState::Active.is_immutable());
     }
 
     #[test]
-    fn test_manifest_sign_and_verify() {
+    fn test_manifest_sign_and_verify() -> Result<(), Box<dyn std::error::Error>> {
         let mut manifest = Manifest::new(
             "1.0.0".to_string(),
             json!({"key": "value"}),
             "1.0".to_string(),
             "admin".to_string(),
         );
-        manifest.transition_to(ManifestState::Validated).unwrap();
-        manifest.sign().unwrap();
+        manifest.transition_to(ManifestState::Validated)?;
+        manifest.sign()?;
         assert!(manifest.verify_signature());
     }
 
@@ -336,7 +336,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_manifest_store() {
+    async fn test_manifest_store() -> Result<(), Box<dyn std::error::Error>> {
         let store = ManifestStore::new();
         let manifest = Manifest::new(
             "1.0.0".to_string(),
@@ -345,14 +345,14 @@ mod tests {
             "admin".to_string(),
         );
         let id = manifest.id.clone();
-        store.store(manifest).await.unwrap();
+        store.store(manifest).await?;
 
-        let retrieved = store.get(&id).await.unwrap();
+        let retrieved = store.get(&id).await?;
         assert_eq!(retrieved.version, "1.0.0");
     }
 
     #[tokio::test]
-    async fn test_manifest_store_active() {
+    async fn test_manifest_store_active() -> Result<(), Box<dyn std::error::Error>> {
         let store = ManifestStore::new();
         let mut manifest = Manifest::new(
             "1.0.0".to_string(),
@@ -360,10 +360,10 @@ mod tests {
             "1.0".to_string(),
             "admin".to_string(),
         );
-        manifest.transition_to(ManifestState::Validated).unwrap();
-        manifest.transition_to(ManifestState::Signed).unwrap();
-        manifest.transition_to(ManifestState::Active).unwrap();
-        store.store(manifest).await.unwrap();
+        manifest.transition_to(ManifestState::Validated)?;
+        manifest.transition_to(ManifestState::Signed)?;
+        manifest.transition_to(ManifestState::Active)?;
+        store.store(manifest).await?;
 
         let active = store.active_manifests().await;
         assert_eq!(active.len(), 1);

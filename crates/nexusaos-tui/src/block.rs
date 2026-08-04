@@ -249,11 +249,11 @@ mod tests {
     }
 
     #[test]
-    fn test_tile_grid_active_block() {
+    fn test_tile_grid_active_block() -> Result<(), Box<dyn std::error::Error>> {
         let grid = TileGrid::new();
         let active = grid.active_block();
         assert!(active.is_some());
-        assert_eq!(active.unwrap().id, 1);
+        assert_eq!(active?.id, 1);
     }
 
     #[test]
@@ -293,13 +293,13 @@ mod tests {
     }
 
     #[test]
-    fn test_tile_grid_toggle_maximize() {
+    fn test_tile_grid_toggle_maximize() -> Result<(), Box<dyn std::error::Error>> {
         let mut grid = TileGrid::new();
-        assert!(!grid.active_block().unwrap().is_maximized);
+        assert!(!grid.active_block()?.is_maximized);
         grid.toggle_maximize();
-        assert!(grid.active_block().unwrap().is_maximized);
+        assert!(grid.active_block()?.is_maximized);
         grid.toggle_maximize();
-        assert!(!grid.active_block().unwrap().is_maximized);
+        assert!(!grid.active_block()?.is_maximized);
     }
 
     #[test]
@@ -323,11 +323,11 @@ mod tests {
     }
 
     #[test]
-    fn test_tile_grid_active_block_mut() {
+    fn test_tile_grid_active_block_mut() -> Result<(), Box<dyn std::error::Error>> {
         let mut grid = TileGrid::new();
         if let Some(block) = grid.active_block_mut() {
             block.is_maximized = true;
         }
-        assert!(grid.active_block().unwrap().is_maximized);
+        assert!(grid.active_block()?.is_maximized);
     }
 }

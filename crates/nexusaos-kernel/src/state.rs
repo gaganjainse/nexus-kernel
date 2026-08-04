@@ -160,18 +160,18 @@ mod tests {
     }
 
     #[test]
-    fn test_model_role_serde() {
+    fn test_model_role_serde() -> Result<(), Box<dyn std::error::Error>> {
         let roles =
             vec![ModelRole::Planner, ModelRole::Coder, ModelRole::Vision, ModelRole::Reviewer];
         for role in roles {
-            let json = serde_json::to_string(&role).unwrap();
-            let back: ModelRole = serde_json::from_str(&json).unwrap();
+            let json = serde_json::to_string(&role)?;
+            let back: ModelRole = serde_json::from_str(&json)?;
             assert_eq!(role, back);
         }
     }
 
     #[test]
-    fn test_task_state_serde() {
+    fn test_task_state_serde() -> Result<(), Box<dyn std::error::Error>> {
         let states = vec![
             TaskState::Received,
             TaskState::Classified,
@@ -185,8 +185,8 @@ mod tests {
             TaskState::Archived,
         ];
         for state in states {
-            let json = serde_json::to_string(&state).unwrap();
-            let back: TaskState = serde_json::from_str(&json).unwrap();
+            let json = serde_json::to_string(&state)?;
+            let back: TaskState = serde_json::from_str(&json)?;
             assert_eq!(state, back);
         }
     }
@@ -296,7 +296,7 @@ mod tests {
     }
 
     #[test]
-    fn test_task_record_serde() {
+    fn test_task_record_serde() -> Result<(), Box<dyn std::error::Error>> {
         use crate::task::{TaskInput, TaskRequest};
         let task_id = TaskId::new();
         let request = TaskRequest::new(TaskInput::Text("test".into()));
@@ -310,8 +310,8 @@ mod tests {
                 (TaskState::Classified, Utc::now()),
             ],
         };
-        let json = serde_json::to_string(&record).unwrap();
-        let back: TaskRecord = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&record)?;
+        let back: TaskRecord = serde_json::from_str(&json)?;
         assert_eq!(record.task_id, back.task_id);
         assert_eq!(record.current_state, back.current_state);
         assert_eq!(record.assigned_role, back.assigned_role);

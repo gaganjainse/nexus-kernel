@@ -61,11 +61,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_chat_role_serde() {
+    fn test_chat_role_serde() -> Result<(), Box<dyn std::error::Error>> {
         let role = ChatRole::System;
-        let serialized = serde_json::to_string(&role).unwrap();
+        let serialized = serde_json::to_string(&role)?;
         assert_eq!(serialized, "\"system\"");
-        let deserialized: ChatRole = serde_json::from_str(&serialized).unwrap();
+        let deserialized: ChatRole = serde_json::from_str(&serialized)?;
         assert_eq!(deserialized, role);
     }
 
@@ -78,20 +78,20 @@ mod tests {
     }
 
     #[test]
-    fn test_chat_role_all_variants() {
+    fn test_chat_role_all_variants() -> Result<(), Box<dyn std::error::Error>> {
         let roles = vec![ChatRole::System, ChatRole::User, ChatRole::Assistant];
         for role in roles {
-            let json = serde_json::to_string(&role).unwrap();
-            let back: ChatRole = serde_json::from_str(&json).unwrap();
+            let json = serde_json::to_string(&role)?;
+            let back: ChatRole = serde_json::from_str(&json)?;
             assert_eq!(role, back);
         }
     }
 
     #[test]
-    fn test_chat_role_serde_strings() {
-        assert_eq!(serde_json::to_string(&ChatRole::System).unwrap(), "\"system\"");
-        assert_eq!(serde_json::to_string(&ChatRole::User).unwrap(), "\"user\"");
-        assert_eq!(serde_json::to_string(&ChatRole::Assistant).unwrap(), "\"assistant\"");
+    fn test_chat_role_serde_strings() -> Result<(), Box<dyn std::error::Error>> {
+        assert_eq!(serde_json::to_string(&ChatRole::System)?, "\"system\"");
+        assert_eq!(serde_json::to_string(&ChatRole::User)?, "\"user\"");
+        assert_eq!(serde_json::to_string(&ChatRole::Assistant)?, "\"assistant\"");
     }
 
     #[test]
@@ -103,22 +103,22 @@ mod tests {
     }
 
     #[test]
-    fn test_chat_message_with_images() {
+    fn test_chat_message_with_images() -> Result<(), Box<dyn std::error::Error>> {
         let msg = ChatMessage {
             role: ChatRole::User,
             content: "describe".into(),
             images: Some(vec!["base64data".into()]),
         };
         assert!(msg.images.is_some());
-        assert_eq!(msg.images.unwrap().len(), 1);
+        assert_eq!(msg.images?.len(), 1);
     }
 
     #[test]
-    fn test_chat_message_serde() {
+    fn test_chat_message_serde() -> Result<(), Box<dyn std::error::Error>> {
         let msg =
             ChatMessage { role: ChatRole::Assistant, content: "response".into(), images: None };
-        let json = serde_json::to_string(&msg).unwrap();
-        let back: ChatMessage = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&msg)?;
+        let back: ChatMessage = serde_json::from_str(&json)?;
         assert_eq!(msg.role, back.role);
         assert_eq!(msg.content, back.content);
     }
@@ -137,14 +137,14 @@ mod tests {
     }
 
     #[test]
-    fn test_completion_request_serde() {
+    fn test_completion_request_serde() -> Result<(), Box<dyn std::error::Error>> {
         let req = CompletionRequest::new(
             vec![ChatMessage { role: ChatRole::User, content: "hi".into(), images: None }],
             "gpt-4",
             50,
         );
-        let json = serde_json::to_string(&req).unwrap();
-        let back: CompletionRequest = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&req)?;
+        let back: CompletionRequest = serde_json::from_str(&json)?;
         assert_eq!(req.model, back.model);
         assert_eq!(req.max_tokens, back.max_tokens);
     }
@@ -165,7 +165,7 @@ mod tests {
     }
 
     #[test]
-    fn test_completion_response_serde() {
+    fn test_completion_response_serde() -> Result<(), Box<dyn std::error::Error>> {
         let resp = CompletionResponse {
             content: "hi".into(),
             finish_reason: None,
@@ -173,8 +173,8 @@ mod tests {
             completion_tokens: None,
             model: "m".into(),
         };
-        let json = serde_json::to_string(&resp).unwrap();
-        let back: CompletionResponse = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&resp)?;
+        let back: CompletionResponse = serde_json::from_str(&json)?;
         assert_eq!(resp.content, back.content);
         assert_eq!(resp.model, back.model);
     }
@@ -195,10 +195,10 @@ mod tests {
     }
 
     #[test]
-    fn test_token_usage_serde() {
+    fn test_token_usage_serde() -> Result<(), Box<dyn std::error::Error>> {
         let usage = TokenUsage { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 };
-        let json = serde_json::to_string(&usage).unwrap();
-        let back: TokenUsage = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&usage)?;
+        let back: TokenUsage = serde_json::from_str(&json)?;
         assert_eq!(usage.total_tokens, back.total_tokens);
     }
 

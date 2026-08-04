@@ -177,7 +177,7 @@ mod tests {
     use crate::model::types::ChatRole;
 
     #[test]
-    fn test_provider_creation() {
+    fn test_provider_creation() -> Result<(), Box<dyn std::error::Error>> {
         let provider = QwenVisionProvider::new(
             "qwen3.5-9b".to_string(),
             "http://localhost:8000".to_string(),
@@ -185,21 +185,21 @@ mod tests {
             32768,
         );
         assert!(provider.is_ok());
-        let p = provider.unwrap();
+        let p = provider?;
         assert_eq!(p.role(), ModelRole::Vision);
         assert!(p.supports_vision());
         assert_eq!(p.max_context(), 32768);
     }
 
     #[test]
-    fn test_provider_name() {
+    fn test_provider_name() -> Result<(), Box<dyn std::error::Error>> {
         let provider = QwenVisionProvider::new(
             "qwen3.5-9b".to_string(),
             "http://localhost:8000".to_string(),
             "test-key".to_string(),
             32768,
         )
-        .unwrap();
+        ?;
         assert!(provider.name().starts_with("qwen-vision-"));
     }
 

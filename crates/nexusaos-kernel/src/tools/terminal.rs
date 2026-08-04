@@ -285,7 +285,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_terminal_exact_denied_prefix() {
+    async fn test_terminal_exact_denied_prefix() -> Result<(), Box<dyn std::error::Error>> {
         let tool = TerminalTool::new(5, vec!["ls".to_string()]);
 
         let req = ToolRequest {
@@ -295,7 +295,8 @@ mod tests {
         let err = tool.execute(&req).await.unwrap_err();
         match err {
             ToolError::CommandDenied { command } => assert_eq!(command, "ls"),
-            _ => panic!("Expected CommandDenied"),
+            _ => unreachable!("Expected CommandDenied"),
         }
+        Ok(())
     }
 }

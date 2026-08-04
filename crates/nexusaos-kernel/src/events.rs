@@ -255,7 +255,7 @@ mod tests {
     }
 
     #[test]
-    fn test_serde_round_trip() {
+    fn test_serde_round_trip() -> Result<(), Box<dyn std::error::Error>> {
         let payloads = vec![
             EventPayload::TaskCreated { request: json!({"k": "v"}) },
             EventPayload::StateChanged { from: "A".to_string(), to: "B".to_string() },
@@ -357,8 +357,8 @@ mod tests {
         ];
 
         for payload in payloads {
-            let serialized = serde_json::to_string(&payload).unwrap();
-            let deserialized: EventPayload = serde_json::from_str(&serialized).unwrap();
+            let serialized = serde_json::to_string(&payload)?;
+            let deserialized: EventPayload = serde_json::from_str(&serialized)?;
             assert_eq!(payload, deserialized);
         }
     }
@@ -446,33 +446,33 @@ mod tests {
     }
 
     #[test]
-    fn test_event_policy_check_with_reason() {
+    fn test_event_policy_check_with_reason() -> Result<(), Box<dyn std::error::Error>> {
         let payload = EventPayload::PolicyCheck {
             action: "filesystem.write".to_string(),
             decision: "deny".to_string(),
             reason: Some("not allowed".to_string()),
         };
-        let json = serde_json::to_string(&payload).unwrap();
-        let back: EventPayload = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&payload)?;
+        let back: EventPayload = serde_json::from_str(&json)?;
         match back {
             EventPayload::PolicyCheck { reason, .. } => {
                 assert_eq!(reason, Some("not allowed".to_string()))
             }
-            _ => panic!("Wrong variant"),
+            _ => unreachable!("Wrong variant"),
         }
     }
 
     #[test]
-    fn test_event_error_event_with_details() {
+    fn test_event_error_event_with_details() -> Result<(), Box<dyn std::error::Error>> {
         let payload = EventPayload::ErrorEvent { message: "fatal".to_string(), details: None };
-        let json = serde_json::to_string(&payload).unwrap();
-        let back: EventPayload = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&payload)?;
+        let back: EventPayload = serde_json::from_str(&json)?;
         match back {
             EventPayload::ErrorEvent { message, details } => {
                 assert_eq!(message, "fatal");
                 assert!(details.is_none());
             }
-            _ => panic!("Wrong variant"),
+            _ => unreachable!("Wrong variant"),
         }
     }
 
@@ -484,10 +484,10 @@ mod tests {
     }
 
     #[test]
-    fn test_event_kind_serde() {
+    fn test_event_kind_serde() -> Result<(), Box<dyn std::error::Error>> {
         let kind = EventKind::SystemStarted;
-        let json = serde_json::to_string(&kind).unwrap();
-        let back: EventKind = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&kind)?;
+        let back: EventKind = serde_json::from_str(&json)?;
         assert_eq!(kind, back);
     }
 
