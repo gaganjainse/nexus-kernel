@@ -14,7 +14,7 @@ use crate::{
     policy::PolicyEngine,
     router::TaskRouter,
     state::{TaskRecord, TaskState},
-    storage::{EventStore, TaskProjection},
+    storage::{EventStore, SnapshotStore, TaskProjection},
     task::{TaskId, TaskInput, TaskRequest},
     tools::broker::ToolBroker,
 };
@@ -27,6 +27,7 @@ pub struct Kernel {
     provider_registry: Arc<ProviderRegistry>,
     tool_broker: Arc<ToolBroker>,
     max_tool_output_size: usize,
+    snapshot_store: Option<Arc<SnapshotStore>>,
 }
 
 impl Kernel {
@@ -37,6 +38,7 @@ impl Kernel {
         provider_registry: Arc<ProviderRegistry>,
         tool_broker: Arc<ToolBroker>,
         max_tool_output_size: usize,
+        snapshot_store: Option<Arc<SnapshotStore>>,
     ) -> Result<Self, NexusError> {
         let kernel = Self {
             event_store,
@@ -45,6 +47,7 @@ impl Kernel {
             provider_registry,
             tool_broker,
             max_tool_output_size,
+            snapshot_store,
         };
         Ok(kernel)
     }
@@ -297,6 +300,11 @@ impl Kernel {
                 tool_name: tool_call.tool_name.clone(),
                 arguments: tool_call.arguments.clone(),
             };
+
+            // Create checkpoint before risky tool execution
+            self.create_checkpoint(*task_id, &tool_call.tool_name, &tool_call.arguments)
+                .await?;
+
             self.emit_tool_requested(*task_id, &tool_call.tool_name, tool_call.arguments).await?;
 
             match self.tool_broker.execute(&tool_req).await {
@@ -488,6 +496,50 @@ impl Kernel {
             completed_at: Utc::now(),
             requires_confirmation: false,
         })
+    }
+
+    /// Create a checkpoint snapshot before a risky action.
+    async fn create_checkpoint(
+        &self,
+        task_id: TaskId,
+        tool_name: &str,
+        arguments: &serde_json::Value,
+    ) -> Result<(), NexusError> {
+        let snapshot_store = match &self.snapshot_store {
+            Some(store) => store,
+            None => return Ok(()),
+        };
+
+        let projection = self.projection.read().await;
+        let task = projection.tasks.get(&task_id).cloned();
+        drop(projection);
+
+        let snapshot_data = serde_json::json!({
+            "task_id": task_id.to_string(),
+            "tool_name": tool_name,
+            "arguments": arguments,
+            "task_state": task.as_ref().map(|t| t.current_state.to_string()),
+            "state_history": task.as_ref().map(|t| t.state_history.iter().map(|(s, _)| s.to_string()).collect::<Vec<_>>()),
+        });
+
+        let snapshot = crate::storage::Snapshot {
+            snapshot_id: format!("checkpoint-{}-{}", task_id, tool_name),
+            created_at: Utc::now(),
+            last_sequence: 0,
+            data: snapshot_data,
+        };
+
+        snapshot_store.save(&snapshot).await?;
+
+        self.emit_event(Event::new(
+            task_id,
+            EventKind::CheckpointCreated,
+            EventPayload::Checkpoint { snapshot_path: snapshot.snapshot_id },
+            "kernel".to_string(),
+        ))
+        .await?;
+
+        Ok(())
     }
 
     /// Call a model provider with the given prompt, emitting telemetry events.
@@ -682,7 +734,7 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None)
             .await
             .unwrap();
 
@@ -697,7 +749,7 @@ mod tests {
         let policy = PolicyEngine::deny_all();
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None)
             .await
             .unwrap();
 
@@ -718,7 +770,7 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None)
             .await
             .unwrap();
 
@@ -740,7 +792,7 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None)
             .await
             .unwrap();
 
@@ -783,6 +835,7 @@ mod tests {
             Arc::new(registry),
             broker,
             1_048_576,
+            None,
         )
         .await
         .unwrap();
@@ -813,7 +866,7 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None)
             .await
             .unwrap();
 
@@ -839,7 +892,7 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None)
             .await
             .unwrap();
 
@@ -868,7 +921,7 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None)
             .await
             .unwrap();
 
@@ -892,7 +945,7 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None)
             .await
             .unwrap();
 
@@ -914,7 +967,7 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None)
             .await
             .unwrap();
 
@@ -980,6 +1033,7 @@ mod tests {
             Arc::new(registry),
             broker,
             1_048_576,
+            None,
         )
         .await
         .unwrap();
@@ -1016,7 +1070,7 @@ mod tests {
         let policy = PolicyEngine::deny_all();
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None)
             .await
             .unwrap();
         assert_eq!(kernel.task_count().await, 0);
@@ -1035,7 +1089,7 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None)
             .await
             .unwrap();
 
@@ -1072,7 +1126,7 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None)
             .await
             .unwrap();
 
@@ -1099,7 +1153,7 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None)
             .await
             .unwrap();
 

@@ -81,6 +81,7 @@ pub fn execute(
             registry,
             broker,
             config.resource_limits.max_tool_output_size,
+            None,
         )
         .await?;
 
