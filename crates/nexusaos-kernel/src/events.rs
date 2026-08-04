@@ -5,6 +5,7 @@ use std::fmt;
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 use crate::task::TaskId;
@@ -146,12 +147,30 @@ pub struct Event {
     pub payload: EventPayload,
     pub metadata: EventMetadata,
     pub timestamp: DateTime<Utc>,
+    pub checksum: String,
 }
 
 impl Event {
+    fn compute_checksum(&self) -> String {
+        let mut hasher = Sha256::new();
+        hasher.update(self.id.0.to_string().as_bytes());
+        if let Some(task_id) = self.task_id {
+            hasher.update(task_id.0.to_string().as_bytes());
+        }
+        hasher.update(self.sequence.0.to_string().as_bytes());
+        hasher.update(serde_json::to_string(&self.kind).unwrap_or_default().as_bytes());
+        hasher.update(serde_json::to_string(&self.payload).unwrap_or_default().as_bytes());
+        hasher.update(self.metadata.source.as_bytes());
+        if let Some(correlation_id) = &self.metadata.correlation_id {
+            hasher.update(correlation_id.as_bytes());
+        }
+        hasher.update(self.timestamp.to_rfc3339().as_bytes());
+        format!("{:x}", hasher.finalize())
+    }
+
     /// Creates a new event associated with a task
     pub fn new(task_id: TaskId, kind: EventKind, payload: EventPayload, source: String) -> Self {
-        Self {
+        let mut event = Self {
             id: EventId::new(),
             task_id: Some(task_id),
             sequence: SequenceNumber(0),
@@ -159,12 +178,15 @@ impl Event {
             payload,
             metadata: EventMetadata { source, correlation_id: None },
             timestamp: Utc::now(),
-        }
+            checksum: String::new(),
+        };
+        event.checksum = event.compute_checksum();
+        event
     }
 
     /// Creates a new system-level event without a task
     pub fn system(kind: EventKind, payload: EventPayload, source: String) -> Self {
-        Self {
+        let mut event = Self {
             id: EventId::new(),
             task_id: None,
             sequence: SequenceNumber(0),
@@ -172,7 +194,15 @@ impl Event {
             payload,
             metadata: EventMetadata { source, correlation_id: None },
             timestamp: Utc::now(),
-        }
+            checksum: String::new(),
+        };
+        event.checksum = event.compute_checksum();
+        event
+    }
+
+    /// Verify the event's checksum against its current content.
+    pub fn verify_checksum(&self) -> bool {
+        self.checksum == self.compute_checksum()
     }
 }
 

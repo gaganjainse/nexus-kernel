@@ -174,6 +174,24 @@ impl ContextManager {
 
         Ok(ContextBudget { max_tokens, complexity, was_clamped, clamp_reason })
     }
+
+    /// Get a context budget for a task input, clamped to the resource budget.
+    pub fn context_for_task(
+        &self,
+        input: &crate::task::TaskInput,
+        pressure: &SystemPressure,
+        model_max_context: usize,
+        resource_budget: &crate::resource::ResourceBudget,
+    ) -> Result<usize, ResourceError> {
+        let complexity = TaskComplexity::estimate_from_input(&input.text(), false);
+        let budget = self.estimate_budget(complexity, pressure, model_max_context)?;
+        let clamped = budget.max_tokens.min(resource_budget.max_context_tokens);
+        if clamped < budget.max_tokens {
+            Ok(clamped)
+        } else {
+            Ok(budget.max_tokens)
+        }
+    }
 }
 
 /// Mutable state shared across pressure checks.

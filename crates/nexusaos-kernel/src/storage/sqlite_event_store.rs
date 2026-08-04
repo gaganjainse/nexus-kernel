@@ -26,6 +26,7 @@ impl SqliteEventStore {
                     id TEXT PRIMARY KEY,
                     task_id TEXT,
                     sequence INTEGER,
+                    idempotency_key TEXT UNIQUE,
                     data TEXT NOT NULL
                 )",
                 (),
@@ -151,14 +152,16 @@ impl SqliteEventStore {
 impl EventStore for SqliteEventStore {
     async fn append(&self, event: Event) -> Result<(), NexusError> {
         let data = serde_json::to_string(&event).map_err(NexusError::Serde)?;
+        let idempotency_key = event.id.0.to_string();
         let result = self
             .spawn_query(move |conn| {
                 conn.execute(
-                    "INSERT INTO events (id, task_id, sequence, data) VALUES (?1, ?2, ?3, ?4)",
+                    "INSERT INTO events (id, task_id, sequence, idempotency_key, data) VALUES (?1, ?2, ?3, ?4, ?5)",
                     (
                         event.id.0.to_string(),
                         event.task_id.map(|id| id.0.to_string()),
                         event.sequence.0,
+                        idempotency_key,
                         data,
                     ),
                 )

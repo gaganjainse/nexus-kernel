@@ -168,6 +168,7 @@ mod tests {
                 correlation_id: None,
             },
             timestamp: Utc::now(),
+            checksum: String::new(),
         }];
         summary.update(&events);
         assert_eq!(summary.completed_tasks, 1);
@@ -205,6 +206,7 @@ mod tests {
                 correlation_id: None,
             },
             timestamp: Utc::now(),
+            checksum: String::new(),
         }];
         let summary = store.update_summary("proj-1", &events).await;
         assert_eq!(summary.completed_tasks, 1);

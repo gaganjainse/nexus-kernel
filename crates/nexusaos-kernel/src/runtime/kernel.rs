@@ -229,6 +229,28 @@ impl Kernel {
             policy.evaluate(crate::policy::actions::TASK_CREATE)
         };
 
+        let policy_trust_tier = {
+            let policy = self.policy.read().await;
+            policy.trust_tier()
+        };
+        let _ = self
+            .emit_event(Event::new(
+                task_id,
+                EventKind::PolicyDecision,
+                EventPayload::PolicyDecision {
+                    action: crate::policy::actions::TASK_CREATE.to_string(),
+                    decision: format!("{:?}", decision),
+                    reason: match &decision {
+                        crate::policy::PolicyDecision::Deny(r)
+                        | crate::policy::PolicyDecision::RequireConfirmation(r) => r.clone(),
+                        crate::policy::PolicyDecision::Allow => String::new(),
+                    },
+                    trust_tier: policy_trust_tier as u8,
+                },
+                "kernel".to_string(),
+            ))
+            .await;
+
         if decision.is_denied() {
             return Err(NexusError::Policy(crate::error::PolicyError::Denied {
                 reason: "Task creation denied by policy".into(),

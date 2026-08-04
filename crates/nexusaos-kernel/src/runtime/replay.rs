@@ -71,6 +71,25 @@ impl ReplayEngine {
         Ok(projection)
     }
 
+    /// Replay events for a specific task starting from a given sequence number.
+    pub async fn replay_from(
+        store: &dyn EventStore,
+        task_id: &TaskId,
+        from_sequence: u64,
+    ) -> Result<TaskProjection, NexusError> {
+        let events = store.read_since(from_sequence).await?;
+        let mut projection = TaskProjection::new();
+
+        for event in events {
+            if event.task_id != Some(*task_id) {
+                continue;
+            }
+            projection.apply(&event);
+        }
+
+        Ok(projection)
+    }
+
     /// Get the event history for a specific task.
     pub async fn task_history(
         store: &dyn EventStore,
