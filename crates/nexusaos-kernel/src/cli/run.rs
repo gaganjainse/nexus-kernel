@@ -94,7 +94,7 @@ pub fn execute(
             dedup_window_secs: 5,
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
-        })),
+        ),
             registry,
             broker,
             config.resource_limits.max_tool_output_size,

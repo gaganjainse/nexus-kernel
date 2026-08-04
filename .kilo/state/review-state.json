@@ -1,6 +1,6 @@
 {
   "project_motive": "Governance-first, event-sourced AI operating environment. Models propose actions; kernel validates and records. Every state change is append-only and auditable. Destructive operations require explicit policy approval. Core operations work offline without cloud dependencies. AI providers are replaceable via a common interface.",
-  "current_model": "kilo-gateway-free-1",
+  "current_model": "kilo-gateway-free-2",
   "model_rotation": [
     "kilo-gateway-free-1",
     "kilo-gateway-free-2",
@@ -24,7 +24,7 @@
     }
   },
   "last_cycle": {
-    "timestamp": "2026-08-04T22:30:02+05:30",
+    "timestamp": "2026-08-04T22:45:01+05:30",
     "agent_id": "audit-cycle.sh",
     "clippy_errors": 0,
     "test_failures": 0,
