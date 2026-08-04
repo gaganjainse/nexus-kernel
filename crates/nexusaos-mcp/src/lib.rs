@@ -51,18 +51,28 @@ pub async fn validate_mcp_request(
 /// Checks if the given capability set permits the MCP tool operation.
 pub fn check_mcp_capabilities(
     capabilities: &CapabilitySet,
-    _tool_name: &str,
-    _arguments: &serde_json::Value,
+    tool_name: &str,
+    arguments: &serde_json::Value,
 ) -> bool {
-    if let Some(path) = _arguments.get("path").and_then(|v| v.as_str()) {
+    if let Some(path) = arguments.get("path").and_then(|v| v.as_str()) {
         if capabilities.check_path(std::path::Path::new(path)) {
             return true;
         }
     }
-    if let Some(cmd) = _arguments.get("command").and_then(|v| v.as_str()) {
+    if let Some(cmd) = arguments.get("command").and_then(|v| v.as_str()) {
         if capabilities.check_command(cmd) {
             return true;
         }
     }
-    capabilities.check_path(std::path::Path::new("/tmp"))
+    if let Some(image) = arguments.get("image").and_then(|v| v.as_str()) {
+        if capabilities.check_path(std::path::Path::new(image)) {
+            return true;
+        }
+    }
+    if let Some(url) = arguments.get("url").and_then(|v| v.as_str()) {
+        if capabilities.check_path(std::path::Path::new(url)) {
+            return true;
+        }
+    }
+    false
 }

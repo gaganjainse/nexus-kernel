@@ -8,6 +8,7 @@ use nexusaos_kernel::{
 };
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
 use tokio::net::UnixListener;
+use tokio::sync::AtomicUsize;
 use tracing::info;
 
 use crate::{
@@ -21,6 +22,7 @@ pub struct McpServer {
     tool_broker: Arc<ToolBroker>,
     policy: Arc<PolicyEngine>,
     capabilities: Arc<CapabilitySet>,
+    active_connections: Arc<AtomicUsize>,
 }
 
 impl McpServer {
@@ -31,7 +33,7 @@ impl McpServer {
         policy: Arc<PolicyEngine>,
         capabilities: Arc<CapabilitySet>,
     ) -> Self {
-        Self { config, tool_broker, policy, capabilities }
+        Self { config, tool_broker, policy, capabilities, active_connections: Arc::new(AtomicUsize::new(0)) }
     }
 
     /// Run the MCP server, listening for connections on the configured Unix socket.
@@ -44,12 +46,21 @@ impl McpServer {
 
         loop {
             let (stream, _addr) = listener.accept().await.map_err(NexusError::Io)?;
+            let current = self.active_connections.load(std::sync::atomic::Ordering::Relaxed);
+            if current >= self.config.max_connections {
+                tracing::warn!(max = self.config.max_connections, "MCP connection limit reached, rejecting");
+                continue;
+            }
+            self.active_connections.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             let broker = self.tool_broker.clone();
             let policy = self.policy.clone();
             let caps = self.capabilities.clone();
+            let active_connections = self.active_connections.clone();
 
             tokio::spawn(async move {
-                if let Err(e) = handle_connection(stream, broker, policy, caps).await {
+                let result = handle_connection(stream, broker, policy, caps).await;
+                active_connections.fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
+                if let Err(e) = result {
                     tracing::error!(error = %e, "MCP connection error");
                 }
             });

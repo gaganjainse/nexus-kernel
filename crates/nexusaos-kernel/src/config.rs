@@ -119,6 +119,19 @@ pub struct ContextConfig {
     pub vram_headroom_mb: u64,
 }
 
+impl Default for ContextConfig {
+    fn default() -> Self {
+        Self {
+            simple_question: 8192,
+            code_edit: 16384,
+            feature_work: 32768,
+            architecture: 65536,
+            ram_headroom_mb: 2048,
+            vram_headroom_mb: 1024,
+        }
+    }
+}
+
 /// Configuration for a single model provider.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModelProviderConfig {
