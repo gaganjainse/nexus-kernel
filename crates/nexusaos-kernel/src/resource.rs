@@ -378,7 +378,7 @@ mod tests {
     }
 
     #[test]
-    fn test_system_pressure_serde_roundtrip() {
+    fn test_system_pressure_serde_roundtrip() -> Result<(), Box<dyn std::error::Error>> {
         let pressure = SystemPressure {
             ram_available_mb: 8000,
             ram_total_mb: 16000,
@@ -387,11 +387,12 @@ mod tests {
             disk_available_gb: 100,
             queue_depth: 5,
         };
-        let json = serde_json::to_string(&pressure).unwrap();
-        let back: SystemPressure = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&pressure)?;
+        let back: SystemPressure = serde_json::from_str(&json)?;
         assert_eq!(pressure.ram_available_mb, back.ram_available_mb);
         assert_eq!(pressure.vram_available_mb, back.vram_available_mb);
         assert_eq!(pressure.queue_depth, back.queue_depth);
+        Ok(())
     }
 
     #[test]

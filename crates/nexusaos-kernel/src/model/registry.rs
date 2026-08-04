@@ -173,7 +173,7 @@ mod tests {
     }
 
     #[test]
-    fn test_registry_overwrite_provider() {
+    fn test_registry_overwrite_provider() -> Result<(), Box<dyn std::error::Error>> {
         let mut registry = ProviderRegistry::new();
         registry.register(Box::new(MockProvider));
 
@@ -213,10 +213,11 @@ mod tests {
         }
 
         registry.register(Box::new(AnotherPlanner));
-        let planner = registry.get(&ModelRole::Planner).unwrap();
+        let planner = registry.get(&ModelRole::Planner).ok_or_else(|| "planner not found")?;
         assert_eq!(planner.name(), "another-planner");
         assert_eq!(planner.max_context(), 200);
         assert!(planner.supports_vision());
+        Ok(())
     }
 
     #[test]

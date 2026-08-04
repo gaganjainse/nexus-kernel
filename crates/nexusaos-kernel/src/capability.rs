@@ -542,7 +542,7 @@ mod tests {
     }
 
     #[test]
-    fn test_scope_serde_roundtrip() {
+    fn test_scope_serde_roundtrip() -> Result<(), Box<dyn std::error::Error>> {
         let scopes = vec![
             Scope::Path(PathBuf::from("/tmp")),
             Scope::Command("ls".into()),
@@ -551,14 +551,15 @@ mod tests {
             Scope::Global,
         ];
         for scope in scopes {
-            let json = serde_json::to_string(&scope).unwrap();
-            let back: Scope = serde_json::from_str(&json).unwrap();
+            let json = serde_json::to_string(&scope)?;
+            let back: Scope = serde_json::from_str(&json)?;
             assert_eq!(scope, back);
         }
+        Ok(())
     }
 
     #[test]
-    fn test_capability_lease_serde_roundtrip() {
+    fn test_capability_lease_serde_roundtrip() -> Result<(), Box<dyn std::error::Error>> {
         let lease = CapabilityLease {
             id: Uuid::new_v4(),
             capability: Capability {
@@ -571,11 +572,12 @@ mod tests {
             granted_by: "admin".into(),
             revoked: false,
         };
-        let json = serde_json::to_string(&lease).unwrap();
-        let back: CapabilityLease = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&lease)?;
+        let back: CapabilityLease = serde_json::from_str(&json)?;
         assert_eq!(lease.id, back.id);
         assert_eq!(lease.capability.name, back.capability.name);
         assert_eq!(lease.granted_by, back.granted_by);
+        Ok(())
     }
 
     #[test]

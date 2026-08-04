@@ -223,7 +223,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_artifact_store() {
+    async fn test_artifact_store() -> Result<(), Box<dyn std::error::Error>> {
         let store = ArtifactStore::new(86400, 100_000);
         let artifact = Artifact::new(
             TaskId::new(),
@@ -232,14 +232,15 @@ mod tests {
             serde_json::json!({"tool": "test"}),
         );
         let id = artifact.id.clone();
-        store.store(artifact).await.unwrap();
+        store.store(artifact).await?;
 
-        let retrieved = store.get(&id).await.unwrap();
+        let retrieved = store.get(&id).await.ok_or_else(|| "artifact not found")?;
         assert_eq!(retrieved.content, "test output");
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_artifact_store_get_by_task() {
+    async fn test_artifact_store_get_by_task() -> Result<(), Box<dyn std::error::Error>> {
         let store = ArtifactStore::new(86400, 100_000);
         let task_id = TaskId::new();
         let artifact = Artifact::new(
@@ -248,14 +249,15 @@ mod tests {
             "test output".to_string(),
             serde_json::json!({"tool": "test"}),
         );
-        store.store(artifact).await.unwrap();
+        store.store(artifact).await?;
 
         let artifacts = store.get_by_task(&task_id).await;
         assert_eq!(artifacts.len(), 1);
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_artifact_store_cleanup_expired() {
+    async fn test_artifact_store_cleanup_expired() -> Result<(), Box<dyn std::error::Error>> {
         let store = ArtifactStore::new(0, 100_000);
         let artifact = Artifact::new_with_ttl(
             TaskId::new(),
@@ -264,11 +266,12 @@ mod tests {
             serde_json::json!({"tool": "test"}),
             0,
         );
-        store.store(artifact).await.unwrap();
+        store.store(artifact).await?;
         store.cleanup_expired().await;
 
         let all = store.list_all().await;
         assert!(all.is_empty());
+        Ok(())
     }
 
     #[test]

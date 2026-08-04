@@ -436,12 +436,12 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_worker_pool_find_idle_worker() {
+    async fn test_worker_pool_find_idle_worker() -> Result<(), Box<dyn std::error::Error>> {
         let config = WorkerConfig::default();
         let pool = WorkerPool::new(config);
         let idle_idx = pool.find_idle_worker().await;
-        assert!(idle_idx.is_some());
-        assert_eq!(idle_idx.unwrap(), 0);
+        assert_eq!(idle_idx.ok_or_else(|| "no idle worker")?, 0);
+        Ok(())
     }
 
     #[test]

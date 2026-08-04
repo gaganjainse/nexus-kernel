@@ -350,17 +350,18 @@ mod tests {
     }
 
     #[test]
-    fn test_route_decision_serde() {
+    fn test_route_decision_serde_roundtrip() -> Result<(), Box<dyn std::error::Error>> {
         let decision = RouteDecision {
             primary_role: ModelRole::Coder,
             review_role: Some(ModelRole::Reviewer),
             confidence: 0.8,
             reason: "test".to_string(),
         };
-        let json = serde_json::to_string(&decision).unwrap();
-        let back: RouteDecision = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&decision)?;
+        let back: RouteDecision = serde_json::from_str(&json)?;
         assert_eq!(decision.primary_role, back.primary_role);
         assert_eq!(decision.confidence, back.confidence);
+        Ok(())
     }
 
     #[test]
