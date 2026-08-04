@@ -468,6 +468,30 @@ impl Kernel {
         self.event_store.append(event).await
     }
 
+    /// Redact common secret patterns from strings before storing in events.
+    /// Prevents secrets from leaking into the audit log.
+    fn redact_secrets(text: &str) -> String {
+        let mut result = text.to_string();
+        let secret_patterns = [
+            "api_key=",
+            "apikey=",
+            "secret=",
+            "token=",
+            "password=",
+            "passwd=",
+        ];
+        for pattern in &secret_patterns {
+            if let Some(pos) = result.find(pattern) {
+                let end = result[pos..]
+                    .find(|c: char| c.is_whitespace() || c == '"' || c == '\'' || c == '\n')
+                    .map(|i| pos + i)
+                    .unwrap_or(result.len());
+                result.replace_range(pos..end, &format!("{}***REDACTED***", pattern));
+            }
+        }
+        result
+    }
+
     async fn emit_model_requested(
         &self,
         task_id: TaskId,
@@ -490,13 +514,14 @@ impl Kernel {
         response_tokens: usize,
         content: &str,
     ) -> Result<(), NexusError> {
+        let redacted = Self::redact_secrets(content);
         self.emit_event(Event::new(
             task_id,
             EventKind::ModelResponded,
             EventPayload::ModelResponse {
                 role: role.to_string(),
                 response_tokens,
-                content: content.to_string(),
+                content: redacted,
             },
             "kernel".to_string(),
         ))
@@ -528,13 +553,14 @@ impl Kernel {
     ) -> Result<(), NexusError> {
         let max_size = self.max_tool_output_size;
         let truncated = truncate_output(output, max_size);
+        let redacted = Self::redact_secrets(&truncated);
         self.emit_event(Event::new(
             task_id,
             kind,
             EventPayload::ToolResult {
                 tool_name: tool_name.to_string(),
                 success,
-                output: truncated.to_string(),
+                output: redacted,
             },
             "kernel".to_string(),
         ))
