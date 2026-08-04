@@ -225,6 +225,17 @@ impl Kernel {
 
         self.transition_task(task_id, TaskState::Planned).await?;
 
+        // If the task was routed to the vision model, treat its output
+        // as a structured observation, not a direct action (§6.8).
+        if task.assigned_role == Some(crate::state::ModelRole::Vision) {
+            self.emit_vision_observation(
+                *task_id,
+                "Vision",
+                &plan_resp.content,
+            )
+            .await?;
+        }
+
         let plan = plan_resp.content.to_lowercase();
         let requires_coder = ["write code", "implement ", "edit ", "fix bug", "refactor"]
             .iter()
