@@ -165,7 +165,7 @@ mod tests {
     }
 
     #[test]
-    fn test_registry() {
+    fn test_registry() -> Result<(), Box<dyn std::error::Error>> {
         let registry = ControllerRegistry::new();
         let controller = Arc::new(MockController {
             block_id: "blk1".to_string(),
@@ -184,17 +184,21 @@ mod tests {
 
         assert!(registry.remove("blk1").is_some());
         assert!(registry.remove("blk1").is_none());
+    Ok(())
+    Ok(())
     }
 
     #[test]
-    fn test_registry_default_constructor() {
+    fn test_registry_default_constructor() -> Result<(), Box<dyn std::error::Error>> {
         let registry = ControllerRegistry::default();
         assert!(registry.list().is_empty());
         assert!(registry.get("any").is_none());
+    Ok(())
+    Ok(())
     }
 
     #[test]
-    fn test_registry_multiple_controllers() {
+    fn test_registry_multiple_controllers() -> Result<(), Box<dyn std::error::Error>> {
         let registry = ControllerRegistry::new();
         let c1 = Arc::new(MockController {
             block_id: "blk1".to_string(),
@@ -212,22 +216,28 @@ mod tests {
         assert_eq!(statuses.len(), 2);
         assert!(statuses.iter().any(|s| s.block_id == "blk1"));
         assert!(statuses.iter().any(|s| s.block_id == "blk2"));
+    Ok(())
+    Ok(())
     }
 
     #[test]
-    fn test_registry_remove_nonexistent() {
+    fn test_registry_remove_nonexistent() -> Result<(), Box<dyn std::error::Error>> {
         let registry = ControllerRegistry::new();
         assert!(registry.remove("nonexistent").is_none());
+    Ok(())
+    Ok(())
     }
 
     #[test]
-    fn test_registry_list_empty() {
+    fn test_registry_list_empty() -> Result<(), Box<dyn std::error::Error>> {
         let registry = ControllerRegistry::new();
         assert!(registry.list().is_empty());
+    Ok(())
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_registry_send_input_not_found() {
+    async fn test_registry_send_input_not_found() -> Result<(), Box<dyn std::error::Error>> {
         let registry = ControllerRegistry::new();
         let result = registry.send_input("nonexistent", BlockInput::Data(b"hello".to_vec())).await;
         assert!(result.is_err());
@@ -235,24 +245,28 @@ mod tests {
             Err(ControllerError::BlockNotFound(id)) => assert_eq!(id, "nonexistent"),
             _ => panic!("expected BlockNotFound error"),
         }
+    Ok(())
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_registry_send_input_found() {
+    async fn test_registry_send_input_found() -> Result<(), Box<dyn std::error::Error>> {
         use std::sync::atomic::AtomicBool;
         let registry = ControllerRegistry::new();
         let controller = Arc::new(MockController {
             block_id: "blk1".to_string(),
             started: AtomicBool::new(false),
         });
-        registry.register("blk1", controller).unwrap();
+        registry.register("blk1", controller)?;
 
         let result = registry.send_input("blk1", BlockInput::Data(b"test".to_vec())).await;
         assert!(result.is_ok());
+    Ok(())
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_registry_stop_all() {
+    async fn test_registry_stop_all() -> Result<(), Box<dyn std::error::Error>> {
         use std::sync::atomic::AtomicBool;
         let registry = ControllerRegistry::new();
         let c1 = Arc::new(MockController {
@@ -263,8 +277,8 @@ mod tests {
             block_id: "blk2".to_string(),
             started: AtomicBool::new(true),
         });
-        registry.register("blk1", c1.clone()).unwrap();
-        registry.register("blk2", c2.clone()).unwrap();
+        registry.register("blk1", c1.clone())?;
+        registry.register("blk2", c2.clone())?;
 
         registry.stop_all();
 
@@ -273,10 +287,12 @@ mod tests {
         let statuses = registry.list();
         assert_eq!(statuses.len(), 2);
         assert!(statuses.iter().all(|s| s.status == "init"));
+    Ok(())
+    Ok(())
     }
 
     #[test]
-    fn test_controller_status_serialization() {
+    fn test_controller_status_serialization() -> Result<(), Box<dyn std::error::Error>> {
         let status = ControllerStatus {
             block_id: "blk1".to_string(),
             status: "running".to_string(),
@@ -284,35 +300,41 @@ mod tests {
             exit_code: Some(0),
         };
 
-        let json = serde_json::to_string(&status).unwrap();
-        let parsed: ControllerStatus = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&status)?;
+        let parsed: ControllerStatus = serde_json::from_str(&json)?;
         assert_eq!(parsed.block_id, "blk1");
         assert_eq!(parsed.status, "running");
         assert_eq!(parsed.conn_name, "local");
         assert_eq!(parsed.exit_code, Some(0));
+    Ok(())
+    Ok(())
     }
 
     #[test]
-    fn test_controller_status_deserialization() {
+    fn test_controller_status_deserialization() -> Result<(), Box<dyn std::error::Error>> {
         let json = r#"{"block_id":"blk1","status":"done","conn_name":"remote","exit_code":1}"#;
-        let status: ControllerStatus = serde_json::from_str(json).unwrap();
+        let status: ControllerStatus = serde_json::from_str(json)?;
         assert_eq!(status.block_id, "blk1");
         assert_eq!(status.status, "done");
         assert_eq!(status.conn_name, "remote");
         assert_eq!(status.exit_code, Some(1));
+    Ok(())
+    Ok(())
     }
 
     #[test]
-    fn test_block_input_data_variant() {
+    fn test_block_input_data_variant() -> Result<(), Box<dyn std::error::Error>> {
         let input = BlockInput::Data(b"hello".to_vec());
         match input {
             BlockInput::Data(d) => assert_eq!(d, b"hello"),
             _ => panic!("expected Data variant"),
         }
+    Ok(())
+    Ok(())
     }
 
     #[test]
-    fn test_block_input_resize_variant() {
+    fn test_block_input_resize_variant() -> Result<(), Box<dyn std::error::Error>> {
         let input = BlockInput::Resize { rows: 24, cols: 80 };
         match input {
             BlockInput::Resize { rows, cols } => {
@@ -321,19 +343,23 @@ mod tests {
             }
             _ => panic!("expected Resize variant"),
         }
+    Ok(())
+    Ok(())
     }
 
     #[test]
-    fn test_block_input_signal_variant() {
+    fn test_block_input_signal_variant() -> Result<(), Box<dyn std::error::Error>> {
         let input = BlockInput::Signal(2);
         match input {
             BlockInput::Signal(sig) => assert_eq!(sig, 2),
             _ => panic!("expected Signal variant"),
         }
+    Ok(())
+    Ok(())
     }
 
     #[test]
-    fn test_controller_error_display() {
+    fn test_controller_error_display() -> Result<(), Box<dyn std::error::Error>> {
         let err = ControllerError::BlockNotFound("blk1".to_string());
         assert_eq!(err.to_string(), "block not found: blk1");
 
@@ -345,30 +371,35 @@ mod tests {
 
         let err = ControllerError::Shell("pty error".to_string());
         assert_eq!(err.to_string(), "shell error: pty error");
+    Ok(())
+    Ok(())
     }
 
     #[test]
-    fn test_controller_error_io_from() {
+    fn test_controller_error_io_from() -> Result<(), Box<dyn std::error::Error>> {
         let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "file not found");
         let controller_err: ControllerError = io_err.into();
         match controller_err {
             ControllerError::Io(_) => {}
             _ => panic!("expected Io variant"),
         }
+    Ok(())
+    Ok(())
     }
 
     #[test]
-    fn test_registry_get_returns_cloned_arc() {
+    fn test_registry_get_returns_cloned_arc() -> Result<(), Box<dyn std::error::Error>> {
         use std::sync::atomic::AtomicBool;
         let registry = ControllerRegistry::new();
         let controller = Arc::new(MockController {
             block_id: "blk1".to_string(),
             started: AtomicBool::new(false),
         });
-        registry.register("blk1", controller.clone()).unwrap();
+        registry.register("blk1", controller.clone())?;
 
-        let retrieved = registry.get("blk1").unwrap();
+        let retrieved = registry.get("blk1").ok_or("controller not found")?;
         assert_eq!(retrieved.runtime_status().block_id, "blk1");
         assert_eq!(retrieved.conn_name(), "mock");
+    Ok(())
     }
 }

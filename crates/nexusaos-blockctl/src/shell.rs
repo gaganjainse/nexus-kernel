@@ -191,13 +191,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_detect_shell() {
+    fn test_detect_shell() -> Result<(), Box<dyn std::error::Error>> {
         let shell = detect_shell();
         assert!(!shell.is_empty());
+    Ok(())
     }
 
     #[test]
-    fn test_controller_init() {
+    fn test_controller_init() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(BlockFileStore::new());
         let controller = ShellController::new("blk1".to_string(), store, None);
         let status = controller.runtime_status();
@@ -205,20 +206,22 @@ mod tests {
         assert_eq!(status.conn_name, "local");
         assert_eq!(status.block_id, "blk1");
         assert_eq!(status.exit_code, None);
+    Ok(())
     }
 
     #[test]
-    fn test_controller_init_with_custom_shell() {
+    fn test_controller_init_with_custom_shell() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(BlockFileStore::new());
         let controller =
             ShellController::new("blk1".to_string(), store, Some("/bin/sh".to_string()));
         assert_eq!(controller.conn_name(), "local");
         let status = controller.runtime_status();
         assert_eq!(status.status, "init");
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_send_input_before_start() {
+    async fn test_send_input_before_start() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(BlockFileStore::new());
         let controller = ShellController::new("blk1".to_string(), store, None);
         let result = controller.send_input(BlockInput::Data(b"hello".to_vec())).await;
@@ -227,40 +230,43 @@ mod tests {
             Err(ControllerError::NotRunning(id)) => assert_eq!(id, "blk1"),
             _ => panic!("expected NotRunning error"),
         }
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_stop_sets_status_done() {
+    async fn test_stop_sets_status_done() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(BlockFileStore::new());
         let controller = ShellController::new("blk1".to_string(), store, None);
-        controller.stop(false).await.unwrap();
+        controller.stop(false).await?;
         let status = controller.runtime_status();
         assert_eq!(status.status, "done");
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_stop_graceful_vs_ungraceful() {
+    async fn test_stop_graceful_vs_ungraceful() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(BlockFileStore::new());
         let controller = ShellController::new("blk1".to_string(), store, None);
-        controller.stop(true).await.unwrap();
+        controller.stop(true).await?;
         let status = controller.runtime_status();
         assert_eq!(status.status, "done");
 
         let store2 = Arc::new(BlockFileStore::new());
         let controller2 = ShellController::new("blk2".to_string(), store2, None);
-        controller2.stop(false).await.unwrap();
+        controller2.stop(false).await?;
         let status2 = controller2.runtime_status();
         assert_eq!(status2.status, "done");
+    Ok(())
     }
 
     #[tokio::test]
     #[ignore]
-    async fn test_integration_shell() {
+    async fn test_integration_shell() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(BlockFileStore::new());
         let controller = ShellController::new("blk1".to_string(), store.clone(), None);
-        controller.start().await.unwrap();
+        controller.start().await?;
 
-        controller.send_input(BlockInput::Data(b"echo hello\n".to_vec())).await.unwrap();
+        controller.send_input(BlockInput::Data(b"echo hello\n".to_vec())).await?;
 
         tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
 
@@ -268,15 +274,16 @@ mod tests {
         let output_str = String::from_utf8_lossy(&output);
         assert!(output_str.contains("hello"));
 
-        controller.send_input(BlockInput::Data(b"exit\n".to_vec())).await.unwrap();
+        controller.send_input(BlockInput::Data(b"exit\n".to_vec())).await?;
         tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
 
         let status = controller.runtime_status();
         assert_eq!(status.status, "done");
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_start_invalid_shell_path() {
+    async fn test_start_invalid_shell_path() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(BlockFileStore::new());
         let controller =
             ShellController::new("blk1".to_string(), store, Some("/nonexistent/shell".to_string()));
@@ -286,18 +293,20 @@ mod tests {
             Err(ControllerError::Shell(_)) => {}
             _ => panic!("expected Shell error"),
         }
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_send_input_after_stop() {
+    async fn test_send_input_after_stop() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(BlockFileStore::new());
         let controller = ShellController::new("blk1".to_string(), store, None);
-        controller.stop(true).await.unwrap();
+        controller.stop(true).await?;
         let result = controller.send_input(BlockInput::Data(b"hello".to_vec())).await;
         assert!(result.is_err());
         match result {
             Err(ControllerError::NotRunning(_)) => {}
             _ => panic!("expected NotRunning error"),
         }
+    Ok(())
     }
 }

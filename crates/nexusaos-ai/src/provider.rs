@@ -38,37 +38,42 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_ai_error_api_display() {
+    fn test_ai_error_api_display() -> Result<(), Box<dyn std::error::Error>> {
         let err = AiError::Api("bad request".to_string());
         assert_eq!(err.to_string(), "API error: bad request");
+    Ok(())
     }
 
     #[test]
-    fn test_chat_message_serde_roundtrip() {
+    fn test_chat_message_serde_roundtrip() -> Result<(), Box<dyn std::error::Error>> {
         let msg = ChatMessage { role: "user".to_string(), content: "hello".to_string() };
-        let json = serde_json::to_string(&msg).unwrap();
-        let decoded: ChatMessage = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&msg)?;
+        let decoded: ChatMessage = serde_json::from_str(&json)?;
         assert_eq!(msg, decoded);
+    Ok(())
     }
 
     #[test]
-    fn test_chat_request_construction() {
+    fn test_chat_request_construction() -> Result<(), Box<dyn std::error::Error>> {
         let req = ChatRequest { messages: vec![], model: "gpt".to_string(), max_tokens: Some(100) };
         assert!(req.messages.is_empty());
         assert_eq!(req.model, "gpt");
         assert_eq!(req.max_tokens, Some(100));
+    Ok(())
     }
 
     #[test]
-    fn test_chat_request_with_none_max_tokens() {
+    fn test_chat_request_with_none_max_tokens() -> Result<(), Box<dyn std::error::Error>> {
         let req = ChatRequest { messages: vec![], model: "gpt".to_string(), max_tokens: None };
         assert!(req.max_tokens.is_none());
+    Ok(())
     }
 
     #[test]
-    fn test_chat_message_clone() {
+    fn test_chat_message_clone() -> Result<(), Box<dyn std::error::Error>> {
         let msg = ChatMessage { role: "assistant".to_string(), content: "response".to_string() };
         let cloned = msg.clone();
         assert_eq!(msg, cloned);
+    Ok(())
     }
 }

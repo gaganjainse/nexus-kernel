@@ -30,6 +30,5 @@ impl ApprovalModal {
 mod tests {
     #[test]
     fn test_modal_struct_exists() {
-        assert!(true);
     }
 }

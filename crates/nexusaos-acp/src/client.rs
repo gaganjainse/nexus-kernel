@@ -194,35 +194,38 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_acp_request_serde() {
+    fn test_acp_request_serde() -> Result<(), Box<dyn std::error::Error>> {
         let req = AcpRequest {
             jsonrpc: "2.0".to_string(),
             method: "authenticate".to_string(),
             params: None,
             id: Some("1".to_string()),
         };
-        let json = serde_json::to_string(&req).unwrap();
-        let back: AcpRequest = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&req)?;
+        let back: AcpRequest = serde_json::from_str(&json)?;
         assert_eq!(back.method, "authenticate");
+    Ok(())
     }
 
     #[test]
-    fn test_acp_response_serde() {
+    fn test_acp_response_serde() -> Result<(), Box<dyn std::error::Error>> {
         let resp = AcpResponse {
             jsonrpc: "2.0".to_string(),
             result: Some(serde_json::json!({"granted": true})),
             error: None,
             id: Some("1".to_string()),
         };
-        let json = serde_json::to_string(&resp).unwrap();
-        let back: AcpResponse = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&resp)?;
+        let back: AcpResponse = serde_json::from_str(&json)?;
         assert!(back.result.is_some());
+    Ok(())
     }
 
     #[test]
-    fn test_acp_client_new() {
+    fn test_acp_client_new() -> Result<(), Box<dyn std::error::Error>> {
         let client = AcpClient::new("/tmp/test.sock", "agent-1");
         assert_eq!(client.socket_path, "/tmp/test.sock");
         assert_eq!(client.agent_id, "agent-1");
+    Ok(())
     }
 }

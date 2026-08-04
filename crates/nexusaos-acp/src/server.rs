@@ -283,7 +283,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_handle_request_ping() {
+    async fn test_handle_request_ping() -> Result<(), Box<dyn std::error::Error>> {
         let manager =
             Arc::new(AcpSessionManager::new(10, 3600, Arc::new(PolicyEngine::deny_all())));
         let req = AcpRequest {
@@ -293,11 +293,12 @@ mod tests {
             id: Some("1".to_string()),
         };
         let resp = handle_request(&req, &manager).await;
-        assert_eq!(resp.result.unwrap(), serde_json::json!({"pong": true}));
+        assert_eq!(resp.result.ok_or("response result was None")?, serde_json::json!({"pong": true}));
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_handle_request_unknown_method() {
+    async fn test_handle_request_unknown_method() -> Result<(), Box<dyn std::error::Error>> {
         let manager =
             Arc::new(AcpSessionManager::new(10, 3600, Arc::new(PolicyEngine::deny_all())));
         let req = AcpRequest {
@@ -308,5 +309,6 @@ mod tests {
         };
         let resp = handle_request(&req, &manager).await;
         assert!(resp.error.is_some());
+    Ok(())
     }
 }

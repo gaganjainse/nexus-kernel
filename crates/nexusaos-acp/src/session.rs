@@ -226,46 +226,49 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_session_create() {
+    async fn test_session_create() -> Result<(), Box<dyn std::error::Error>> {
         let policy = PolicyEngine::deny_all();
         let manager = AcpSessionManager::new(10, 3600, Arc::new(policy));
         let agent = test_agent();
-        let session = manager.create_session(agent).await.unwrap();
+        let session = manager.create_session(agent).await?;
         assert_eq!(session.state, AcpSessionState::Active);
         assert!(session.is_active());
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_session_grant_capability() {
+    async fn test_session_grant_capability() -> Result<(), Box<dyn std::error::Error>> {
         let policy = PolicyEngine::deny_all();
         let manager = AcpSessionManager::new(10, 3600, Arc::new(policy));
         let agent = test_agent();
-        let session = manager.create_session(agent).await.unwrap();
+        let session = manager.create_session(agent).await?;
 
         let cap = Capability {
             name: "fs_read".to_string(),
             scope: Scope::Path(std::path::PathBuf::from("/tmp")),
             description: "read /tmp".to_string(),
         };
-        let lease = session.grant_capability(cap, "admin".to_string(), None).await.unwrap();
+        let lease = session.grant_capability(cap, "admin".to_string(), None).await?;
         assert!(!lease.revoked);
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_session_terminate() {
+    async fn test_session_terminate() -> Result<(), Box<dyn std::error::Error>> {
         let policy = PolicyEngine::deny_all();
         let manager = AcpSessionManager::new(10, 3600, Arc::new(policy));
         let agent = test_agent();
-        let session = manager.create_session(agent).await.unwrap();
+        let session = manager.create_session(agent).await?;
         let session_id = session.session_id.clone();
 
-        manager.terminate_session(&session_id).await.unwrap();
-        let updated = manager.get_session(&session_id).await.unwrap();
+        manager.terminate_session(&session_id).await?;
+        let updated = manager.get_session(&session_id).await.ok_or("session not found")?;
         assert_eq!(updated.state, AcpSessionState::Terminated);
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_session_max_sessions() {
+    async fn test_session_max_sessions() -> Result<(), Box<dyn std::error::Error>> {
         let policy = PolicyEngine::deny_all();
         let manager = AcpSessionManager::new(2, 3600, Arc::new(policy));
 
@@ -285,18 +288,20 @@ mod tests {
             capabilities: Arc::new(RwLock::new(CapabilitySet::new())),
         };
 
-        manager.create_session(agent1).await.unwrap();
-        manager.create_session(agent2).await.unwrap();
+        manager.create_session(agent1).await?;
+        manager.create_session(agent2).await?;
         let result = manager.create_session(agent3).await;
         assert!(result.is_err());
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_session_is_active() {
+    async fn test_session_is_active() -> Result<(), Box<dyn std::error::Error>> {
         let policy = PolicyEngine::deny_all();
         let manager = AcpSessionManager::new(10, 3600, Arc::new(policy));
         let agent = test_agent();
-        let session = manager.create_session(agent).await.unwrap();
+        let session = manager.create_session(agent).await?;
         assert!(session.is_active());
+    Ok(())
     }
 }

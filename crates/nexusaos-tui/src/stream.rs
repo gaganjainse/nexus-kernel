@@ -19,7 +19,6 @@ mod tests {
     #[test]
     fn test_push_token() {
         TokenStreamer::push_token("");
-        assert!(true);
     }
 
     #[test]

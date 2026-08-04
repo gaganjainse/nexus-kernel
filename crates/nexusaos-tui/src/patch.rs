@@ -111,7 +111,7 @@ mod tests {
 
         PatchEngine::apply_patch(&file_path, &patch).unwrap();
         let updated = fs::read_to_string(&file_path).unwrap();
-        assert!(updated.is_empty() || updated == "");
+        assert!(updated.is_empty());
     }
 
     #[test]

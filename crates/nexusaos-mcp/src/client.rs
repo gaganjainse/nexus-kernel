@@ -165,34 +165,37 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_mcp_request_serde() {
+    fn test_mcp_request_serde() -> Result<(), Box<dyn std::error::Error>> {
         let req = McpRequest {
             jsonrpc: "2.0".to_string(),
             method: "tools/list".to_string(),
             params: None,
             id: Some("1".to_string()),
         };
-        let json = serde_json::to_string(&req).expect("failed to serialize McpRequest");
-        let back: McpRequest = serde_json::from_str(&json).expect("failed to deserialize McpRequest");
+        let json = serde_json::to_string(&req)?;
+        let back: McpRequest = serde_json::from_str(&json)?;
         assert_eq!(back.method, "tools/list");
+    Ok(())
     }
 
     #[test]
-    fn test_mcp_response_serde() {
+    fn test_mcp_response_serde() -> Result<(), Box<dyn std::error::Error>> {
         let resp = McpResponse {
             jsonrpc: "2.0".to_string(),
             result: Some(serde_json::json!({"tools": []})),
             error: None,
             id: Some("1".to_string()),
         };
-        let json = serde_json::to_string(&resp).expect("failed to serialize McpResponse");
-        let back: McpResponse = serde_json::from_str(&json).expect("failed to deserialize McpResponse");
+        let json = serde_json::to_string(&resp)?;
+        let back: McpResponse = serde_json::from_str(&json)?;
         assert!(back.result.is_some());
+    Ok(())
     }
 
     #[test]
-    fn test_mcp_client_new() {
+    fn test_mcp_client_new() -> Result<(), Box<dyn std::error::Error>> {
         let client = McpClient::new("/tmp/test.sock");
         assert_eq!(client.socket_path, "/tmp/test.sock");
+    Ok(())
     }
 }

@@ -267,7 +267,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_handle_request_ping() {
+    async fn test_handle_request_ping() -> Result<(), Box<dyn std::error::Error>> {
         let req = McpRequest {
             jsonrpc: "2.0".to_string(),
             method: "ping".to_string(),
@@ -278,11 +278,12 @@ mod tests {
         let policy = PolicyEngine::deny_all();
         let caps = CapabilitySet::new();
         let resp = handle_request(&req, &broker, &policy, &caps).await;
-        assert_eq!(resp.result.expect("ping response should have result"), serde_json::json!({"pong": true}));
+        assert_eq!(resp.result.ok_or("ping response should have result")?, serde_json::json!({"pong": true}));
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_handle_request_tools_list() {
+    async fn test_handle_request_tools_list() -> Result<(), Box<dyn std::error::Error>> {
         let req = McpRequest {
             jsonrpc: "2.0".to_string(),
             method: "tools/list".to_string(),
@@ -294,10 +295,11 @@ mod tests {
         let caps = CapabilitySet::new();
         let resp = handle_request(&req, &broker, &policy, &caps).await;
         assert!(resp.result.is_some());
+    Ok(())
     }
 
     #[tokio::test]
-    async fn test_handle_request_unknown_method() {
+    async fn test_handle_request_unknown_method() -> Result<(), Box<dyn std::error::Error>> {
         let req = McpRequest {
             jsonrpc: "2.0".to_string(),
             method: "unknown".to_string(),
@@ -309,15 +311,17 @@ mod tests {
         let caps = CapabilitySet::new();
         let resp = handle_request(&req, &broker, &policy, &caps).await;
         assert!(resp.error.is_some());
+    Ok(())
     }
 
     #[test]
-    fn test_mcp_server_new() {
+    fn test_mcp_server_new() -> Result<(), Box<dyn std::error::Error>> {
         let broker = Arc::new(ToolBroker::new(Arc::new(PolicyEngine::deny_all())));
         let policy = Arc::new(PolicyEngine::deny_all());
         let caps = Arc::new(CapabilitySet::new());
         let config = McpServerConfig::default();
         let server = McpServer::new(config, broker, policy, caps);
         assert_eq!(server.config.socket_path, "/tmp/nexusaos-mcp.sock");
+    Ok(())
     }
 }

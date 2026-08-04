@@ -81,192 +81,215 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_append_and_read_all() {
+    fn test_append_and_read_all() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         store.append("blk1", b"hello");
-        assert_eq!(store.read_all("blk1").unwrap(), b"hello");
+        assert_eq!(store.read_all("blk1").ok_or("unexpected None")?, b"hello");
+    Ok(())
     }
 
     #[test]
-    fn test_truncate_exceeding_max_size() {
+    fn test_truncate_exceeding_max_size() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         store.set_max_size("blk1", 5);
         store.append("blk1", b"hello world");
-        assert_eq!(store.read_all("blk1").unwrap(), b"world");
+        assert_eq!(store.read_all("blk1").ok_or("unexpected None")?, b"world");
+    Ok(())
     }
 
     #[test]
-    fn test_read_tail() {
+    fn test_read_tail() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         store.append("blk1", b"1234567890");
-        assert_eq!(store.read_tail("blk1", 3).unwrap(), b"890");
+        assert_eq!(store.read_tail("blk1", 3).ok_or("unexpected None")?, b"890");
+    Ok(())
     }
 
     #[test]
-    fn test_truncate_and_delete() {
+    fn test_truncate_and_delete() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         store.append("blk1", b"123");
         store.truncate("blk1");
-        assert_eq!(store.read_all("blk1").unwrap(), b"");
+        assert_eq!(store.read_all("blk1").ok_or("unexpected None")?, b"");
         store.delete_zone("blk1");
         assert!(store.read_all("blk1").is_none());
+    Ok(())
     }
 
     #[test]
-    fn test_multiple_zones() {
+    fn test_multiple_zones() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         store.append("blk1", b"aaa");
         store.append("blk2", b"bbb");
-        assert_eq!(store.read_all("blk1").unwrap(), b"aaa");
-        assert_eq!(store.read_all("blk2").unwrap(), b"bbb");
+        assert_eq!(store.read_all("blk1").ok_or("unexpected None")?, b"aaa");
+        assert_eq!(store.read_all("blk2").ok_or("unexpected None")?, b"bbb");
+    Ok(())
     }
 
     #[test]
-    fn test_default_constructor() {
+    fn test_default_constructor() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::default();
         assert!(store.read_all("any").is_none());
         assert_eq!(store.zone_size("any"), 0);
+    Ok(())
     }
 
     #[test]
-    fn test_append_empty_data() {
+    fn test_append_empty_data() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         store.append("blk1", b"");
-        assert_eq!(store.read_all("blk1").unwrap(), b"");
+        assert_eq!(store.read_all("blk1").ok_or("unexpected None")?, b"");
         assert_eq!(store.zone_size("blk1"), 0);
+    Ok(())
     }
 
     #[test]
-    fn test_append_multiple_times() {
+    fn test_append_multiple_times() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         store.append("blk1", b"hello ");
         store.append("blk1", b"world");
         store.append("blk1", b"!");
-        assert_eq!(store.read_all("blk1").unwrap(), b"hello world!");
+        assert_eq!(store.read_all("blk1").ok_or("unexpected None")?, b"hello world!");
         assert_eq!(store.zone_size("blk1"), 12);
+    Ok(())
     }
 
     #[test]
-    fn test_append_exceeds_default_max_size() {
+    fn test_append_exceeds_default_max_size() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         let large_data = vec![b'x'; 2 * 1024 * 1024];
         store.append("blk1", &large_data);
         let size = store.zone_size("blk1");
         assert!(size <= 1024 * 1024);
         assert_eq!(size, 1024 * 1024);
+    Ok(())
     }
 
     #[test]
-    fn test_read_all_nonexistent_zone() {
+    fn test_read_all_nonexistent_zone() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         assert!(store.read_all("nonexistent").is_none());
+    Ok(())
     }
 
     #[test]
-    fn test_read_tail_nonexistent_zone() {
+    fn test_read_tail_nonexistent_zone() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         assert!(store.read_tail("nonexistent", 10).is_none());
+    Ok(())
     }
 
     #[test]
-    fn test_read_tail_larger_than_data() {
+    fn test_read_tail_larger_than_data() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         store.append("blk1", b"abc");
-        assert_eq!(store.read_tail("blk1", 100).unwrap(), b"abc");
+        assert_eq!(store.read_tail("blk1", 100).ok_or("unexpected None")?, b"abc");
+    Ok(())
     }
 
     #[test]
-    fn test_read_tail_zero_bytes() {
+    fn test_read_tail_zero_bytes() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         store.append("blk1", b"abc");
-        assert_eq!(store.read_tail("blk1", 0).unwrap(), b"");
+        assert_eq!(store.read_tail("blk1", 0).ok_or("unexpected None")?, b"");
+    Ok(())
     }
 
     #[test]
-    fn test_truncate_nonexistent_zone() {
+    fn test_truncate_nonexistent_zone() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         store.truncate("nonexistent");
         assert!(store.read_all("nonexistent").is_none());
+    Ok(())
     }
 
     #[test]
-    fn test_delete_zone_nonexistent() {
+    fn test_delete_zone_nonexistent() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         store.delete_zone("nonexistent");
         assert!(store.read_all("nonexistent").is_none());
+    Ok(())
     }
 
     #[test]
-    fn test_zone_size_nonexistent() {
+    fn test_zone_size_nonexistent() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         assert_eq!(store.zone_size("nonexistent"), 0);
+    Ok(())
     }
 
     #[test]
-    fn test_zone_size_after_operations() {
+    fn test_zone_size_after_operations() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         store.append("blk1", b"hello");
         assert_eq!(store.zone_size("blk1"), 5);
         store.truncate("blk1");
         assert_eq!(store.zone_size("blk1"), 0);
+    Ok(())
     }
 
     #[test]
-    fn test_set_max_size_creates_zone() {
+    fn test_set_max_size_creates_zone() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         store.set_max_size("new_zone", 100);
         assert_eq!(store.zone_size("new_zone"), 0);
         store.append("new_zone", b"data");
-        assert_eq!(store.read_all("new_zone").unwrap(), b"data");
+        assert_eq!(store.read_all("new_zone").ok_or("unexpected None")?, b"data");
+    Ok(())
     }
 
     #[test]
-    fn test_set_max_size_shrinks_existing_data() {
+    fn test_set_max_size_shrinks_existing_data() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         store.append("blk1", b"hello world");
-        assert_eq!(store.read_all("blk1").unwrap(), b"hello world");
+        assert_eq!(store.read_all("blk1").ok_or("unexpected None")?, b"hello world");
         store.set_max_size("blk1", 5);
-        assert_eq!(store.read_all("blk1").unwrap(), b"world");
+        assert_eq!(store.read_all("blk1").ok_or("unexpected None")?, b"world");
         assert_eq!(store.zone_size("blk1"), 5);
+    Ok(())
     }
 
     #[test]
-    fn test_set_max_size_zero() {
+    fn test_set_max_size_zero() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         store.append("blk1", b"hello");
         store.set_max_size("blk1", 0);
-        assert_eq!(store.read_all("blk1").unwrap(), b"");
+        assert_eq!(store.read_all("blk1").ok_or("unexpected None")?, b"");
         assert_eq!(store.zone_size("blk1"), 0);
+    Ok(())
     }
 
     #[test]
-    fn test_set_max_size_larger_than_current() {
+    fn test_set_max_size_larger_than_current() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         store.set_max_size("blk1", 100);
         store.append("blk1", b"hello");
-        assert_eq!(store.read_all("blk1").unwrap(), b"hello");
+        assert_eq!(store.read_all("blk1").ok_or("unexpected None")?, b"hello");
+    Ok(())
     }
 
     #[test]
-    fn test_append_after_truncate() {
+    fn test_append_after_truncate() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         store.append("blk1", b"original");
         store.truncate("blk1");
         store.append("blk1", b"new");
-        assert_eq!(store.read_all("blk1").unwrap(), b"new");
+        assert_eq!(store.read_all("blk1").ok_or("unexpected None")?, b"new");
+    Ok(())
     }
 
     #[test]
-    fn test_read_tail_after_multiple_appends() {
+    fn test_read_tail_after_multiple_appends() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         store.append("blk1", b"abc");
         store.append("blk1", b"def");
         store.append("blk1", b"ghi");
-        assert_eq!(store.read_tail("blk1", 4).unwrap(), b"fghi");
+        assert_eq!(store.read_tail("blk1", 4).ok_or("unexpected None")?, b"fghi");
+    Ok(())
     }
 
     #[test]
-    fn test_concurrent_access() {
+    fn test_concurrent_access() -> Result<(), Box<dyn std::error::Error>> {
         use std::sync::Arc;
         let store = Arc::new(BlockFileStore::new());
         let handles: Vec<_> = (0..10)
@@ -279,9 +302,10 @@ mod tests {
             .collect();
 
         for handle in handles {
-            handle.join().unwrap();
+            handle.join().map_err(|e| format!("thread error: {:?}", e))?;
         }
 
         assert_eq!(store.zone_size("blk1"), 10);
+    Ok(())
     }
 }
