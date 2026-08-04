@@ -132,12 +132,20 @@ pub struct Kernel {
     performance_monitor: Arc<PerformanceMonitor>,
     resource_budget: ResourceBudget,
     resource_monitor: Arc<ResourceMonitor>,
-    _context_manager: Arc<ContextManager>,
+    context_manager: Arc<ContextManager>,
     scheduler: Arc<Scheduler>,
     manifest_store: Arc<ManifestStore>,
     artifact_store: Arc<ArtifactStore>,
     dedup_window_secs: u64,
     dedup_cache: Arc<RwLock<DedupCache>>,
+}
+
+struct ModelCallContext<'a> {
+    task_id: TaskId,
+    role_label: &'a str,
+    user_content: &'a str,
+    system_prompt: &'a str,
+    context_budget: usize,
 }
 
 impl Kernel {
@@ -170,7 +178,7 @@ impl Kernel {
             performance_monitor: Arc::new(PerformanceMonitor::new()),
             resource_budget,
             resource_monitor,
-            _context_manager: context_manager,
+            context_manager,
             scheduler,
             manifest_store,
             artifact_store,
@@ -478,7 +486,7 @@ impl Kernel {
         self.check_model_pressure(&crate::state::ModelRole::Planner).await?;
 
         let pressure = self.system_pressure().await;
-        let planner_context_budget = self._context_manager.context_for_task(
+        let planner_context_budget = self.context_manager.context_for_task(
             &task.request.input,
             &pressure,
             planner.max_context(),
@@ -487,13 +495,15 @@ impl Kernel {
 
         let plan_resp = match self
             .call_model_with_fallback(
-                *task_id,
-                "Planner",
-                &input_text,
-                "You are a planner.",
+                &ModelCallContext {
+                    task_id: *task_id,
+                    role_label: "Planner",
+                    user_content: &input_text,
+                    system_prompt: "You are a planner.",
+                    context_budget: planner_context_budget,
+                },
                 planner,
                 None,
-                planner_context_budget,
             )
             .await
         {
@@ -533,7 +543,7 @@ impl Kernel {
             self.check_model_pressure(&crate::state::ModelRole::Coder).await?;
 
             let pressure = self.system_pressure().await;
-            let coder_context_budget = self._context_manager.context_for_task(
+            let coder_context_budget = self.context_manager.context_for_task(
                 &task.request.input,
                 &pressure,
                 coder.max_context(),
@@ -542,13 +552,15 @@ impl Kernel {
 
             let code_resp = match self
                 .call_model_with_fallback(
-                    *task_id,
-                    "Coder",
-                    &final_output,
-                    "You are a coder.",
+                    &ModelCallContext {
+                        task_id: *task_id,
+                        role_label: "Coder",
+                        user_content: &final_output,
+                        system_prompt: "You are a coder.",
+                        context_budget: coder_context_budget,
+                    },
                     coder,
                     None,
-                    coder_context_budget,
                 )
                 .await
             {
@@ -568,7 +580,7 @@ impl Kernel {
                 self.check_model_pressure(&crate::state::ModelRole::Reviewer).await?;
 
                 let pressure = self.system_pressure().await;
-                let reviewer_context_budget = self._context_manager.context_for_task(
+                let reviewer_context_budget = self.context_manager.context_for_task(
                     &task.request.input,
                     &pressure,
                     reviewer.max_context(),
@@ -577,13 +589,15 @@ impl Kernel {
 
                 let rev_resp = match self
                     .call_model_with_fallback(
-                        *task_id,
-                        "Reviewer",
-                        &final_output,
-                        "You are a reviewer.",
+                        &ModelCallContext {
+                            task_id: *task_id,
+                            role_label: "Reviewer",
+                            user_content: &final_output,
+                            system_prompt: "You are a reviewer.",
+                            context_budget: reviewer_context_budget,
+                        },
                         reviewer,
                         None,
-                        reviewer_context_budget,
                     )
                     .await
                 {
@@ -876,6 +890,26 @@ impl Kernel {
         .await
     }
 
+    async fn emit_vision_observation(
+        &self,
+        task_id: TaskId,
+        role: &str,
+        observation: &str,
+    ) -> Result<(), NexusError> {
+        self.emit_event(Event::new(
+            task_id,
+            EventKind::ModelResponded,
+            EventPayload::ModelResponse {
+                role: role.to_string(),
+                response_tokens: 0,
+                content: format!("[VISION OBSERVATION] {}", observation),
+            },
+            "kernel".to_string(),
+        ))
+        .await?;
+        Ok(())
+    }
+
     async fn emit_tool_requested(
         &self,
         task_id: TaskId,
@@ -996,47 +1030,41 @@ impl Kernel {
         Ok(())
     }
 
-    /// Call a model provider with the given prompt, emitting telemetry events.
-    /// If the provider fails and a fallback is available, retries with the fallback.
     async fn call_model(
         &self,
-        task_id: TaskId,
-        role_label: &str,
-        user_content: &str,
-        system_prompt: &str,
+        ctx: &ModelCallContext<'_>,
         provider: &dyn ModelProvider,
-        context_budget: usize,
     ) -> Result<CompletionResponse, crate::error::ProviderError> {
         let req = CompletionRequest::new(
             vec![
                 ChatMessage {
                     role: ChatRole::System,
-                    content: system_prompt.to_string(),
+                    content: ctx.system_prompt.to_string(),
                     images: None,
                 },
                 ChatMessage {
                     role: ChatRole::User,
-                    content: user_content.to_string(),
+                    content: ctx.user_content.to_string(),
                     images: None,
                 },
             ],
             provider.name(),
-            context_budget,
+            ctx.context_budget,
         );
-        self.emit_model_requested(task_id, role_label, context_budget).await.map_err(
+        self.emit_model_requested(ctx.task_id, ctx.role_label, ctx.context_budget).await.map_err(
             |e| {
                 crate::error::ProviderError::InferenceFailed(format!(
                     "{} event emission failed: {}",
-                    role_label, e
+                    ctx.role_label, e
                 ))
             },
         )?;
         let resp = provider.complete(req).await.map_err(|e| {
-            crate::error::ProviderError::InferenceFailed(format!("{} failed: {}", role_label, e))
+            crate::error::ProviderError::InferenceFailed(format!("{} failed: {}", ctx.role_label, e))
         })?;
         self.emit_model_responded(
-            task_id,
-            role_label,
+            ctx.task_id,
+            ctx.role_label,
             resp.completion_tokens.unwrap_or(0),
             &resp.content,
         )
@@ -1044,79 +1072,49 @@ impl Kernel {
         .map_err(|e| {
             crate::error::ProviderError::InferenceFailed(format!(
                 "{} event emission failed: {}",
-                role_label, e
+                ctx.role_label, e
             ))
         })?;
         Ok(resp)
     }
 
-    /// Validate that vision model output is treated as a structured observation,
-    /// not a direct system action. Vision outputs must be converted to
-    /// observations before use (§6.8 constraint).
-    async fn emit_vision_observation(
-        &self,
-        task_id: TaskId,
-        role: &str,
-        observation: &str,
-    ) -> Result<(), NexusError> {
-        self.emit_event(Event::new(
-            task_id,
-            EventKind::ModelResponded,
-            EventPayload::ModelResponse {
-                role: role.to_string(),
-                response_tokens: 0,
-                content: format!("[VISION OBSERVATION] {}", observation),
-            },
-            "kernel".to_string(),
-        ))
-        .await?;
-        Ok(())
-    }
-
     /// Call a model with fallback support. If the primary provider fails,
     /// retries with the fallback provider for the same role.
-    #[allow(clippy::too_many_arguments)]
     async fn call_model_with_fallback(
         &self,
-        task_id: TaskId,
-        role_label: &str,
-        user_content: &str,
-        system_prompt: &str,
+        ctx: &ModelCallContext<'_>,
         primary: &dyn ModelProvider,
         fallback: Option<&dyn ModelProvider>,
-        context_budget: usize,
     ) -> Result<CompletionResponse, crate::error::ProviderError> {
-        match self.call_model(task_id, role_label, user_content, system_prompt, primary, context_budget).await {
+        match self.call_model(ctx, primary).await {
             Ok(resp) => Ok(resp),
             Err(primary_err) => {
                 if let Some(fb) = fallback {
                     warn!(
-                        role = role_label,
+                        role = ctx.role_label,
                         primary = primary.name(),
                         fallback = fb.name(),
                         error = %primary_err,
                         "Primary model failed, falling back"
                     );
                     self.emit_event(Event::new(
-                        task_id,
+                        ctx.task_id,
                         EventKind::ModelFailed,
                         EventPayload::ModelFailure {
-                            role: role_label.to_string(),
+                            role: ctx.role_label.to_string(),
                             error: format!("{} (fallback attempted)", primary_err),
                         },
                         "kernel".to_string(),
                     ))
                     .await
                     .map_err(|e| crate::error::ProviderError::InferenceFailed(e.to_string()))?;
-                    self.call_model(task_id, role_label, user_content, system_prompt, fb, context_budget).await
+                    self.call_model(ctx, fb).await
                 } else {
                     Err(primary_err)
                 }
             }
         }
-    }
-
-    /// Confirm a task that is awaiting confirmation and resume execution.
+    }    /// Confirm a task that is awaiting confirmation and resume execution.
     pub async fn confirm_task(&self, task_id: &TaskId) -> Result<TaskOutcome, NexusError> {
         let current_state = self.task_state(task_id).await?;
         if current_state != TaskState::AwaitingConfirmation {
