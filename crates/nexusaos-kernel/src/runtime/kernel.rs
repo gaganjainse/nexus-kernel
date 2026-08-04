@@ -1255,7 +1255,7 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::new()))
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::default()))
             .await
             .unwrap();
 
@@ -1270,7 +1270,7 @@ mod tests {
         let policy = PolicyEngine::deny_all();
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::new()))
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::default()))
             .await
             .unwrap();
 
@@ -1291,7 +1291,7 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::new()))
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::default()))
             .await
             .unwrap();
 
@@ -1313,7 +1313,7 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::new()))
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::default()))
             .await
             .unwrap();
 
@@ -1363,7 +1363,7 @@ mod tests {
             Arc::new(Scheduler::new(32)),
             5,
             Arc::new(ManifestStore::new()),
-            Arc::new(ArtifactStore::new()),
+            Arc::new(ArtifactStore::default()),
         )
         .await
         .unwrap();
@@ -1394,7 +1394,7 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::new()))
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::default()))
             .await
             .unwrap();
 
@@ -1420,7 +1420,7 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::new()))
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::default()))
             .await
             .unwrap();
 
@@ -1449,7 +1449,7 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::new()))
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::default()))
             .await
             .unwrap();
 
@@ -1473,7 +1473,7 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::new()))
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::default()))
             .await
             .unwrap();
 
@@ -1495,7 +1495,7 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::new()))
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::default()))
             .await
             .unwrap();
 
@@ -1522,7 +1522,7 @@ mod tests {
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
         let kernel =
-            Kernel::new(store.clone(), Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::new()))
+            Kernel::new(store.clone(), Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::default()))
                 .await
                 .unwrap();
 
@@ -1568,7 +1568,7 @@ mod tests {
             Arc::new(Scheduler::new(32)),
             5,
             Arc::new(ManifestStore::new()),
-            Arc::new(ArtifactStore::new()),
+            Arc::new(ArtifactStore::default()),
         )
         .await
         .unwrap();
@@ -1605,7 +1605,7 @@ mod tests {
         let policy = PolicyEngine::deny_all();
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::new()))
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::default()))
             .await
             .unwrap();
         assert_eq!(kernel.task_count().await, 0);
@@ -1624,7 +1624,7 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::new()))
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::default()))
             .await
             .unwrap();
 
@@ -1661,7 +1661,7 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::new()))
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::default()))
             .await
             .unwrap();
 
@@ -1688,7 +1688,7 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::new()))
+        let kernel = Kernel::new(store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::default()))
             .await
             .unwrap();
 
@@ -1713,7 +1713,7 @@ mod tests {
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
         let kernel =
-            Kernel::new(store.clone(), Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::new()))
+            Kernel::new(store.clone(), Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::default()))
                 .await
                 .unwrap();
 
@@ -1752,7 +1752,7 @@ mod tests {
             Arc::new(Scheduler::new(32)),
             5,
             Arc::new(ManifestStore::new()),
-            Arc::new(ArtifactStore::new()),
+            Arc::new(ArtifactStore::default()),
         )
         .await
         .unwrap();
@@ -1804,7 +1804,7 @@ mod tests {
             Arc::new(Scheduler::new(32)),
             5,
             Arc::new(ManifestStore::new()),
-            Arc::new(ArtifactStore::new()),
+            Arc::new(ArtifactStore::default()),
         )
         .await
         .unwrap();

@@ -93,7 +93,7 @@ pub fn execute(
             Arc::new(Scheduler::new(32)),
             5,
             Arc::new(ManifestStore::new()),
-            Arc::new(ArtifactStore::new()),
+            Arc::new(ArtifactStore::default()),
         )
         .await?;
 

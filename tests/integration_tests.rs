@@ -94,7 +94,7 @@ async fn test_end_to_end_task_submission_and_state() {
     let registry = Arc::new(ProviderRegistry::new());
     let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
 
-    let kernel = Kernel::new(event_store.clone(), Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::new())).await.unwrap();
+    let kernel = Kernel::new(event_store.clone(), Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::default())).await.unwrap();
 
     let input = TaskInput::Text("Explain the Rust ownership model".to_string());
     let task_id = kernel.submit_task(input).await.unwrap();
@@ -163,7 +163,7 @@ async fn test_policy_enforcement_denied_action() {
     let registry = Arc::new(ProviderRegistry::new());
     let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
 
-    let kernel = Kernel::new(event_store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::new())).await.unwrap();
+    let kernel = Kernel::new(event_store, Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None, ResourceBudget::default(), Arc::new(ResourceMonitor), Arc::new(ContextManager::new(ContextConfig::default())), Arc::new(Scheduler::new(32)), 5, Arc::new(ManifestStore::new()), Arc::new(ArtifactStore::default())).await.unwrap();
 
     let input = TaskInput::Text("Dangerous command execution".to_string());
     let result = kernel.submit_task(input).await;
