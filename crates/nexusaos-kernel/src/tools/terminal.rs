@@ -128,10 +128,9 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_terminal_tool() {
+    async fn test_terminal_tool() -> Result<(), Box<dyn std::error::Error>> {
         let tool = TerminalTool::new(5, vec!["rm -rf".to_string()]);
 
-        // test denied
         let req_denied = ToolRequest {
             tool_name: "terminal".to_string(),
             arguments: json!({ "command": "rm -rf /" }),
@@ -140,22 +139,22 @@ mod tests {
         let err = tool.execute(&req_denied).await.unwrap_err();
         match err {
             ToolError::CommandDenied { command } => assert_eq!(command, "rm -rf /"),
-            _ => panic!("Expected CommandDenied"),
+            _ => unreachable!("Expected CommandDenied"),
         }
 
-        // test allowed
         let req_allowed = ToolRequest {
             tool_name: "terminal".to_string(),
             arguments: json!({ "command": "echo test" }),
         };
 
-        let res = tool.execute(&req_allowed).await.unwrap();
+        let res = tool.execute(&req_allowed).await?;
         assert!(res.success);
         assert_eq!(res.output.trim(), "test");
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_terminal_missing_command() {
+    async fn test_terminal_missing_command() -> Result<(), Box<dyn std::error::Error>> {
         let tool = TerminalTool::new(5, vec![]);
 
         let req = ToolRequest { tool_name: "terminal".to_string(), arguments: json!({}) };
@@ -164,12 +163,13 @@ mod tests {
             ToolError::ExecutionFailed { reason, .. } => {
                 assert!(reason.contains("Missing 'command' argument"))
             }
-            _ => panic!("Expected ExecutionFailed"),
+            _ => unreachable!("Expected ExecutionFailed"),
         }
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_terminal_command_denied_prefix() {
+    async fn test_terminal_command_denied_prefix() -> Result<(), Box<dyn std::error::Error>> {
         let tool = TerminalTool::new(5, vec!["sudo".to_string(), "dd".to_string()]);
 
         let req = ToolRequest {
@@ -179,12 +179,13 @@ mod tests {
         let err = tool.execute(&req).await.unwrap_err();
         match err {
             ToolError::CommandDenied { command } => assert_eq!(command, "sudo apt update"),
-            _ => panic!("Expected CommandDenied"),
+            _ => unreachable!("Expected CommandDenied"),
         }
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_terminal_command_denied_partial_match() {
+    async fn test_terminal_command_denied_partial_match() -> Result<(), Box<dyn std::error::Error>> {
         let tool = TerminalTool::new(5, vec!["rm -rf".to_string()]);
 
         let req = ToolRequest {
@@ -194,25 +195,27 @@ mod tests {
         let err = tool.execute(&req).await.unwrap_err();
         match err {
             ToolError::CommandDenied { command } => assert_eq!(command, "rm -rf /tmp/foo"),
-            _ => panic!("Expected CommandDenied"),
+            _ => unreachable!("Expected CommandDenied"),
         }
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_terminal_no_denied_prefixes() {
+    async fn test_terminal_no_denied_prefixes() -> Result<(), Box<dyn std::error::Error>> {
         let tool = TerminalTool::new(5, vec![]);
 
         let req = ToolRequest {
             tool_name: "terminal".to_string(),
             arguments: json!({ "command": "echo hello" }),
         };
-        let res = tool.execute(&req).await.unwrap();
+        let res = tool.execute(&req).await?;
         assert!(res.success);
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_terminal_timeout() {
-        let tool = TerminalTool::new(1, vec![]); // 1 second timeout
+    async fn test_terminal_timeout() -> Result<(), Box<dyn std::error::Error>> {
+        let tool = TerminalTool::new(1, vec![]);
 
         let req = ToolRequest {
             tool_name: "terminal".to_string(),
@@ -221,60 +224,64 @@ mod tests {
         let err = tool.execute(&req).await.unwrap_err();
         match err {
             ToolError::Timeout { timeout_secs, .. } => assert_eq!(timeout_secs, 1),
-            _ => panic!("Expected Timeout, got: {:?}", err),
+            _ => unreachable!("Expected Timeout, got: {:?}", err),
         }
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_terminal_command_fails_nonzero_exit() {
+    async fn test_terminal_command_fails_nonzero_exit() -> Result<(), Box<dyn std::error::Error>> {
         let tool = TerminalTool::new(5, vec![]);
 
         let req = ToolRequest {
             tool_name: "terminal".to_string(),
             arguments: json!({ "command": "exit 1" }),
         };
-        let res = tool.execute(&req).await.unwrap();
+        let res = tool.execute(&req).await?;
         assert!(!res.success);
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_terminal_empty_output() {
+    async fn test_terminal_empty_output() -> Result<(), Box<dyn std::error::Error>> {
         let tool = TerminalTool::new(5, vec![]);
 
         let req = ToolRequest {
             tool_name: "terminal".to_string(),
             arguments: json!({ "command": "true" }),
         };
-        let res = tool.execute(&req).await.unwrap();
+        let res = tool.execute(&req).await?;
         assert!(res.success);
         assert!(res.output.is_empty() || res.output.trim().is_empty());
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_terminal_with_stderr() {
+    async fn test_terminal_with_stderr() -> Result<(), Box<dyn std::error::Error>> {
         let tool = TerminalTool::new(5, vec![]);
 
-        // A command that writes to stderr but succeeds
         let req = ToolRequest {
             tool_name: "terminal".to_string(),
             arguments: json!({ "command": "echo out" }),
         };
-        let res = tool.execute(&req).await.unwrap();
+        let res = tool.execute(&req).await?;
         assert!(res.success);
         assert!(res.output.contains("out"));
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_terminal_no_match_denied_prefix() {
+    async fn test_terminal_no_match_denied_prefix() -> Result<(), Box<dyn std::error::Error>> {
         let tool = TerminalTool::new(5, vec!["rm -rf /".to_string()]);
 
         let req = ToolRequest {
             tool_name: "terminal".to_string(),
             arguments: json!({ "command": "echo safe" }),
         };
-        let res = tool.execute(&req).await.unwrap();
+        let res = tool.execute(&req).await?;
         assert!(res.success);
         assert_eq!(res.output.trim(), "safe");
+        Ok(())
     }
 
     #[tokio::test]

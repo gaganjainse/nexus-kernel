@@ -54,15 +54,16 @@ mod tests {
     }
 
     #[test]
-    fn test_tool_request_serde() {
+    fn test_tool_request_serde() -> Result<(), Box<dyn std::error::Error>> {
         let req = ToolRequest {
             tool_name: "fs".to_string(),
             arguments: json!({"action": "read", "path": "/tmp/test"}),
         };
-        let json = serde_json::to_string(&req).unwrap();
-        let back: ToolRequest = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&req)?;
+        let back: ToolRequest = serde_json::from_str(&json)?;
         assert_eq!(req.tool_name, back.tool_name);
         assert_eq!(req.arguments, back.arguments);
+        Ok(())
     }
 
     #[test]
@@ -83,16 +84,17 @@ mod tests {
     }
 
     #[test]
-    fn test_tool_result_serde() {
+    fn test_tool_result_serde() -> Result<(), Box<dyn std::error::Error>> {
         let result = ToolResult {
             success: true,
             output: "output".into(),
             data: Some(json!({"key": "val"})),
         };
-        let json = serde_json::to_string(&result).unwrap();
-        let back: ToolResult = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&result)?;
+        let back: ToolResult = serde_json::from_str(&json)?;
         assert_eq!(result.success, back.success);
         assert_eq!(result.output, back.output);
+        Ok(())
     }
 
     #[test]

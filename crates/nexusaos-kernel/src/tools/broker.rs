@@ -164,7 +164,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_broker() {
+    async fn test_broker() -> Result<(), Box<dyn std::error::Error>> {
         let rule = PolicyRule {
             name: "allow-dummy".to_string(),
             action_pattern: "dummy.execute".to_string(),
@@ -179,15 +179,16 @@ mod tests {
 
         let req = ToolRequest { tool_name: "dummy".to_string(), arguments: json!({}) };
 
-        let res = broker.execute(&req).await.unwrap();
+        let res = broker.execute(&req).await?;
         match res {
             BrokerResult::Completed(tr) => assert_eq!(tr.output, "ok"),
-            _ => panic!("Expected Completed"),
+            _ => unreachable!("Expected Completed"),
         }
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_broker_deny_policy() {
+    async fn test_broker_deny_policy() -> Result<(), Box<dyn std::error::Error>> {
         let rule = PolicyRule {
             name: "deny-dummy".to_string(),
             action_pattern: "dummy.execute".to_string(),
@@ -200,17 +201,18 @@ mod tests {
         broker.register(Arc::new(DummyTool));
 
         let req = ToolRequest { tool_name: "dummy".to_string(), arguments: json!({}) };
-        let res = broker.execute(&req).await.unwrap();
+        let res = broker.execute(&req).await?;
         match res {
             BrokerResult::Denied(reason) => {
                 assert!(reason.contains("deny") || reason.contains("Deny"))
             }
-            _ => panic!("Expected Denied"),
+            _ => unreachable!("Expected Denied"),
         }
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_broker_require_confirmation_policy() {
+    async fn test_broker_require_confirmation_policy() -> Result<(), Box<dyn std::error::Error>> {
         let rule = PolicyRule {
             name: "confirm-dummy".to_string(),
             action_pattern: "dummy.execute".to_string(),
@@ -223,15 +225,16 @@ mod tests {
         broker.register(Arc::new(DummyTool));
 
         let req = ToolRequest { tool_name: "dummy".to_string(), arguments: json!({}) };
-        let res = broker.execute(&req).await.unwrap();
+        let res = broker.execute(&req).await?;
         match res {
             BrokerResult::RequiresConfirmation(reason) => assert!(!reason.is_empty()),
-            _ => panic!("Expected RequiresConfirmation"),
+            _ => unreachable!("Expected RequiresConfirmation"),
         }
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_broker_unknown_tool() {
+    async fn test_broker_unknown_tool() -> Result<(), Box<dyn std::error::Error>> {
         let rule = PolicyRule {
             name: "allow-all".to_string(),
             action_pattern: "*".to_string(),
@@ -247,8 +250,9 @@ mod tests {
         let err = broker.execute(&req).await.unwrap_err();
         match err {
             ToolError::NotFound { name } => assert_eq!(name, "nonexistent"),
-            _ => panic!("Expected NotFound"),
+            _ => unreachable!("Expected NotFound"),
         }
+        Ok(())
     }
 
     #[tokio::test]
@@ -289,16 +293,17 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_broker_deny_all_engine() {
+    async fn test_broker_deny_all_engine() -> Result<(), Box<dyn std::error::Error>> {
         let policy = PolicyEngine::deny_all();
         let mut broker = ToolBroker::new(Arc::new(policy));
         broker.register(Arc::new(DummyTool));
 
         let req = ToolRequest { tool_name: "dummy".to_string(), arguments: json!({}) };
-        let res = broker.execute(&req).await.unwrap();
+        let res = broker.execute(&req).await?;
         match res {
             BrokerResult::Denied(_) => {}
-            _ => panic!("Expected Denied with deny_all policy"),
+            _ => unreachable!("Expected Denied with deny_all policy"),
         }
+        Ok(())
     }
 }
