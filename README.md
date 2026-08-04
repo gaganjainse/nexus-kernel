@@ -1,9 +1,3 @@
----
-title: NexusAOS
-description: Governance-first, event-sourced AI operating environment for Ubuntu Linux
-lang: en
----
-
 ## 🦀 NexusAOS
 
 ![Rust](https://img.shields.io/badge/Rust-2024-important?style=for-the-badge&logo=rust)
