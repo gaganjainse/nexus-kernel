@@ -9,11 +9,18 @@ use crate::error::ToolError;
 pub struct FilesystemTool {
     allowed_paths: Vec<PathBuf>,
     denied_patterns: Vec<String>,
+    max_file_size: u64,
 }
 
 impl FilesystemTool {
     pub fn new(allowed_paths: Vec<PathBuf>, denied_patterns: Vec<String>) -> Self {
-        Self { allowed_paths, denied_patterns }
+        Self { allowed_paths, denied_patterns, max_file_size: 10 * 1024 * 1024 }
+    }
+
+    /// Set the maximum file size in bytes for read operations.
+    pub fn with_max_file_size(mut self, max_file_size: u64) -> Self {
+        self.max_file_size = max_file_size;
+        self
     }
 
     /// Resolve a path for permission checks by walking up to the deepest
@@ -81,6 +88,18 @@ impl ToolExecutor for FilesystemTool {
 
                 if !self.is_path_allowed(path) {
                     return Err(ToolError::PathDenied { path: path_str.to_string() });
+                }
+
+                let metadata = tokio::fs::metadata(path).await?;
+                if metadata.len() > self.max_file_size {
+                    return Err(ToolError::ExecutionFailed {
+                        name: self.name().to_string(),
+                        reason: format!(
+                            "File size {} exceeds maximum allowed {}",
+                            metadata.len(),
+                            self.max_file_size
+                        ),
+                    });
                 }
 
                 let content = tokio::fs::read_to_string(path).await?;

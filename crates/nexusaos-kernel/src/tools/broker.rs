@@ -25,16 +25,40 @@ pub struct ToolBroker {
     policy: Arc<PolicyEngine>,
     default_executor: Option<Arc<dyn ToolExecutor>>,
     max_tool_seconds: u64,
+    event_store: Option<Arc<dyn crate::storage::EventStore>>,
+    capabilities: Option<Arc<crate::capability::CapabilitySet>>,
 }
 
 impl ToolBroker {
     pub fn new(policy: Arc<PolicyEngine>) -> Self {
-        Self { executors: HashMap::new(), policy, default_executor: None, max_tool_seconds: 300 }
+        Self {
+            executors: HashMap::new(),
+            policy,
+            default_executor: None,
+            max_tool_seconds: 300,
+            event_store: None,
+            capabilities: None,
+        }
     }
 
     /// Set the maximum tool execution timeout in seconds.
     pub fn with_timeout(mut self, max_tool_seconds: u64) -> Self {
         self.max_tool_seconds = max_tool_seconds;
+        self
+    }
+
+    /// Set the event store for tool invocation/result events.
+    pub fn with_event_store(mut self, event_store: Arc<dyn crate::storage::EventStore>) -> Self {
+        self.event_store = Some(event_store);
+        self
+    }
+
+    /// Set the capability set for authorization checks.
+    pub fn with_capabilities(
+        mut self,
+        capabilities: Arc<crate::capability::CapabilitySet>,
+    ) -> Self {
+        self.capabilities = Some(capabilities);
         self
     }
 
@@ -80,6 +104,17 @@ impl ToolBroker {
                         error!(tool = %request.tool_name, "Tool not found");
                         ToolError::NotFound { name: request.tool_name.clone() }
                     })?;
+
+                // Capability check
+                if let Some(caps) = &self.capabilities {
+                    let required = format!("tool.{}", request.tool_name);
+                    if !caps.has_capability(&required) {
+                        return Ok(BrokerResult::Denied(format!(
+                            "Missing capability: {}",
+                            required
+                        )));
+                    }
+                }
 
                 info!(tool = %request.tool_name, "Executing tool");
                 let result = tokio::time::timeout(

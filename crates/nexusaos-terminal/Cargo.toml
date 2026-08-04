@@ -11,6 +11,7 @@ portable-pty.workspace = true
 tokio.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
+vte = "0.13"
 
 [dev-dependencies]
 tempfile = "3"

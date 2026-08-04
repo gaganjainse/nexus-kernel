@@ -1,6 +1,9 @@
 use std::{
     io::{Read, Write},
-    sync::{Arc, Mutex},
+    sync::{
+        atomic::{AtomicU8, Ordering},
+        Arc,
+    },
 };
 
 use portable_pty::{native_pty_system, CommandBuilder, PtySize};
@@ -11,21 +14,25 @@ use crate::{
     filestore::BlockFileStore,
 };
 
-fn detect_shell() -> String {
-    std::env::var("SHELL").unwrap_or_else(|_| {
-        if std::path::Path::new("/bin/bash").exists() {
-            "/bin/bash".to_string()
-        } else {
-            "/bin/sh".to_string()
-        }
-    })
+const STATUS_IDLE: u8 = 0;
+const STATUS_RUNNING: u8 = 1;
+const STATUS_STOPPING: u8 = 2;
+const STATUS_STOPPED: u8 = 3;
+
+fn status_to_string(status: u8) -> String {
+    match status {
+        STATUS_RUNNING => "running".to_string(),
+        STATUS_STOPPING => "stopping".to_string(),
+        STATUS_STOPPED => "done".to_string(),
+        _ => "init".to_string(),
+    }
 }
 
 pub struct ShellController {
     block_id: String,
     conn_name: String,
-    status: Arc<Mutex<String>>,
-    exit_code: Arc<Mutex<Option<i32>>>,
+    status: Arc<AtomicU8>,
+    exit_code: Arc<AtomicU8>,
     input_tx: Arc<Mutex<Option<mpsc::Sender<BlockInput>>>>,
     file_store: Arc<BlockFileStore>,
     shell_path: String,
@@ -41,8 +48,8 @@ impl ShellController {
         Self {
             block_id,
             conn_name: "local".to_string(),
-            status: Arc::new(Mutex::new("init".to_string())),
-            exit_code: Arc::new(Mutex::new(None)),
+            status: Arc::new(AtomicU8::new(STATUS_IDLE)),
+            exit_code: Arc::new(AtomicU8::new(255)),
             input_tx: Arc::new(Mutex::new(None)),
             file_store,
             shell_path: shell,
@@ -62,7 +69,7 @@ impl Controller for ShellController {
         let mut child =
             pair.slave.spawn_command(cmd).map_err(|e| ControllerError::Shell(e.to_string()))?;
 
-        *self.status.lock().unwrap_or_else(|e| e.into_inner()) = "running".to_string();
+        self.status.store(STATUS_RUNNING, Ordering::SeqCst);
 
         let (tx, mut rx) = mpsc::channel::<BlockInput>(256);
         *self.input_tx.lock().unwrap_or_else(|e| e.into_inner()) = Some(tx);
@@ -114,9 +121,9 @@ impl Controller for ShellController {
         tokio::task::spawn_blocking(move || {
             if let Ok(exit_status) = child.wait() {
                 let code = exit_status.exit_code();
-                *exit_code.lock().unwrap_or_else(|e| e.into_inner()) = Some(code as i32);
+                exit_code.store(((code as i32) & 0xFF) as u8, Ordering::SeqCst);
             }
-            *status.lock().unwrap_or_else(|e| e.into_inner()) = "done".to_string();
+            status.store(STATUS_STOPPED, Ordering::SeqCst);
         });
 
         Ok(())
@@ -130,16 +137,20 @@ impl Controller for ShellController {
             // Best effort without OS specific kill
         }
 
-        *self.status.lock().unwrap_or_else(|e| e.into_inner()) = "done".to_string();
+        let _ = self
+            .status
+            .compare_exchange(STATUS_RUNNING, STATUS_STOPPING, Ordering::SeqCst, Ordering::Relaxed);
+        self.status.store(STATUS_STOPPED, Ordering::SeqCst);
         Ok(())
     }
 
     fn runtime_status(&self) -> ControllerStatus {
+        let exit_code = self.exit_code.load(Ordering::SeqCst);
         ControllerStatus {
             block_id: self.block_id.clone(),
-            status: self.status.lock().unwrap_or_else(|e| e.into_inner()).clone(),
+            status: status_to_string(self.status.load(Ordering::SeqCst)),
             conn_name: self.conn_name.clone(),
-            exit_code: *self.exit_code.lock().unwrap_or_else(|e| e.into_inner()),
+            exit_code: if exit_code == 255 { None } else { Some(exit_code as i32) },
         }
     }
 

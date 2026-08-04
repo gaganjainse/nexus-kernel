@@ -1,7 +1,7 @@
-//! `nexusaos-terminal` — Native Zig VT100 Terminal Parsing Expert & PTY Manager.
+//! `nexusaos-terminal` — PTY manager and VT100/ANSI terminal parser.
 
-pub mod ffi;
+pub mod parser;
 pub mod pty;
 
-pub use ffi::ZigVt100Parser;
+pub use parser::TerminalScreen;
 pub use pty::PtyManager;
