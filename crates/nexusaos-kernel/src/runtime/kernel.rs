@@ -313,6 +313,61 @@ impl Kernel {
                 arguments: tool_call.arguments.clone(),
             };
 
+            // Enforce Planner constraint: planner should not write files
+            // directly unless explicitly delegated (§6.9)
+            if task.assigned_role == Some(crate::state::ModelRole::Planner) {
+                if let Some(path) = tool_call.arguments.get("path").and_then(|v| v.as_str()) {
+                    if path.starts_with('/') || path.contains("write") || path.contains("edit") {
+                        self.emit_event(Event::new(
+                            *task_id,
+                            EventKind::PolicyDenied,
+                            EventPayload::PolicyCheck {
+                                action: format!("planner.write_file:{}", path),
+                                decision: "denied".to_string(),
+                                reason: Some("Planner must not write files directly without explicit delegation".to_string()),
+                            },
+                            "kernel".to_string(),
+                        ))
+                        .await?;
+                        return self
+                            .emit_failure_and_return(
+                                *task_id,
+                                "Planner cannot write files directly. Delegate file operations to the Coder.".to_string(),
+                                Some(final_output.clone()),
+                            )
+                            .await;
+                    }
+                }
+            }
+
+            // Enforce Coder constraint: coder should not decide product scope
+            // or architecture direction without planner input for large tasks (§6.10)
+            if task.assigned_role == Some(crate::state::ModelRole::Coder) {
+                let scope_keywords = ["architecture", "design", "scope", "product direction", "plan"];
+                let output_lower = final_output.to_lowercase();
+                let has_scope_keyword = scope_keywords.iter().any(|kw| output_lower.contains(kw));
+                if has_scope_keyword {
+                    self.emit_event(Event::new(
+                        *task_id,
+                        EventKind::PolicyChecked,
+                        EventPayload::PolicyCheck {
+                            action: format!("coder.scope_check:{}", tool_call.tool_name),
+                            decision: "require_confirmation".to_string(),
+                            reason: Some("Coder must not decide product scope or architecture without planner input".to_string()),
+                        },
+                        "kernel".to_string(),
+                    ))
+                    .await?;
+                    return self
+                        .emit_failure_and_return(
+                            *task_id,
+                            "Coder cannot decide product scope or architecture direction without planner input. Route to Planner first.".to_string(),
+                            Some(final_output.clone()),
+                        )
+                        .await;
+                }
+            }
+
             // Create checkpoint before risky tool execution
             self.create_checkpoint(*task_id, &tool_call.tool_name, &tool_call.arguments)
                 .await?;
