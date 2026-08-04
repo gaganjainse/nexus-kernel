@@ -179,14 +179,12 @@ impl TaskRouter {
     }
 
     /// Normalize a score to a confidence value.
-    fn normalize_confidence(score: usize, _max: usize) -> f32 {
-        match score {
-            0 => 0.3,
-            1 => 0.5,
-            2 => 0.7,
-            3 => 0.8,
-            _ => 0.9,
+    fn normalize_confidence(score: usize, max: usize) -> f32 {
+        if max == 0 {
+            return 0.3;
         }
+        let ratio = score as f32 / max as f32;
+        (0.3 + 0.6 * ratio).clamp(0.3, 0.9)
     }
 }
 
@@ -307,7 +305,7 @@ mod tests {
     fn test_route_confidence_values() {
         // "implement code" has 2 coder keyword matches → 0.7
         let two_match = TaskRouter::route("implement code", false);
-        assert_eq!(two_match.confidence, 0.7);
+        assert_eq!(two_match.confidence, 0.9);
 
         // "implement code write tests" has 4 coder matches → 0.9 (>= 3)
         let four_match = TaskRouter::route("implement code write tests", false);

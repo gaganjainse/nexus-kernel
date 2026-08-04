@@ -460,6 +460,14 @@ impl Kernel {
 
         self.check_model_pressure(&crate::state::ModelRole::Planner).await?;
 
+        let pressure = self.system_pressure().await;
+        let planner_context_budget = self._context_manager.context_for_task(
+            &task.request.input,
+            &pressure,
+            planner.max_context(),
+            &self.resource_budget,
+        )?;
+
         let plan_resp = match self
             .call_model_with_fallback(
                 *task_id,
@@ -468,6 +476,7 @@ impl Kernel {
                 "You are a planner.",
                 planner,
                 None,
+                planner_context_budget,
             )
             .await
         {
@@ -497,17 +506,22 @@ impl Kernel {
         let mut final_output = plan_resp.content;
 
         if requires_coder {
-            let coder = self.provider_registry.get(&crate::state::ModelRole::Coder);
-
-            if coder.is_none() {
-                let err_msg = "Coder provider not available".to_string();
-                return self.emit_failure_and_return(*task_id, err_msg, Some(final_output)).await;
-            }
-
-            let coder = coder.unwrap();
+            let coder = self.provider_registry.get(&crate::state::ModelRole::Coder).ok_or_else(|| {
+                NexusError::Provider(crate::error::ProviderError::Unavailable {
+                    name: "Coder".into(),
+                })
+            })?;
             self.transition_task(task_id, TaskState::Executing).await?;
 
             self.check_model_pressure(&crate::state::ModelRole::Coder).await?;
+
+            let pressure = self.system_pressure().await;
+            let coder_context_budget = self._context_manager.context_for_task(
+                &task.request.input,
+                &pressure,
+                coder.max_context(),
+                &self.resource_budget,
+            )?;
 
             let code_resp = match self
                 .call_model_with_fallback(
@@ -517,6 +531,7 @@ impl Kernel {
                     "You are a coder.",
                     coder,
                     None,
+                    coder_context_budget,
                 )
                 .await
             {
@@ -535,6 +550,14 @@ impl Kernel {
             if let Some(reviewer) = self.provider_registry.get(&crate::state::ModelRole::Reviewer) {
                 self.check_model_pressure(&crate::state::ModelRole::Reviewer).await?;
 
+                let pressure = self.system_pressure().await;
+                let reviewer_context_budget = self._context_manager.context_for_task(
+                    &task.request.input,
+                    &pressure,
+                    reviewer.max_context(),
+                    &self.resource_budget,
+                )?;
+
                 let rev_resp = match self
                     .call_model_with_fallback(
                         *task_id,
@@ -543,6 +566,7 @@ impl Kernel {
                         "You are a reviewer.",
                         reviewer,
                         None,
+                        reviewer_context_budget,
                     )
                     .await
                 {
@@ -964,6 +988,7 @@ impl Kernel {
         user_content: &str,
         system_prompt: &str,
         provider: &dyn ModelProvider,
+        context_budget: usize,
     ) -> Result<CompletionResponse, crate::error::ProviderError> {
         let req = CompletionRequest::new(
             vec![
@@ -979,9 +1004,9 @@ impl Kernel {
                 },
             ],
             provider.name(),
-            provider.max_context(),
+            context_budget,
         );
-        self.emit_model_requested(task_id, role_label, provider.max_context()).await.map_err(
+        self.emit_model_requested(task_id, role_label, context_budget).await.map_err(
             |e| {
                 crate::error::ProviderError::InferenceFailed(format!(
                     "{} event emission failed: {}",
@@ -1041,8 +1066,9 @@ impl Kernel {
         system_prompt: &str,
         primary: &dyn ModelProvider,
         fallback: Option<&dyn ModelProvider>,
+        context_budget: usize,
     ) -> Result<CompletionResponse, crate::error::ProviderError> {
-        match self.call_model(task_id, role_label, user_content, system_prompt, primary).await {
+        match self.call_model(task_id, role_label, user_content, system_prompt, primary, context_budget).await {
             Ok(resp) => Ok(resp),
             Err(primary_err) => {
                 if let Some(fb) = fallback {
@@ -1064,7 +1090,7 @@ impl Kernel {
                     ))
                     .await
                     .map_err(|e| crate::error::ProviderError::InferenceFailed(e.to_string()))?;
-                    self.call_model(task_id, role_label, user_content, system_prompt, fb).await
+                    self.call_model(task_id, role_label, user_content, system_prompt, fb, context_budget).await
                 } else {
                     Err(primary_err)
                 }
