@@ -22,7 +22,7 @@ use crate::{
     runtime::scheduler::Scheduler,
     state::{TaskRecord, TaskState},
     storage::{EventStore, SnapshotStore, TaskProjection},
-    task::{Priority, TaskId, TaskInput, TaskRequest},
+    task::{Priority, TaskId, TaskInput, TaskOutcome, TaskRequest},
     tools::broker::ToolBroker,
 };
 
@@ -170,6 +170,27 @@ impl Kernel {
                 disk_available_gb: 0,
                 queue_depth: self.scheduler.queue_depth(),
             })
+    }
+
+    /// Check if the system has sufficient resources for a model load.
+    /// Returns an error if RAM or VRAM budgets are exceeded.
+    async fn check_model_pressure(&self, role: &crate::state::ModelRole) -> Result<(), NexusError> {
+        let pressure = self.system_pressure().await;
+        if ResourceBudget::exceeds_ram_budget(&pressure, &self.resource_budget) {
+            return Err(NexusError::Resource(crate::error::ResourceError::InsufficientRam {
+                needed_mb: self.resource_budget.max_ram_mb,
+                available_mb: pressure.ram_total_mb.saturating_sub(pressure.ram_available_mb),
+            }));
+        }
+        if *role == crate::state::ModelRole::Coder {
+            if ResourceBudget::exceeds_vram_budget(&pressure, &self.resource_budget) {
+                return Err(NexusError::Resource(crate::error::ResourceError::InsufficientVram {
+                    needed_mb: self.resource_budget.max_vram_mb,
+                    available_mb: pressure.vram_total_mb.saturating_sub(pressure.vram_available_mb),
+                }));
+            }
+        }
+        Ok(())
     }
 
     /// Submit a new task. Returns the TaskId.
@@ -378,6 +399,8 @@ impl Kernel {
                 })
             })?;
 
+        self.check_model_pressure(&crate::state::ModelRole::Planner).await?;
+
         let plan_resp = match self
             .call_model_with_fallback(
                 *task_id,
@@ -430,6 +453,8 @@ impl Kernel {
             let coder = coder.unwrap();
             self.transition_task(task_id, TaskState::Executing).await?;
 
+            self.check_model_pressure(&crate::state::ModelRole::Coder).await?;
+
             let code_resp = match self
                 .call_model_with_fallback(
                     *task_id,
@@ -454,6 +479,8 @@ impl Kernel {
 
             // Reviewer
             if let Some(reviewer) = self.provider_registry.get(&crate::state::ModelRole::Reviewer) {
+                self.check_model_pressure(&crate::state::ModelRole::Reviewer).await?;
+
                 let rev_resp = match self
                     .call_model_with_fallback(
                         *task_id,
@@ -644,7 +671,7 @@ impl Kernel {
         self.transition_task(task_id, TaskState::Completed).await?;
 
         self.emit_event(Event::new(
-            task_id,
+            *task_id,
             EventKind::ProjectSummaryUpdated,
             EventPayload::ProjectSummaryUpdated {
                 project_id: task_id.to_string(),
@@ -1002,7 +1029,7 @@ impl Kernel {
             }));
         }
 
-        self.transition_task(*task_id, TaskState::Executing).await?;
+        self.transition_task(task_id, TaskState::Executing).await?;
         self.execute_task(task_id).await
     }
 

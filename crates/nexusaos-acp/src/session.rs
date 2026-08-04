@@ -197,11 +197,7 @@ impl AcpSessionManager {
         let now = Utc::now();
         sessions.retain(|s| {
             if let Some(expires) = s.expires_at {
-                if now >= expires && s.state == crate::AcpSessionState::Active {
-                    false
-                } else {
-                    true
-                }
+                !(now >= expires && s.state == AcpSessionState::Active)
             } else {
                 true
             }

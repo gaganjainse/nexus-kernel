@@ -5,7 +5,7 @@ use tracing::info;
 
 use nexusaos_kernel::error::NexusError;
 
-use crate::{AcpAgent, AcpResult, AcpSessionManager};
+use crate::{session::AcpSessionManager, AcpResult};
 
 /// ACP server configuration.
 #[derive(Debug, Clone)]
@@ -39,12 +39,12 @@ impl AcpServer {
     pub async fn run(&self) -> AcpResult<()> {
         tokio::fs::remove_file(&self.config.socket_path).await.ok();
         let listener = UnixListener::bind(&self.config.socket_path)
-            .map_err(|e| NexusError::Io(e))?;
+            .map_err(NexusError::Io)?;
 
         info!(socket = %self.config.socket_path, "ACP server listening");
 
         loop {
-            let (stream, _addr) = listener.accept().await.map_err(|e| NexusError::Io(e))?;
+            let (stream, _addr) = listener.accept().await.map_err(NexusError::Io)?;
             let manager = self.session_manager.clone();
 
             tokio::spawn(async move {
