@@ -185,7 +185,6 @@ mod tests {
         assert!(registry.remove("blk1").is_some());
         assert!(registry.remove("blk1").is_none());
     Ok(())
-    Ok(())
     }
 
     #[test]
@@ -193,7 +192,6 @@ mod tests {
         let registry = ControllerRegistry::default();
         assert!(registry.list().is_empty());
         assert!(registry.get("any").is_none());
-    Ok(())
     Ok(())
     }
 
@@ -217,7 +215,6 @@ mod tests {
         assert!(statuses.iter().any(|s| s.block_id == "blk1"));
         assert!(statuses.iter().any(|s| s.block_id == "blk2"));
     Ok(())
-    Ok(())
     }
 
     #[test]
@@ -225,14 +222,12 @@ mod tests {
         let registry = ControllerRegistry::new();
         assert!(registry.remove("nonexistent").is_none());
     Ok(())
-    Ok(())
     }
 
     #[test]
     fn test_registry_list_empty() -> Result<(), Box<dyn std::error::Error>> {
         let registry = ControllerRegistry::new();
         assert!(registry.list().is_empty());
-    Ok(())
     Ok(())
     }
 
@@ -243,9 +238,8 @@ mod tests {
         assert!(result.is_err());
         match result {
             Err(ControllerError::BlockNotFound(id)) => assert_eq!(id, "nonexistent"),
-            _ => panic!("expected BlockNotFound error"),
+            _ => unreachable!("expected BlockNotFound error"),
         }
-    Ok(())
     Ok(())
     }
 
@@ -261,7 +255,6 @@ mod tests {
 
         let result = registry.send_input("blk1", BlockInput::Data(b"test".to_vec())).await;
         assert!(result.is_ok());
-    Ok(())
     Ok(())
     }
 
@@ -288,7 +281,6 @@ mod tests {
         assert_eq!(statuses.len(), 2);
         assert!(statuses.iter().all(|s| s.status == "init"));
     Ok(())
-    Ok(())
     }
 
     #[test]
@@ -307,7 +299,6 @@ mod tests {
         assert_eq!(parsed.conn_name, "local");
         assert_eq!(parsed.exit_code, Some(0));
     Ok(())
-    Ok(())
     }
 
     #[test]
@@ -319,7 +310,6 @@ mod tests {
         assert_eq!(status.conn_name, "remote");
         assert_eq!(status.exit_code, Some(1));
     Ok(())
-    Ok(())
     }
 
     #[test]
@@ -327,9 +317,8 @@ mod tests {
         let input = BlockInput::Data(b"hello".to_vec());
         match input {
             BlockInput::Data(d) => assert_eq!(d, b"hello"),
-            _ => panic!("expected Data variant"),
+            _ => unreachable!("expected Data variant"),
         }
-    Ok(())
     Ok(())
     }
 
@@ -341,9 +330,8 @@ mod tests {
                 assert_eq!(rows, 24);
                 assert_eq!(cols, 80);
             }
-            _ => panic!("expected Resize variant"),
+            _ => unreachable!("expected Resize variant"),
         }
-    Ok(())
     Ok(())
     }
 
@@ -352,9 +340,8 @@ mod tests {
         let input = BlockInput::Signal(2);
         match input {
             BlockInput::Signal(sig) => assert_eq!(sig, 2),
-            _ => panic!("expected Signal variant"),
+            _ => unreachable!("expected Signal variant"),
         }
-    Ok(())
     Ok(())
     }
 
@@ -372,7 +359,6 @@ mod tests {
         let err = ControllerError::Shell("pty error".to_string());
         assert_eq!(err.to_string(), "shell error: pty error");
     Ok(())
-    Ok(())
     }
 
     #[test]
@@ -381,9 +367,8 @@ mod tests {
         let controller_err: ControllerError = io_err.into();
         match controller_err {
             ControllerError::Io(_) => {}
-            _ => panic!("expected Io variant"),
+            _ => unreachable!("expected Io variant"),
         }
-    Ok(())
     Ok(())
     }
 

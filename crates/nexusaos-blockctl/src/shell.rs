@@ -228,7 +228,7 @@ mod tests {
         assert!(result.is_err());
         match result {
             Err(ControllerError::NotRunning(id)) => assert_eq!(id, "blk1"),
-            _ => panic!("expected NotRunning error"),
+            _ => unreachable!("expected NotRunning error"),
         }
     Ok(())
     }
@@ -291,7 +291,7 @@ mod tests {
         assert!(result.is_err());
         match result {
             Err(ControllerError::Shell(_)) => {}
-            _ => panic!("expected Shell error"),
+            _ => unreachable!("expected Shell error"),
         }
     Ok(())
     }
@@ -305,7 +305,7 @@ mod tests {
         assert!(result.is_err());
         match result {
             Err(ControllerError::NotRunning(_)) => {}
-            _ => panic!("expected NotRunning error"),
+            _ => unreachable!("expected NotRunning error"),
         }
     Ok(())
     }
