@@ -132,8 +132,7 @@ pub struct Kernel {
     performance_monitor: Arc<PerformanceMonitor>,
     resource_budget: ResourceBudget,
     resource_monitor: Arc<ResourceMonitor>,
-    #[allow(dead_code)]
-    context_manager: Arc<ContextManager>,
+    _context_manager: Arc<ContextManager>,
     scheduler: Arc<Scheduler>,
     manifest_store: Arc<ManifestStore>,
     artifact_store: Arc<ArtifactStore>,
@@ -171,7 +170,7 @@ impl Kernel {
             performance_monitor: Arc::new(PerformanceMonitor::new()),
             resource_budget,
             resource_monitor,
-            context_manager,
+            _context_manager: context_manager,
             scheduler,
             manifest_store,
             artifact_store,
