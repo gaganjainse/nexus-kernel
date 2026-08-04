@@ -108,6 +108,39 @@ impl SnapshotStore {
 
         Ok(ids)
     }
+
+    /// Retain only the latest N snapshots, deleting older ones.
+    pub async fn retain_latest(&self, max_count: usize) -> Result<(), StorageError> {
+        if !self.path.exists() {
+            return Ok(());
+        }
+
+        let mut snapshots: Vec<(i64, std::path::PathBuf)> = Vec::new();
+        let mut entries = fs::read_dir(&self.path).await?;
+        while let Some(entry) = entries.next_entry().await? {
+            let path = entry.path();
+            if !path.is_file() {
+                continue;
+            }
+            let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+                continue;
+            };
+            if !name.starts_with("snapshot_") || !name.ends_with(".json") {
+                continue;
+            }
+            let ts_part = name.trim_start_matches("snapshot_").trim_end_matches(".json");
+            if let Ok(ts) = ts_part.parse::<i64>() {
+                snapshots.push((ts, path));
+            }
+        }
+
+        snapshots.sort_unstable_by(|a, b| b.0.cmp(&a.0));
+        for (_, path) in snapshots.into_iter().skip(max_count) {
+            let _ = fs::remove_file(path).await;
+        }
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]

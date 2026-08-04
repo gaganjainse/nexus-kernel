@@ -184,6 +184,21 @@ impl EventStore for SqliteEventStore {
     async fn read_since(&self, sequence: u64) -> Result<Vec<Event>, NexusError> {
         Self::read_since(self, sequence).await.map_err(NexusError::Storage)
     }
+
+    async fn current_sequence(&self) -> Result<u64, NexusError> {
+        let seq = self
+            .spawn_query(|conn| {
+                let mut stmt = conn.prepare("SELECT MAX(sequence) FROM events")?;
+                let result = stmt.query_row([], |row| row.get::<_, i64>(0));
+                match result {
+                    Ok(max_seq) => Ok(max_seq.max(0) as u64),
+                    Err(rusqlite::Error::QueryReturnedNoRows) => Ok(0),
+                    Err(e) => Err(StorageError::Database(e)),
+                }
+            })
+            .await;
+        seq.map_err(NexusError::Storage)
+    }
 }
 
 #[cfg(test)]

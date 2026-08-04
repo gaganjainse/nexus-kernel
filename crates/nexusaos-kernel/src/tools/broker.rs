@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use tracing::{error, info, warn};
 
@@ -24,11 +24,18 @@ pub struct ToolBroker {
     executors: HashMap<String, Arc<dyn ToolExecutor>>,
     policy: Arc<PolicyEngine>,
     default_executor: Option<Arc<dyn ToolExecutor>>,
+    max_tool_seconds: u64,
 }
 
 impl ToolBroker {
     pub fn new(policy: Arc<PolicyEngine>) -> Self {
-        Self { executors: HashMap::new(), policy, default_executor: None }
+        Self { executors: HashMap::new(), policy, default_executor: None, max_tool_seconds: 300 }
+    }
+
+    /// Set the maximum tool execution timeout in seconds.
+    pub fn with_timeout(mut self, max_tool_seconds: u64) -> Self {
+        self.max_tool_seconds = max_tool_seconds;
+        self
     }
 
     /// Register a tool executor.
@@ -73,7 +80,15 @@ impl ToolBroker {
                 })?;
 
                 info!(tool = %request.tool_name, "Executing tool");
-                let result = executor.execute(request).await?;
+                let result = tokio::time::timeout(
+                    Duration::from_secs(self.max_tool_seconds),
+                    executor.execute(request),
+                )
+                .await
+                .map_err(|_| ToolError::Timeout {
+                    name: request.tool_name.clone(),
+                    timeout_secs: self.max_tool_seconds,
+                })??;
                 info!(tool = %request.tool_name, success = %result.success, "Tool execution completed");
                 Ok(BrokerResult::Completed(result))
             }

@@ -37,6 +37,9 @@ pub trait EventStore: Send + Sync {
 
     /// Read events since a given sequence number.
     async fn read_since(&self, sequence: u64) -> Result<Vec<Event>, NexusError>;
+
+    /// Get the current/highest sequence number in the store.
+    async fn current_sequence(&self) -> Result<u64, NexusError>;
 }
 
 /// Append-only event store backed by JSONL files.
@@ -110,6 +113,11 @@ impl JsonlEventStore {
         idx.insert(event.id, offset);
 
         Ok(())
+    }
+
+    /// Get the current highest sequence number.
+    pub async fn current_sequence(&self) -> Result<u64, StorageError> {
+        Ok(self.next_sequence.load(Ordering::SeqCst).saturating_sub(1))
     }
 
     /// Read all events in sequence order.

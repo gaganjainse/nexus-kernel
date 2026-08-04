@@ -14,8 +14,8 @@ pub fn run(config_path: &str) -> Result<(), NexusError> {
     info!("Checking system status");
 
     let config = AppConfig::load(config_path)?;
-    let pressure = ResourceMonitor::snapshot();
     let data_dir = config.resolved_data_dir();
+    let pressure = ResourceMonitor::snapshot(&data_dir);
 
     println!("NexusAOS Status\n");
     println!("  Data dir:       {}", data_dir.display());

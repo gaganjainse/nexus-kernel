@@ -153,8 +153,8 @@ impl Kernel {
 
     /// Take a system pressure snapshot without blocking the async runtime.
     async fn system_pressure(&self) -> SystemPressure {
-        let monitor = self.resource_monitor.clone();
-        tokio::task::spawn_blocking(move || ResourceMonitor::snapshot())
+        let data_dir = std::path::Path::new(".");
+        tokio::task::spawn_blocking(move || ResourceMonitor::snapshot(data_dir))
             .await
             .unwrap_or_else(|_| SystemPressure {
                 ram_available_mb: 0,
@@ -801,6 +801,8 @@ impl Kernel {
         let task = projection.tasks.get(&task_id).cloned();
         drop(projection);
 
+        let sequence = self.event_store.current_sequence().await?;
+
         let snapshot_data = serde_json::json!({
             "task_id": task_id.to_string(),
             "tool_name": tool_name,
@@ -812,11 +814,12 @@ impl Kernel {
         let snapshot = crate::storage::Snapshot {
             snapshot_id: format!("checkpoint-{}-{}", task_id, tool_name),
             created_at: Utc::now(),
-            last_sequence: 0,
+            last_sequence: sequence,
             data: snapshot_data,
         };
 
         snapshot_store.save(&snapshot).await?;
+        let _ = snapshot_store.retain_latest(32).await;
 
         self.emit_event(Event::new(
             task_id,
@@ -1115,6 +1118,9 @@ mod tests {
         }
         async fn read_since(&self, _sequence: u64) -> Result<Vec<Event>, NexusError> {
             Ok(self.events.lock().unwrap().clone())
+        }
+        async fn current_sequence(&self) -> Result<u64, NexusError> {
+            Ok(self.events.lock().unwrap().len() as u64)
         }
     }
 

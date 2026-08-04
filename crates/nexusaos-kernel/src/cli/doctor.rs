@@ -44,7 +44,7 @@ pub fn run(config_path: &str) -> Result<(), NexusError> {
 
     // Check system resources
     print!("  System resources ... ");
-    let pressure = ResourceMonitor::snapshot();
+    let pressure = ResourceMonitor::snapshot(std::path::Path::new("/"));
     println!(
         "✓ RAM: {} MB free, Disk: {} GB free",
         pressure.ram_available_mb, pressure.disk_available_gb

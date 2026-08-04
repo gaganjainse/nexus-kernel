@@ -132,7 +132,7 @@ impl ResourceMonitor {
     ///
     /// This is a relatively expensive operation (system calls + optional
     /// subprocess for GPU info). Cache the result for a few seconds.
-    pub fn snapshot() -> SystemPressure {
+    pub fn snapshot(data_dir: &std::path::Path) -> SystemPressure {
         let mut sys = System::new_all();
         sys.refresh_memory();
 
@@ -141,7 +141,7 @@ impl ResourceMonitor {
 
         let (vram_available_mb, vram_total_mb) = Self::query_gpu_vram();
 
-        let disk_available_gb = Self::query_disk_space();
+        let disk_available_gb = Self::query_disk_space(data_dir);
 
         SystemPressure {
             ram_available_mb,
@@ -223,25 +223,30 @@ impl ResourceMonitor {
     }
 
     /// Query available disk space on the root filesystem (cross-platform).
-    fn query_disk_space() -> u64 {
-        // Try sysinfo first (cross-platform, no subprocess needed)
+    fn query_disk_space(data_dir: &std::path::Path) -> u64 {
+        let data_dir = data_dir.canonicalize().unwrap_or_else(|_| data_dir.to_path_buf());
+
         let disks = sysinfo::Disks::new_with_refreshed_list();
-        if let Some(root_disk) = disks.iter().find(|d| {
-            d.mount_point() == std::path::Path::new("/")
-                || d.mount_point() == std::path::Path::new("C:\\")
+        if let Some(disk) = disks.iter().find(|d| {
+            data_dir.starts_with(d.mount_point())
         }) {
-            return root_disk.available_space() / (1024 * 1024 * 1024);
+            return disk.available_space() / (1024 * 1024 * 1024);
         }
 
-        // Fallback to platform-specific df commands
+        let mount_point = data_dir.to_string_lossy();
         #[cfg(target_os = "linux")]
         {
-            Self::query_df_space(&["--output=avail", "-BG", "/"], 0)
+            Self::query_df_space(&["--output=avail", "-BG", &mount_point], 0)
         }
 
         #[cfg(target_os = "macos")]
         {
-            Self::query_df_space(&["-g", "/"], 3)
+            Self::query_df_space(&["-g", &mount_point], 3)
+        }
+
+        #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+        {
+            0
         }
     }
 

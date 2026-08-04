@@ -120,6 +120,9 @@ mod tests {
         async fn read_since(&self, _sequence: u64) -> Result<Vec<Event>, NexusError> {
             Ok(self.events.lock().unwrap().clone())
         }
+        async fn current_sequence(&self) -> Result<u64, NexusError> {
+            Ok(self.events.lock().unwrap().len() as u64)
+        }
     }
 
     #[tokio::test]
