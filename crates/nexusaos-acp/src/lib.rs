@@ -3,6 +3,10 @@ pub mod session;
 
 use std::sync::Arc;
 
+use serde::Deserialize;
+
+use tokio::sync::RwLock;
+
 use nexusaos_kernel::{
     capability::{CapabilityLease, CapabilitySet, Scope},
     error::NexusError,
@@ -13,12 +17,19 @@ use tracing::info;
 /// Result type for ACP operations.
 pub type AcpResult<T> = Result<T, NexusError>;
 
-/// An ACP agent descriptor.
+/// An ACP agent descriptor (serializable).
 #[derive(Debug, Clone)]
 pub struct AcpAgent {
     pub id: String,
     pub name: String,
-    pub capabilities: Arc<CapabilitySet>,
+    pub capabilities: Arc<RwLock<CapabilitySet>>,
+}
+
+/// Deserializable agent info for ACP client responses.
+#[derive(Debug, Clone, Deserialize)]
+pub struct AcpAgentInfo {
+    pub id: String,
+    pub name: String,
 }
 
 /// ACP session configuration.
@@ -50,11 +61,12 @@ pub async fn validate_acp_request(
 }
 
 /// Checks if the agent's capability set permits the requested operation.
-pub fn check_acp_capabilities(
+pub async fn check_acp_capabilities(
     agent: &AcpAgent,
     scope: &Scope,
 ) -> bool {
-    for lease in &agent.capabilities.leases {
+    let caps = agent.capabilities.read().await;
+    for lease in &caps.leases {
         if !lease.is_valid() {
             continue;
         }
@@ -90,11 +102,12 @@ pub fn check_acp_capabilities(
 }
 
 /// Grants a capability to an ACP agent.
-pub fn grant_agent_capability(
-    agent: &mut AcpAgent,
+pub async fn grant_agent_capability(
+    agent: &AcpAgent,
     capability: nexusaos_kernel::capability::Capability,
     granted_by: String,
     ttl: Option<std::time::Duration>,
-) -> &CapabilityLease {
-    agent.capabilities.grant(capability, granted_by, ttl)
+) -> CapabilityLease {
+    let mut caps = agent.capabilities.write().await;
+    caps.grant(capability, granted_by, ttl).clone()
 }

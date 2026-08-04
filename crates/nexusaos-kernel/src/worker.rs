@@ -357,8 +357,10 @@ impl ToolExecutor for IsolatedWorkerExecutor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use nexusaos_kernel::capability::{Capability, Scope};
+    use std::sync::Arc;
     use std::time::Duration;
+
+    use crate::capability::CapabilitySet;
 
     #[test]
     fn test_worker_config_default() {
@@ -371,8 +373,7 @@ mod tests {
 
     #[test]
     fn test_worker_process_creation() {
-        let caps = Arc::new(CapabilitySet::new());
-        let worker = WorkerProcess::new("worker-0".to_string(), WorkerConfig::default(), caps);
+        let worker = WorkerProcess::new("worker-0".to_string(), WorkerConfig::default());
         assert_eq!(worker.worker_id, "worker-0");
         assert_eq!(worker.state, WorkerState::Idle);
         assert_eq!(worker.restart_count, 0);
@@ -394,17 +395,15 @@ mod tests {
 
     #[test]
     fn test_worker_pool_creation() {
-        let caps = Arc::new(CapabilitySet::new());
         let config = WorkerConfig::default();
-        let pool = WorkerPool::new(config, caps);
+        let pool = WorkerPool::new(config);
         assert_eq!(pool.workers.len(), 8);
     }
 
     #[tokio::test]
     async fn test_worker_pool_find_idle_worker() {
-        let caps = Arc::new(CapabilitySet::new());
         let config = WorkerConfig::default();
-        let pool = WorkerPool::new(config, caps);
+        let pool = WorkerPool::new(config);
         let idle_idx = pool.find_idle_worker().await;
         assert!(idle_idx.is_some());
         assert_eq!(idle_idx.unwrap(), 0);
@@ -423,9 +422,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_isolated_worker_executor() {
-        let caps = Arc::new(CapabilitySet::new());
         let config = WorkerConfig::default();
-        let executor = IsolatedWorkerExecutor::new(config, caps);
+        let executor = IsolatedWorkerExecutor::new(config);
 
         assert_eq!(executor.name(), "isolated-worker-executor");
         assert_eq!(executor.description(), "Executes tools in isolated worker processes with capability lease enforcement");

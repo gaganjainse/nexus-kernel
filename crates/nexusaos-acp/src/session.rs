@@ -27,7 +27,7 @@ pub enum AcpSessionState {
 }
 
 /// An ACP session with an agent.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone)]
 pub struct AcpSession {
     pub session_id: String,
     pub agent: AcpAgent,

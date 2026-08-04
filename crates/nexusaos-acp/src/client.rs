@@ -1,11 +1,14 @@
+use std::sync::Arc;
+
 use serde::{Deserialize, Serialize};
 use tokio::net::UnixStream;
+use tokio::sync::RwLock;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tracing::info;
 
 use nexusaos_kernel::error::NexusError;
 
-use crate::{AcpAgent, AcpResult};
+use crate::{AcpAgent, AcpAgentInfo, AcpResult, CapabilitySet};
 
 /// ACP protocol version.
 pub const ACP_VERSION: &str = "2024-10-01";
@@ -89,7 +92,12 @@ impl AcpClient {
 
         match resp.result {
             Some(val) => {
-                let agent: AcpAgent = serde_json::from_value(val)?;
+                let agent_info: AcpAgentInfo = serde_json::from_value(val)?;
+                let agent = AcpAgent {
+                    id: agent_info.id,
+                    name: agent_info.name,
+                    capabilities: Arc::new(RwLock::new(CapabilitySet::new())),
+                };
                 info!(agent = %agent.id, "ACP agent authenticated");
                 Ok(agent)
             }

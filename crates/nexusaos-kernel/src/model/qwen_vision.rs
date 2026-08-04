@@ -14,7 +14,7 @@ use crate::{
     error::ProviderError,
     model::{
         provider::ModelProvider,
-        types::{ChatMessage, CompletionRequest, CompletionResponse},
+        types::{ChatMessage, ChatRole, CompletionRequest, CompletionResponse},
     },
     state::ModelRole,
 };
@@ -184,7 +184,7 @@ struct QwenUsage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::types::ChatMessage;
+    use crate::model::types::ChatRole;
 
     #[test]
     fn test_provider_creation() {

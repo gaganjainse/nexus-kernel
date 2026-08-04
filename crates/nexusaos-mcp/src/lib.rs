@@ -39,27 +39,27 @@ impl Default for McpServerConfig {
 /// Validates an MCP request through the policy engine before tool execution.
 pub async fn validate_mcp_request(
     policy: &PolicyEngine,
-    tool_name: &str,
-    arguments: &serde_json::Value,
+    _tool_name: &str,
+    _arguments: &serde_json::Value,
 ) -> PolicyDecision {
-    let action = format!("mcp.{}.execute", tool_name);
+    let action = format!("mcp.{}.execute", _tool_name);
     let decision = policy.evaluate(&action);
-    info!(tool = %tool_name, decision = ?decision, "MCP request validated through policy");
+    info!(tool = %_tool_name, decision = ?decision, "MCP request validated through policy");
     decision
 }
 
 /// Checks if the given capability set permits the MCP tool operation.
 pub fn check_mcp_capabilities(
     capabilities: &CapabilitySet,
-    tool_name: &str,
-    arguments: &serde_json::Value,
+    _tool_name: &str,
+    _arguments: &serde_json::Value,
 ) -> bool {
-    if let Some(path) = arguments.get("path").and_then(|v| v.as_str()) {
+    if let Some(path) = _arguments.get("path").and_then(|v| v.as_str()) {
         if capabilities.check_path(std::path::Path::new(path)) {
             return true;
         }
     }
-    if let Some(cmd) = arguments.get("command").and_then(|v| v.as_str()) {
+    if let Some(cmd) = _arguments.get("command").and_then(|v| v.as_str()) {
         if capabilities.check_command(cmd) {
             return true;
         }
