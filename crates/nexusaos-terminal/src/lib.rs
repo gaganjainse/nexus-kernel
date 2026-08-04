@@ -3,5 +3,5 @@
 pub mod parser;
 pub mod pty;
 
-pub use parser::TerminalScreen;
+pub use parser::{TerminalEmulator, TerminalScreen};
 pub use pty::PtyManager;

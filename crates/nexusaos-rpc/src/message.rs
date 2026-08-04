@@ -1,13 +1,20 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(untagged)]
+pub enum RpcId {
+    Num(i64),
+    Str(String),
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RpcRequest {
     pub jsonrpc: String,
     pub method: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub params: Option<Value>,
-    pub id: Option<String>,
+    pub id: Option<RpcId>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -17,7 +24,7 @@ pub struct RpcResponse {
     pub result: Option<Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<RpcError>,
-    pub id: Option<String>,
+    pub id: Option<RpcId>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -38,7 +45,7 @@ mod tests {
             jsonrpc: "2.0".into(),
             method: "ping".into(),
             params: None,
-            id: Some("1".into()),
+            id: Some(RpcId::Str("1".into())),
         };
         assert_eq!(req.method, "ping");
     }
@@ -49,14 +56,14 @@ mod tests {
             jsonrpc: "2.0".into(),
             method: "subtract".into(),
             params: Some(json!({"minuend": 23, "subtrahend": 42})),
-            id: Some("3".into()),
+            id: Some(RpcId::Str("3".into())),
         };
         let json_str = serde_json::to_string(&req).unwrap();
         let decoded: RpcRequest = serde_json::from_str(&json_str).unwrap();
         assert_eq!(decoded.jsonrpc, "2.0");
         assert_eq!(decoded.method, "subtract");
         assert_eq!(decoded.params, Some(json!({"minuend": 23, "subtrahend": 42})));
-        assert_eq!(decoded.id, Some("3".into()));
+        assert_eq!(decoded.id, Some(RpcId::Str("3".into())));
     }
 
     #[test]
@@ -80,7 +87,7 @@ mod tests {
             jsonrpc: "2.0".into(),
             method: "clone_test".into(),
             params: Some(json!([1, 2, 3])),
-            id: Some("99".into()),
+            id: Some(RpcId::Str("99".into())),
         };
         let cloned = req.clone();
         assert_eq!(cloned.method, req.method);
@@ -94,10 +101,23 @@ mod tests {
             jsonrpc: "2.0".into(),
             method: "sum".into(),
             params: Some(json!([1, 2, 3])),
-            id: Some("1".into()),
+            id: Some(RpcId::Num(1)),
         };
         assert!(req.params.as_ref().unwrap().is_array());
         assert_eq!(req.params.as_ref().unwrap().as_array().unwrap().len(), 3);
+    }
+
+    #[test]
+    fn test_rpc_request_integer_id() {
+        let req = RpcRequest {
+            jsonrpc: "2.0".into(),
+            method: "ping".into(),
+            params: None,
+            id: Some(RpcId::Num(42)),
+        };
+        let json_str = serde_json::to_string(&req).unwrap();
+        let decoded: RpcRequest = serde_json::from_str(&json_str).unwrap();
+        assert_eq!(decoded.id, Some(RpcId::Num(42)));
     }
 
     #[test]
@@ -106,7 +126,7 @@ mod tests {
             jsonrpc: "2.0".into(),
             result: Some(json!("success")),
             error: None,
-            id: Some("1".into()),
+            id: Some(RpcId::Str("1".into())),
         };
         assert!(resp.result.is_some());
         assert!(resp.error.is_none());
@@ -119,7 +139,7 @@ mod tests {
             jsonrpc: "2.0".into(),
             result: None,
             error: Some(RpcError { code: -32601, message: "Method not found".into() }),
-            id: Some("1".into()),
+            id: Some(RpcId::Str("1".into())),
         };
         assert!(resp.result.is_none());
         assert!(resp.error.is_some());
@@ -132,7 +152,7 @@ mod tests {
             jsonrpc: "2.0".into(),
             result: Some(json!("data")),
             error: Some(RpcError { code: 0, message: "ok".into() }),
-            id: Some("1".into()),
+            id: Some(RpcId::Str("1".into())),
         };
         assert!(resp.result.is_some());
         assert!(resp.error.is_some());
@@ -151,13 +171,13 @@ mod tests {
             jsonrpc: "2.0".into(),
             result: Some(json!({"key": "value"})),
             error: None,
-            id: Some("req-1".into()),
+            id: Some(RpcId::Str("req-1".into())),
         };
         let json_str = serde_json::to_string(&resp).unwrap();
         let decoded: RpcResponse = serde_json::from_str(&json_str).unwrap();
         assert_eq!(decoded.jsonrpc, "2.0");
         assert_eq!(decoded.result, Some(json!({"key": "value"})));
-        assert_eq!(decoded.id, Some("req-1".into()));
+        assert_eq!(decoded.id, Some(RpcId::Str("req-1".into())));
     }
 
     #[test]
@@ -198,7 +218,7 @@ mod tests {
             jsonrpc: "2.0".into(),
             result: Some(json!(true)),
             error: None,
-            id: Some("1".into()),
+            id: Some(RpcId::Str("1".into())),
         };
         let cloned = resp.clone();
         assert_eq!(cloned.jsonrpc, resp.jsonrpc);

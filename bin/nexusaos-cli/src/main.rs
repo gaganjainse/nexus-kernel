@@ -117,14 +117,10 @@ fn main() -> anyhow::Result<()> {
             }
         }
         Some(Commands::Pty) => {
-            println!("Testing Native Zig VT100 Parser & PTY Integration...");
-            if let Some(parser) = nexusaos_terminal::ZigVt100Parser::new(80, 24) {
-                parser.feed(b"Echo from PTY\nLine 2\n");
-                println!(
-                    "Zig VT100 Parser processed {} lines successfully.",
-                    parser.lines_processed()
-                );
-            }
+            println!("Testing Native VT100 Parser & PTY Integration...");
+            let mut emulator = nexusaos_terminal::TerminalEmulator::new_default();
+            emulator.feed(b"Echo from PTY\nLine 2\n");
+            println!("VT100 Parser processed {} lines successfully.", emulator.lines().len());
         }
     }
 

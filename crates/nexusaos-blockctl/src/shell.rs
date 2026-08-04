@@ -2,7 +2,7 @@ use std::{
     io::{Read, Write},
     sync::{
         atomic::{AtomicU8, Ordering},
-        Arc,
+        Arc, Mutex,
     },
 };
 
@@ -13,6 +13,16 @@ use crate::{
     controller::{BlockInput, Controller, ControllerError, ControllerStatus},
     filestore::BlockFileStore,
 };
+
+fn detect_shell() -> String {
+    std::env::var("SHELL").unwrap_or_else(|_| {
+        if std::path::Path::new("/bin/bash").exists() {
+            "/bin/bash".to_string()
+        } else {
+            "/bin/sh".to_string()
+        }
+    })
+}
 
 const STATUS_IDLE: u8 = 0;
 const STATUS_RUNNING: u8 = 1;
@@ -137,9 +147,12 @@ impl Controller for ShellController {
             // Best effort without OS specific kill
         }
 
-        let _ = self
-            .status
-            .compare_exchange(STATUS_RUNNING, STATUS_STOPPING, Ordering::SeqCst, Ordering::Relaxed);
+        let _ = self.status.compare_exchange(
+            STATUS_RUNNING,
+            STATUS_STOPPING,
+            Ordering::SeqCst,
+            Ordering::Relaxed,
+        );
         self.status.store(STATUS_STOPPED, Ordering::SeqCst);
         Ok(())
     }

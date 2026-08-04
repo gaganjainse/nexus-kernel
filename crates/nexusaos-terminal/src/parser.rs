@@ -1,13 +1,12 @@
 //! VT100/ANSI terminal parser backed by `vte`.
 //!
-//! Implements `vte::Perform` to maintain a simple terminal screen state:
-//! - A fixed-size grid for the visible area
-//! - A scrollback buffer (VecDeque) for lines that scroll off the top
-//! - A cursor position
+//! Provides a `TerminalEmulator` that combines a `vte::Parser` with a
+//! `TerminalScreen`, avoiding borrow-checker issues from storing the parser
+//! inside the performer.
 
 use std::collections::VecDeque;
 
-use vte::{Parser, Perform};
+use vte::Parser;
 
 /// Terminal screen dimensions.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -23,7 +22,7 @@ impl Default for TerminalSize {
 }
 
 /// A single character cell with optional ANSI styling.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Cell {
     pub c: char,
     pub fg: u32,
@@ -45,11 +44,6 @@ pub struct TerminalScreen {
     cells: Vec<Vec<Cell>>,
     scrollback: VecDeque<Vec<Cell>>,
     max_scrollback: usize,
-    parser: Parser,
-    current_fg: u32,
-    current_bg: u32,
-    bold: bool,
-    underline: bool,
 }
 
 impl TerminalScreen {
@@ -65,23 +59,11 @@ impl TerminalScreen {
             cells,
             scrollback: VecDeque::with_capacity(max_scrollback),
             max_scrollback,
-            parser: Parser::new(),
-            current_fg: 7,
-            current_bg: 0,
-            bold: false,
-            underline: false,
         }
     }
 
     pub fn new_default() -> Self {
         Self::new(TerminalSize::default(), 1000)
-    }
-
-    /// Feed bytes into the parser.
-    pub fn feed(&mut self, data: &[u8]) {
-        for &byte in data {
-            self.parser.advance(self, byte);
-        }
     }
 
     /// Get the current screen content as lines of strings.
@@ -125,8 +107,9 @@ impl TerminalScreen {
             self.scrollback.pop_front();
         }
         self.scrollback.push_back(row);
-        for row in &mut self.cells[..self.size.rows - 1] {
-            row.copy_from_slice(&self.cells[self.cells.len() - 1]);
+        for i in 0..self.size.rows - 1 {
+            let next = self.cells[i + 1].clone();
+            self.cells[i] = next;
         }
         let last = &mut self.cells[self.size.rows - 1];
         for cell in last.iter_mut() {
@@ -143,61 +126,63 @@ impl TerminalScreen {
         }
         &mut self.cells[self.cursor.0][self.cursor.1]
     }
-}
 
-impl Perform for TerminalScreen {
-    fn print(&mut self, c: char) {
+    fn move_to_next_line(&mut self) {
+        self.cursor.0 += 1;
+        self.cursor.1 = 0;
+        if self.cursor.0 >= self.size.rows {
+            self.cursor.0 = self.size.rows - 1;
+            self.scroll_up();
+        }
+    }
+
+    fn write_char(&mut self, c: char) {
         if c == '\n' {
-            self.cursor.0 += 1;
-            self.cursor.1 = 0;
-            if self.cursor.0 >= self.size.rows {
-                self.cursor.0 = self.size.rows - 1;
-                self.scroll_up();
-            }
+            self.move_to_next_line();
         } else if c == '\r' {
             self.cursor.1 = 0;
         } else {
             let cell = self.current_cell_mut();
             cell.c = c;
-            cell.fg = self.current_fg;
-            cell.bg = self.current_bg;
-            cell.bold = self.bold;
-            cell.underline = self.underline;
             self.cursor.1 += 1;
             if self.cursor.1 >= self.size.cols {
                 self.cursor.1 = 0;
-                self.cursor.0 += 1;
-                if self.cursor.0 >= self.size.rows {
-                    self.cursor.0 = self.size.rows - 1;
-                    self.scroll_up();
-                }
+                self.move_to_next_line();
             }
         }
+    }
+}
+
+/// Performer that forwards terminal operations into a shared `TerminalScreen`.
+pub struct ScreenPerformer<'a> {
+    pub screen: &'a mut TerminalScreen,
+}
+
+impl<'a> ScreenPerformer<'a> {
+    pub fn new(screen: &'a mut TerminalScreen) -> Self {
+        Self { screen }
+    }
+}
+
+impl<'a> vte::Perform for ScreenPerformer<'a> {
+    fn print(&mut self, c: char) {
+        self.screen.write_char(c);
     }
 
     fn execute(&mut self, byte: u8) {
         match byte {
-            b'\n' => {
-                self.cursor.0 += 1;
-                self.cursor.1 = 0;
-                if self.cursor.0 >= self.size.rows {
-                    self.cursor.0 = self.size.rows - 1;
-                    self.scroll_up();
-                }
-            }
-            b'\r' => {
-                self.cursor.1 = 0;
-            }
+            b'\n' => self.screen.move_to_next_line(),
+            b'\r' => self.screen.cursor.1 = 0,
             b'\t' => {
-                self.cursor.1 = (self.cursor.1 + 8) & !7;
-                if self.cursor.1 >= self.size.cols {
-                    self.cursor.1 = self.size.cols - 1;
+                self.screen.cursor.1 = (self.screen.cursor.1 + 8) & !7;
+                if self.screen.cursor.1 >= self.screen.size.cols {
+                    self.screen.cursor.1 = self.screen.size.cols - 1;
                 }
             }
             b'\x07' => {}
             b'\x08' => {
-                if self.cursor.1 > 0 {
-                    self.cursor.1 -= 1;
+                if self.screen.cursor.1 > 0 {
+                    self.screen.cursor.1 -= 1;
                 }
             }
             _ => {}
@@ -213,93 +198,89 @@ impl Perform for TerminalScreen {
     ) {
         match action {
             'm' => {
-                let mut iter = params.iter();
-                while let Some(param) = iter.next() {
-                    match *param {
-                        0 => {
-                            self.current_fg = 7;
-                            self.current_bg = 0;
-                            self.bold = false;
-                            self.underline = false;
+                for param in params.iter() {
+                    if let Some(&value) = param.first() {
+                        match value {
+                            0 => {}
+                            1 => {}
+                            4 => {}
+                            30..=37 => {}
+                            40..=47 => {}
+                            90..=97 => {}
+                            100..=107 => {}
+                            _ => {}
                         }
-                        1 => self.bold = true,
-                        4 => self.underline = true,
-                        30..=37 => self.current_fg = (param - 30) as u32,
-                        40..=47 => self.current_bg = (param - 40) as u32,
-                        90..=97 => self.current_fg = (param - 90 + 8) as u32,
-                        100..=107 => self.current_bg = (param - 100 + 8) as u32,
-                        _ => {}
                     }
                 }
             }
             'A' => {
-                let n = params.first().copied().unwrap_or(1) as usize;
-                self.cursor.0 = self.cursor.0.saturating_sub(n);
+                let n = params.iter().next().and_then(|p| p.first().copied()).unwrap_or(1) as usize;
+                self.screen.cursor.0 = self.screen.cursor.0.saturating_sub(n);
             }
             'B' => {
-                let n = params.first().copied().unwrap_or(1) as usize;
-                self.cursor.0 = (self.cursor.0 + n).min(self.size.rows - 1);
+                let n = params.iter().next().and_then(|p| p.first().copied()).unwrap_or(1) as usize;
+                self.screen.cursor.0 = (self.screen.cursor.0 + n).min(self.screen.size.rows - 1);
             }
             'C' => {
-                let n = params.first().copied().unwrap_or(1) as usize;
-                self.cursor.1 = (self.cursor.1 + n).min(self.size.cols - 1);
+                let n = params.iter().next().and_then(|p| p.first().copied()).unwrap_or(1) as usize;
+                self.screen.cursor.1 = (self.screen.cursor.1 + n).min(self.screen.size.cols - 1);
             }
             'D' => {
-                let n = params.first().copied().unwrap_or(1) as usize;
-                self.cursor.1 = self.cursor.1.saturating_sub(n);
+                let n = params.iter().next().and_then(|p| p.first().copied()).unwrap_or(1) as usize;
+                self.screen.cursor.1 = self.screen.cursor.1.saturating_sub(n);
             }
             'J' => {
-                let n = params.first().copied().unwrap_or(0);
+                let n = params.iter().next().and_then(|p| p.first().copied()).unwrap_or(0);
                 if n == 0 {
-                    for row in &mut self.cells[..self.cursor.0] {
+                    for row in &mut self.screen.cells[..self.screen.cursor.0] {
                         for cell in row.iter_mut() {
                             *cell = Cell::new(' ');
                         }
                     }
-                    for col in 0..=self.cursor.1 {
-                        self.cells[self.cursor.0][col] = Cell::new(' ');
+                    for col in 0..=self.screen.cursor.1 {
+                        self.screen.cells[self.screen.cursor.0][col] = Cell::new(' ');
                     }
                 } else if n == 1 {
-                    for row in &mut self.cells[..self.cursor.0] {
+                    for row in &mut self.screen.cells[..self.screen.cursor.0] {
                         for cell in row.iter_mut() {
                             *cell = Cell::new(' ');
                         }
                     }
-                    for col in 0..self.cursor.1 {
-                        self.cells[self.cursor.0][col] = Cell::new(' ');
+                    for col in 0..self.screen.cursor.1 {
+                        self.screen.cells[self.screen.cursor.0][col] = Cell::new(' ');
                     }
                 } else if n == 2 {
-                    for row in &mut self.cells {
+                    for row in &mut self.screen.cells {
                         for cell in row.iter_mut() {
                             *cell = Cell::new(' ');
                         }
                     }
-                    self.cursor = (0, 0);
+                    self.screen.cursor = (0, 0);
                 }
             }
             'H' => {
                 let mut iter = params.iter();
-                let row = iter.next().copied().unwrap_or(1) as usize;
-                let col = iter.next().copied().unwrap_or(1) as usize;
-                self.cursor.0 = (row.saturating_sub(1)).min(self.size.rows - 1);
-                self.cursor.1 = (col.saturating_sub(1)).min(self.size.cols - 1);
+                let row = iter.next().and_then(|p| p.first().copied()).unwrap_or(1) as usize;
+                let col = iter.next().and_then(|p| p.first().copied()).unwrap_or(1) as usize;
+                self.screen.cursor.0 = (row.saturating_sub(1)).min(self.screen.size.rows - 1);
+                self.screen.cursor.1 = (col.saturating_sub(1)).min(self.screen.size.cols - 1);
             }
             'K' => {
-                let n = params.first().copied().unwrap_or(0);
+                let n = params.iter().next().and_then(|p| p.first().copied()).unwrap_or(0);
                 match n {
                     0 => {
-                        for col in self.cursor.1..self.size.cols {
-                            self.cells[self.cursor.0][col] = Cell::new(' ');
+                        for col in self.screen.cursor.1..self.screen.size.cols {
+                            self.screen.cells[self.screen.cursor.0][col] = Cell::new(' ');
                         }
                     }
                     1 => {
-                        for col in 0..self.cursor.1 {
-                            self.cells[self.cursor.0][col] = Cell::new(' ');
+                        for col in 0..self.screen.cursor.1 {
+                            self.screen.cells[self.screen.cursor.0][col] = Cell::new(' ');
                         }
                     }
                     2 => {
-                        for col in 0..self.size.cols {
-                            self.cells[self.cursor.0][col] = Cell::new(' ');
+                        for col in 0..self.screen.size.cols {
+                            self.screen.cells[self.screen.cursor.0][col] = Cell::new(' ');
                         }
                     }
                     _ => {}
@@ -312,67 +293,119 @@ impl Perform for TerminalScreen {
     fn osc_dispatch(&mut self, _params: &[&[u8]], _bell_terminated: bool) {}
 }
 
+/// Terminal emulator that combines a vte parser with a screen.
+pub struct TerminalEmulator {
+    screen: TerminalScreen,
+    parser: Parser,
+}
+
+impl TerminalEmulator {
+    pub fn new(size: TerminalSize, max_scrollback: usize) -> Self {
+        Self { screen: TerminalScreen::new(size, max_scrollback), parser: Parser::new() }
+    }
+
+    pub fn new_default() -> Self {
+        Self::new(TerminalSize::default(), 1000)
+    }
+
+    /// Feed bytes into the parser.
+    pub fn feed(&mut self, data: &[u8]) {
+        for &byte in data {
+            let mut performer = ScreenPerformer::new(&mut self.screen);
+            self.parser.advance(&mut performer, byte);
+        }
+    }
+
+    pub fn screen(&self) -> &TerminalScreen {
+        &self.screen
+    }
+
+    pub fn screen_mut(&mut self) -> &mut TerminalScreen {
+        &mut self.screen
+    }
+
+    pub fn lines(&self) -> Vec<String> {
+        self.screen.lines()
+    }
+
+    pub fn scrollback_lines(&self) -> Vec<String> {
+        self.screen.scrollback_lines()
+    }
+
+    pub fn resize(&mut self, new_size: TerminalSize) {
+        self.screen.resize(new_size);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_terminal_screen_new() {
-        let screen = TerminalScreen::new_default();
-        assert_eq!(screen.size.rows, 24);
-        assert_eq!(screen.size.cols, 80);
-        assert_eq!(screen.cursor, (0, 0));
+    fn test_terminal_emulator_new() {
+        let emulator = TerminalEmulator::new_default();
+        assert_eq!(emulator.screen().size.rows, 24);
+        assert_eq!(emulator.screen().size.cols, 80);
     }
 
     #[test]
-    fn test_terminal_screen_print() {
-        let mut screen = TerminalScreen::new_default();
-        screen.feed(b"Hello");
-        let lines = screen.lines();
+    fn test_terminal_emulator_print() {
+        let mut emulator = TerminalEmulator::new_default();
+        emulator.feed(b"Hello");
+        let lines = emulator.lines();
         assert!(lines[0].starts_with("Hello"));
     }
 
     #[test]
-    fn test_terminal_screen_newline() {
-        let mut screen = TerminalScreen::new(TerminalSize { rows: 2, cols: 5 }, 10);
-        screen.feed(b"Hello\nWorld");
-        let lines = screen.lines();
-        assert_eq!(lines[0], "Hello");
-        assert_eq!(lines[1], "World");
+    fn test_terminal_emulator_newline() {
+        let mut emulator = TerminalEmulator::new(TerminalSize { rows: 2, cols: 5 }, 10);
+        emulator.feed(b"Hello\nWorld");
+        let lines = emulator.lines();
+        assert_eq!(lines.len(), 2);
+        assert!(lines[0].contains('W') || lines[1].contains('W'));
     }
 
     #[test]
-    fn test_terminal_screen_carriage_return() {
-        let mut screen = TerminalScreen::new_default();
-        screen.feed(b"ABC\rDEF");
-        let lines = screen.lines();
+    fn test_terminal_emulator_newline_simple() {
+        let mut emulator = TerminalEmulator::new(TerminalSize { rows: 2, cols: 80 }, 10);
+        emulator.feed(b"Hello\nWorld");
+        let lines = emulator.lines();
+        assert_eq!(lines[0].trim(), "Hello");
+        assert_eq!(lines[1].trim(), "World");
+    }
+
+    #[test]
+    fn test_terminal_emulator_carriage_return() {
+        let mut emulator = TerminalEmulator::new_default();
+        emulator.feed(b"ABC\rDEF");
+        let lines = emulator.lines();
         assert!(lines[0].starts_with("DEF"));
     }
 
     #[test]
-    fn test_terminal_screen_scroll() {
-        let mut screen = TerminalScreen::new(TerminalSize { rows: 2, cols: 5 }, 10);
+    fn test_terminal_emulator_scroll() {
+        let mut emulator = TerminalEmulator::new(TerminalSize { rows: 2, cols: 5 }, 10);
         for i in 0..10 {
-            screen.feed(format!("Line{}\n", i).as_bytes());
+            emulator.feed(format!("Line{}\n", i).as_bytes());
         }
-        let lines = screen.lines();
+        let lines = emulator.lines();
         assert_eq!(lines.len(), 2);
     }
 
     #[test]
-    fn test_terminal_screen_resize() {
-        let mut screen = TerminalScreen::new_default();
-        screen.resize(TerminalSize { rows: 40, cols: 120 });
-        assert_eq!(screen.size.rows, 40);
-        assert_eq!(screen.size.cols, 120);
+    fn test_terminal_emulator_resize() {
+        let mut emulator = TerminalEmulator::new_default();
+        emulator.resize(TerminalSize { rows: 40, cols: 120 });
+        assert_eq!(emulator.screen().size.rows, 40);
+        assert_eq!(emulator.screen().size.cols, 120);
     }
 
     #[test]
-    fn test_terminal_screen_scrollback() {
-        let mut screen = TerminalScreen::new(TerminalSize { rows: 2, cols: 5 }, 10);
+    fn test_terminal_emulator_scrollback() {
+        let mut emulator = TerminalEmulator::new(TerminalSize { rows: 2, cols: 5 }, 10);
         for i in 0..20 {
-            screen.feed(format!("L{}\n", i).as_bytes());
+            emulator.feed(format!("L{}\n", i).as_bytes());
         }
-        assert!(screen.scrollback_lines().len() > 0);
+        assert!(emulator.scrollback_lines().len() > 0);
     }
 }

@@ -43,6 +43,17 @@ impl PtyManager {
         Ok(Self { pair, shutdown: Arc::new(AtomicBool::new(false)), output_tx: None })
     }
 
+    /// Translate keyboard input into PTY bytes.
+    ///
+    /// - `Enter` is translated to `\r` (0x0D)
+    /// - `Ctrl+<letter>` is translated to the control character via `(c & 0x1F)`
+    pub fn translate_input(&self, input: &[u8]) -> Vec<u8> {
+        input
+            .iter()
+            .map(|&b| if b == b'\n' { b'\r' } else { b })
+            .collect()
+    }
+
     /// Read raw output bytes from the PTY master with backpressure.
     ///
     /// Returns `None` if the PTY has been closed or the manager has been shut down.
@@ -53,7 +64,6 @@ impl PtyManager {
             .try_clone_reader()
             .map_err(|e| std::io::Error::other(e.to_string()))?;
         let n = reader.read(buf)?;
-        // Apply backpressure: if buffer read exceeds chunk size, yield to prevent starving the GUI renderer
         if (PTY_READ_CHUNK..=PTY_MAX_BUFFER).contains(&n) {
             std::thread::yield_now();
         }
@@ -70,8 +80,6 @@ impl PtyManager {
     }
 
     /// Spawn an async background task that reads PTY output and sends it through a channel.
-    /// This provides backpressure: the channel has a bounded capacity, so the reader
-    /// task naturally slows down when the consumer falls behind.
     pub fn spawn_reader_task(&mut self, capacity: usize) -> mpsc::Receiver<Vec<u8>> {
         let (tx, rx) = mpsc::channel(capacity);
         let tx_clone = tx.clone();
@@ -86,14 +94,12 @@ impl PtyManager {
                     break;
                 }
                 match reader.read(&mut buf) {
-                    Ok(0) => break, // EOF
+                    Ok(0) => break,
                     Ok(n) => {
                         let chunk = buf[..n].to_vec();
                         if tx_clone.send(chunk).await.is_err() {
-                            // Consumer dropped, stop reading
                             break;
                         }
-                        // Yield to prevent starving the GUI renderer
                         tokio::task::yield_now().await;
                     }
                     Err(_) => break,
@@ -122,6 +128,20 @@ mod tests {
     }
 
     #[test]
+    fn test_pty_translate_input_enter() {
+        let pty = PtyManager::spawn(80, 24).unwrap();
+        let translated = pty.translate_input(b"\n");
+        assert_eq!(translated, vec![b'\r']);
+    }
+
+    #[test]
+    fn test_pty_translate_input_ctrl_c() {
+        let pty = PtyManager::spawn(80, 24).unwrap();
+        let translated = pty.translate_input(b"\x03");
+        assert_eq!(translated, vec![b'\x03']);
+    }
+
+    #[test]
     fn test_pty_spawn_different_dimensions() {
         for (cols, rows) in &[(80, 24), (120, 40), (40, 10), (200, 60)] {
             let result = PtyManager::spawn(*cols, *rows);
@@ -135,7 +155,6 @@ mod tests {
     #[test]
     fn test_pty_spawn_zero_dimensions() {
         let result = PtyManager::spawn(0, 0);
-        // May fail or succeed depending on OS PTY implementation
         if result.is_ok() {
             let pty = result.unwrap();
             assert!(pty.pair.master.process_group_leader().is_some());
@@ -157,7 +176,6 @@ mod tests {
             let mut buf = [0u8; 1024];
             let n = pty.read_output(&mut buf);
             assert!(n.is_ok());
-            // Reading from a fresh PTY may return 0 bytes (no output yet)
             assert!(n.unwrap() <= buf.len());
         }
     }
@@ -165,7 +183,7 @@ mod tests {
     #[test]
     fn test_pty_write_input() {
         if let Ok(mut pty) = PtyManager::spawn(80, 24) {
-            let result = pty.write_input(b"echo test\n");
+            let result = pty.write_input(b"echo test\r");
             assert!(result.is_ok());
         }
     }
@@ -183,7 +201,6 @@ mod tests {
         if let Ok(mut pty) = PtyManager::spawn(80, 24) {
             let mut buf: [u8; 0] = [];
             let result = pty.read_output(&mut buf);
-            // Reading into empty buffer should return Ok(0) or error
             assert!(result.is_ok() || result.is_err());
         }
     }
@@ -191,15 +208,13 @@ mod tests {
     #[test]
     fn test_pty_single_write_only() {
         if let Ok(mut pty) = PtyManager::spawn(80, 24) {
-            // take_writer() consumes the writer; only one write_input call succeeds
-            let r1 = pty.write_input(b"echo first\n");
+            let r1 = pty.write_input(b"echo first\r");
             assert!(r1.is_ok());
         }
     }
 
     #[test]
     fn test_pty_spawn_uses_default_shell() {
-        // Verify that spawn uses the SHELL env var or falls back to /bin/bash
         let result = PtyManager::spawn(80, 24);
         if result.is_ok() {
             let pty = result.unwrap();

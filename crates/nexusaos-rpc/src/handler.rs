@@ -5,7 +5,7 @@ use nexusaos_wps::broker::Broker;
 use serde_json::json;
 use tokio::net::UnixStream;
 
-use crate::message::{RpcRequest, RpcResponse};
+use crate::message::{RpcId, RpcRequest, RpcResponse};
 
 pub struct RpcHandler {
     broker: Arc<Broker>,
@@ -98,6 +98,7 @@ mod tests {
     use tokio::{io::AsyncWriteExt, net::UnixStream};
 
     use super::*;
+    use crate::message::RpcId;
 
     #[tokio::test]
     async fn test_process_request() {
@@ -108,7 +109,7 @@ mod tests {
             jsonrpc: "2.0".into(),
             method: "ping".into(),
             params: None,
-            id: Some("1".into()),
+            id: Some(RpcId::Str("1".into())),
         };
         let resp = handler.process_request(req).await;
         assert_eq!(resp.result.unwrap(), json!("pong"));
@@ -160,10 +161,10 @@ mod tests {
             jsonrpc: "2.0".into(),
             method: "echo".into(),
             params: None,
-            id: Some("42".into()),
+            id: Some(RpcId::Str("42".into())),
         };
         let resp = handler.process_request(req).await;
-        assert_eq!(resp.id, Some("42".into()));
+        assert_eq!(resp.id, Some(RpcId::Str("42".into())));
     }
 
     #[tokio::test]
@@ -177,7 +178,7 @@ mod tests {
                 jsonrpc: "2.0".into(),
                 method: (*method).into(),
                 params: None,
-                id: Some("1".into()),
+                id: Some(RpcId::Str("1".into())),
             };
             let resp = handler.process_request(req).await;
             assert_eq!(resp.jsonrpc, "2.0");
