@@ -124,7 +124,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_metamap_new_and_empty() {
+    fn test_metamap_new_and_empty() -> Result<(), Box<dyn std::error::Error>> {
         let mut meta = MetaMap::new();
         assert!(meta.is_empty());
         assert_eq!(meta.len(), 0);
@@ -132,10 +132,11 @@ mod tests {
         meta.set("test", "value");
         assert!(!meta.is_empty());
         assert_eq!(meta.len(), 1);
+    Ok(())
     }
 
     #[test]
-    fn test_typed_getters() {
+    fn test_typed_getters() -> Result<(), Box<dyn std::error::Error>> {
         let mut meta = MetaMap::new();
         meta.set("str", "hello");
         meta.set("int", 42);
@@ -165,10 +166,11 @@ mod tests {
         expected_map.insert("key".to_string(), "value".to_string());
         assert_eq!(meta.get_string_map("map"), Some(expected_map));
         assert_eq!(meta.get_string_map("str"), None);
+    Ok(())
     }
 
     #[test]
-    fn test_merge_meta_simple_set() {
+    fn test_merge_meta_simple_set() -> Result<(), Box<dyn std::error::Error>> {
         let mut base = MetaMap::new();
         base.set("a", "1");
 
@@ -177,12 +179,13 @@ mod tests {
         updates.set("b", "3");
 
         merge_meta(&mut base, &updates);
-        assert_eq!(base.get_string("a").unwrap(), "2");
-        assert_eq!(base.get_string("b").unwrap(), "3");
+        assert_eq!(base.get_string("a").ok_or("unexpected None")?, "2");
+        assert_eq!(base.get_string("b").ok_or("unexpected None")?, "3");
+    Ok(())
     }
 
     #[test]
-    fn test_merge_meta_delete() {
+    fn test_merge_meta_delete() -> Result<(), Box<dyn std::error::Error>> {
         let mut base = MetaMap::new();
         base.set("a", "1");
         base.set("b", "2");
@@ -193,10 +196,11 @@ mod tests {
         merge_meta(&mut base, &updates);
         assert!(!base.contains_key("a"));
         assert!(base.contains_key("b"));
+    Ok(())
     }
 
     #[test]
-    fn test_merge_meta_wildcard_delete() {
+    fn test_merge_meta_wildcard_delete() -> Result<(), Box<dyn std::error::Error>> {
         let mut base = MetaMap::new();
         base.set("ai:model", "gpt-4");
         base.set("ai:maxtokens", 1000);
@@ -209,10 +213,11 @@ mod tests {
         assert!(!base.contains_key("ai:model"));
         assert!(!base.contains_key("ai:maxtokens"));
         assert!(base.contains_key("bg"));
+    Ok(())
     }
 
     #[test]
-    fn test_merge_meta_mixed() {
+    fn test_merge_meta_mixed() -> Result<(), Box<dyn std::error::Error>> {
         let mut base = MetaMap::new();
         base.set("ai:model", "gpt-4");
         base.set("ai:maxtokens", 1000);
@@ -230,21 +235,23 @@ mod tests {
         assert!(!base.contains_key("term:theme"));
         assert!(base.contains_key("keep"));
         assert_eq!(base.get_string("new_key"), Some("hello".to_string()));
+    Ok(())
     }
 
     #[test]
-    fn test_serde() {
+    fn test_serde() -> Result<(), Box<dyn std::error::Error>> {
         let mut meta = MetaMap::new();
         meta.set("key", "value");
-        let serialized = serde_json::to_string(&meta).unwrap();
+        let serialized = serde_json::to_string(&meta)?;
         assert_eq!(serialized, r#"{"key":"value"}"#);
 
-        let deserialized: MetaMap = serde_json::from_str(&serialized).unwrap();
+        let deserialized: MetaMap = serde_json::from_str(&serialized)?;
         assert_eq!(deserialized, meta);
+    Ok(())
     }
 
     #[test]
-    fn test_remove_existing_and_nonexistent() {
+    fn test_remove_existing_and_nonexistent() -> Result<(), Box<dyn std::error::Error>> {
         let mut meta = MetaMap::new();
         meta.set("a", 1);
         meta.set("b", 2);
@@ -259,10 +266,11 @@ mod tests {
         meta.remove("nonexistent");
         assert_eq!(meta.len(), 1);
         assert!(meta.contains_key("b"));
+    Ok(())
     }
 
     #[test]
-    fn test_keys_iterator() {
+    fn test_keys_iterator() -> Result<(), Box<dyn std::error::Error>> {
         let mut meta = MetaMap::new();
         meta.set("alpha", 1);
         meta.set("beta", 2);
@@ -271,31 +279,35 @@ mod tests {
         let mut keys: Vec<&String> = meta.keys().collect();
         keys.sort();
         assert_eq!(keys, vec!["alpha", "beta", "gamma"]);
+    Ok(())
     }
 
     #[test]
-    fn test_keys_empty() {
+    fn test_keys_empty() -> Result<(), Box<dyn std::error::Error>> {
         let meta = MetaMap::new();
         assert_eq!(meta.keys().count(), 0);
+    Ok(())
     }
 
     #[test]
-    fn test_contains_key() {
+    fn test_contains_key() -> Result<(), Box<dyn std::error::Error>> {
         let mut meta = MetaMap::new();
         meta.set("present", "yes");
         assert!(meta.contains_key("present"));
         assert!(!meta.contains_key("absent"));
+    Ok(())
     }
 
     #[test]
-    fn test_default() {
+    fn test_default() -> Result<(), Box<dyn std::error::Error>> {
         let meta = MetaMap::default();
         assert!(meta.is_empty());
         assert_eq!(meta.len(), 0);
+    Ok(())
     }
 
     #[test]
-    fn test_clone() {
+    fn test_clone() -> Result<(), Box<dyn std::error::Error>> {
         let mut original = MetaMap::new();
         original.set("key", "value");
         original.set("num", 42);
@@ -307,10 +319,11 @@ mod tests {
         cloned.remove("key");
         assert!(original.contains_key("key"));
         assert!(!cloned.contains_key("key"));
+    Ok(())
     }
 
     #[test]
-    fn test_get_int_negative_and_float() {
+    fn test_get_int_negative_and_float() -> Result<(), Box<dyn std::error::Error>> {
         let mut meta = MetaMap::new();
         meta.set("neg", -99);
         meta.set("zero", 0);
@@ -322,10 +335,11 @@ mod tests {
         // Floats are NOT valid integers
         assert_eq!(meta.get_int("float"), None);
         assert_eq!(meta.get_int("bool"), None);
+    Ok(())
     }
 
     #[test]
-    fn test_get_float_from_int() {
+    fn test_get_float_from_int() -> Result<(), Box<dyn std::error::Error>> {
         let mut meta = MetaMap::new();
         meta.set("int_val", 42);
         meta.set("float_val", -3.14);
@@ -333,10 +347,11 @@ mod tests {
         // Integer stored as JSON should be retrievable as f64
         assert_eq!(meta.get_float("int_val"), Some(42.0));
         assert_eq!(meta.get_float("float_val"), Some(-3.14));
+    Ok(())
     }
 
     #[test]
-    fn test_get_bool_false() {
+    fn test_get_bool_false() -> Result<(), Box<dyn std::error::Error>> {
         let mut meta = MetaMap::new();
         meta.set("true_val", true);
         meta.get_string("true_val"); // consume
@@ -344,68 +359,76 @@ mod tests {
 
         assert_eq!(meta.get_bool("true_val"), Some(true));
         assert_eq!(meta.get_bool("false_val"), Some(false));
+    Ok(())
     }
 
     #[test]
-    fn test_get_string_list_empty_array() {
+    fn test_get_string_list_empty_array() -> Result<(), Box<dyn std::error::Error>> {
         let mut meta = MetaMap::new();
         meta.set("empty_list", json!([]));
 
         assert_eq!(meta.get_string_list("empty_list"), Some(vec![]));
+    Ok(())
     }
 
     #[test]
-    fn test_get_string_list_mixed_items() {
+    fn test_get_string_list_mixed_items() -> Result<(), Box<dyn std::error::Error>> {
         let mut meta = MetaMap::new();
         // Array with non-string items returns None (first non-string causes failure)
         meta.set("mixed", json!(["a", 42, "b"]));
 
         assert_eq!(meta.get_string_list("mixed"), None);
+    Ok(())
     }
 
     #[test]
-    fn test_get_string_list_all_non_strings() {
+    fn test_get_string_list_all_non_strings() -> Result<(), Box<dyn std::error::Error>> {
         let mut meta = MetaMap::new();
         meta.set("ints", json!([1, 2, 3]));
 
         assert_eq!(meta.get_string_list("ints"), None);
+    Ok(())
     }
 
     #[test]
-    fn test_get_string_list_null_value() {
+    fn test_get_string_list_null_value() -> Result<(), Box<dyn std::error::Error>> {
         let mut meta = MetaMap::new();
         meta.set("null_key", serde_json::Value::Null);
 
         assert_eq!(meta.get_string_list("null_key"), None);
+    Ok(())
     }
 
     #[test]
-    fn test_get_string_map_empty_object() {
+    fn test_get_string_map_empty_object() -> Result<(), Box<dyn std::error::Error>> {
         let mut meta = MetaMap::new();
         meta.set("empty_map", json!({}));
 
         assert_eq!(meta.get_string_map("empty_map"), Some(HashMap::new()));
+    Ok(())
     }
 
     #[test]
-    fn test_get_string_map_non_string_values() {
+    fn test_get_string_map_non_string_values() -> Result<(), Box<dyn std::error::Error>> {
         let mut meta = MetaMap::new();
         // Object with non-string value returns None
         meta.set("mixed_map", json!({"key": 42}));
 
         assert_eq!(meta.get_string_map("mixed_map"), None);
+    Ok(())
     }
 
     #[test]
-    fn test_get_string_map_partial_non_strings() {
+    fn test_get_string_map_partial_non_strings() -> Result<(), Box<dyn std::error::Error>> {
         let mut meta = MetaMap::new();
         meta.set("partial_mixed", json!({"a": "ok", "b": 42}));
 
         assert_eq!(meta.get_string_map("partial_mixed"), None);
+    Ok(())
     }
 
     #[test]
-    fn test_get_nonexistent_key_returns_none() {
+    fn test_get_nonexistent_key_returns_none() -> Result<(), Box<dyn std::error::Error>> {
         let meta = MetaMap::new();
         assert_eq!(meta.get_string("missing"), None);
         assert_eq!(meta.get_int("missing"), None);
@@ -414,10 +437,11 @@ mod tests {
         assert_eq!(meta.get_string_list("missing"), None);
         assert_eq!(meta.get_string_map("missing"), None);
         assert_eq!(meta.get_string("empty"), None);
+    Ok(())
     }
 
     #[test]
-    fn test_get_on_key_with_wrong_type() {
+    fn test_get_on_key_with_wrong_type() -> Result<(), Box<dyn std::error::Error>> {
         let mut meta = MetaMap::new();
         meta.set("num", 42);
         meta.set("str_val", "hello");
@@ -430,10 +454,11 @@ mod tests {
         assert_eq!(meta.get_bool("str_val"), None);
         assert_eq!(meta.get_string_map("arr"), None);
         assert_eq!(meta.get_string_list("obj"), None);
+    Ok(())
     }
 
     #[test]
-    fn test_set_overwrites_existing() {
+    fn test_set_overwrites_existing() -> Result<(), Box<dyn std::error::Error>> {
         let mut meta = MetaMap::new();
         meta.set("key", "first");
         assert_eq!(meta.get_string("key"), Some("first".to_string()));
@@ -441,10 +466,11 @@ mod tests {
         meta.set("key", "second");
         assert_eq!(meta.get_string("key"), Some("second".to_string()));
         assert_eq!(meta.len(), 1);
+    Ok(())
     }
 
     #[test]
-    fn test_set_various_value_types() {
+    fn test_set_various_value_types() -> Result<(), Box<dyn std::error::Error>> {
         let mut meta = MetaMap::new();
         meta.set("string", "text");
         meta.set("i64", 9223372036854775807i64);
@@ -459,10 +485,11 @@ mod tests {
         assert_eq!(meta.get_float("f64"), Some(std::f64::consts::PI));
         assert_eq!(meta.get_bool("bool"), Some(true));
         assert_eq!(meta.get_string_list("array"), None); // mixed types → None
+    Ok(())
     }
 
     #[test]
-    fn test_merge_with_empty_updates() {
+    fn test_merge_with_empty_updates() -> Result<(), Box<dyn std::error::Error>> {
         let mut base = MetaMap::new();
         base.set("a", "1");
         base.set("b", "2");
@@ -474,10 +501,11 @@ mod tests {
         assert_eq!(base.len(), 2);
         assert_eq!(base.get_string("a"), Some("1".to_string()));
         assert_eq!(base.get_string("b"), Some("2".to_string()));
+    Ok(())
     }
 
     #[test]
-    fn test_merge_into_empty_base() {
+    fn test_merge_into_empty_base() -> Result<(), Box<dyn std::error::Error>> {
         let mut base = MetaMap::new();
 
         let mut updates = MetaMap::new();
@@ -489,10 +517,11 @@ mod tests {
         assert_eq!(base.len(), 2);
         assert_eq!(base.get_string("new"), Some("value".to_string()));
         assert_eq!(base.get_int("num"), Some(42));
+    Ok(())
     }
 
     #[test]
-    fn test_merge_null_value_not_wildcard() {
+    fn test_merge_null_value_not_wildcard() -> Result<(), Box<dyn std::error::Error>> {
         let mut base = MetaMap::new();
         base.set("to_delete", "val");
         base.set("to_keep", "val2");
@@ -504,10 +533,11 @@ mod tests {
 
         assert!(!base.contains_key("to_delete"));
         assert!(base.contains_key("to_keep"));
+    Ok(())
     }
 
     #[test]
-    fn test_merge_wildcard_sets_non_null_value() {
+    fn test_merge_wildcard_sets_non_null_value() -> Result<(), Box<dyn std::error::Error>> {
         let mut base = MetaMap::new();
         base.set("ai:model", "gpt-4");
 
@@ -520,10 +550,11 @@ mod tests {
         assert_eq!(base.get_string("ai:*"), Some("overwritten".to_string()));
         // The actual key "ai:model" should NOT be deleted since the value was not null
         assert_eq!(base.get_string("ai:model"), Some("gpt-4".to_string()));
+    Ok(())
     }
 
     #[test]
-    fn test_merge_wildcard_no_matching_prefix() {
+    fn test_merge_wildcard_no_matching_prefix() -> Result<(), Box<dyn std::error::Error>> {
         let mut base = MetaMap::new();
         base.set("other:key", "val");
         base.set("foo:bar", "val2");
@@ -537,10 +568,11 @@ mod tests {
         assert_eq!(base.len(), 2);
         assert!(base.contains_key("other:key"));
         assert!(base.contains_key("foo:bar"));
+    Ok(())
     }
 
     #[test]
-    fn test_merge_wildcard_exact_prefix_match() {
+    fn test_merge_wildcard_exact_prefix_match() -> Result<(), Box<dyn std::error::Error>> {
         let mut base = MetaMap::new();
         base.set("ai:model", "gpt-4");
         base.set("ai:temp", 0.7);
@@ -555,10 +587,11 @@ mod tests {
         assert!(!base.contains_key("ai:temp"));
         // "aide:val" should NOT be deleted because it doesn't start with "ai:"
         assert!(base.contains_key("aide:val"));
+    Ok(())
     }
 
     #[test]
-    fn test_merge_overwrites_existing_keys() {
+    fn test_merge_overwrites_existing_keys() -> Result<(), Box<dyn std::error::Error>> {
         let mut base = MetaMap::new();
         base.set("a", "old");
         base.set("b", 1);
@@ -571,10 +604,11 @@ mod tests {
 
         assert_eq!(base.get_string("a"), Some("new".to_string()));
         assert_eq!(base.get_int("b"), Some(2));
+    Ok(())
     }
 
     #[test]
-    fn test_merge_empty_string_key_delete() {
+    fn test_merge_empty_string_key_delete() -> Result<(), Box<dyn std::error::Error>> {
         let mut base = MetaMap::new();
         base.set("", "val");
 
@@ -584,38 +618,42 @@ mod tests {
         merge_meta(&mut base, &updates);
 
         assert!(!base.contains_key(""));
+    Ok(())
     }
 
     #[test]
-    fn test_serde_empty_metamap() {
+    fn test_serde_empty_metamap() -> Result<(), Box<dyn std::error::Error>> {
         let meta = MetaMap::new();
-        let serialized = serde_json::to_string(&meta).unwrap();
+        let serialized = serde_json::to_string(&meta)?;
         assert_eq!(serialized, r#"{}"#);
 
-        let deserialized: MetaMap = serde_json::from_str(&serialized).unwrap();
+        let deserialized: MetaMap = serde_json::from_str(&serialized)?;
         assert_eq!(deserialized, meta);
         assert!(deserialized.is_empty());
+    Ok(())
     }
 
     #[test]
-    fn test_serde_complex_values() {
+    fn test_serde_complex_values() -> Result<(), Box<dyn std::error::Error>> {
         let mut meta = MetaMap::new();
         meta.set("nested", json!({"outer": {"inner": [1, 2, 3]}}));
         meta.set("array_of_objects", json!([{"name": "a"}, {"name": "b"}]));
 
-        let serialized = serde_json::to_string(&meta).unwrap();
-        let deserialized: MetaMap = serde_json::from_str(&serialized).unwrap();
+        let serialized = serde_json::to_string(&meta)?;
+        let deserialized: MetaMap = serde_json::from_str(&serialized)?;
         assert_eq!(deserialized, meta);
+    Ok(())
     }
 
     #[test]
-    fn test_serde_invalid_json_fails() {
+    fn test_serde_invalid_json_fails() -> Result<(), Box<dyn std::error::Error>> {
         let result: Result<MetaMap, _> = serde_json::from_str("not valid json");
         assert!(result.is_err());
+    Ok(())
     }
 
     #[test]
-    fn test_metamap_partial_eq_with_different_values() {
+    fn test_metamap_partial_eq_with_different_values() -> Result<(), Box<dyn std::error::Error>> {
         let mut m1 = MetaMap::new();
         m1.set("key", "val1");
 
@@ -623,10 +661,11 @@ mod tests {
         m2.set("key", "val2");
 
         assert_ne!(m1, m2);
+    Ok(())
     }
 
     #[test]
-    fn test_metamap_partial_eq_with_different_lengths() {
+    fn test_metamap_partial_eq_with_different_lengths() -> Result<(), Box<dyn std::error::Error>> {
         let mut m1 = MetaMap::new();
         m1.set("key", "val");
 
@@ -635,10 +674,11 @@ mod tests {
         m2.set("extra", "val2");
 
         assert_ne!(m1, m2);
+    Ok(())
     }
 
     #[test]
-    fn test_merge_multiple_keys_same_operation() {
+    fn test_merge_multiple_keys_same_operation() -> Result<(), Box<dyn std::error::Error>> {
         let mut base = MetaMap::new();
         base.set("x", 1);
         base.set("y", 2);
@@ -655,10 +695,11 @@ mod tests {
         assert!(!base.contains_key("y"));
         assert_eq!(base.get_int("z"), Some(30));
         assert_eq!(base.len(), 2);
+    Ok(())
     }
 
     #[test]
-    fn test_merge_preserves_unrelated_keys() {
+    fn test_merge_preserves_unrelated_keys() -> Result<(), Box<dyn std::error::Error>> {
         let mut base = MetaMap::new();
         base.set("keep1", "a");
         base.set("keep2", "b");
@@ -676,5 +717,6 @@ mod tests {
         assert!(base.contains_key("term:theme"));
         assert_eq!(base.get_string("new"), Some("added".to_string()));
         assert_eq!(base.len(), 4);
+    Ok(())
     }
 }

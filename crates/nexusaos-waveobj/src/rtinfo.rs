@@ -137,15 +137,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_status_constants() {
+    fn test_status_constants() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(STATUS_INIT, "init");
         assert_eq!(STATUS_RUNNING, "running");
         assert_eq!(STATUS_DONE, "done");
         assert_eq!(STATUS_ERROR, "error");
+    Ok(())
     }
 
     #[test]
-    fn test_serde_roundtrip() {
+    fn test_serde_roundtrip() -> Result<(), Box<dyn std::error::Error>> {
         let mut extra = HashMap::new();
         extra.insert("key1".to_string(), serde_json::json!("value1"));
 
@@ -160,17 +161,18 @@ mod tests {
             extra,
         };
 
-        let json = serde_json::to_string(&info).unwrap();
-        let deserialized: ObjRTInfo = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&info)?;
+        let deserialized: ObjRTInfo = serde_json::from_str(&json)?;
 
         assert_eq!(deserialized.block_id, info.block_id);
         assert_eq!(deserialized.shell_proc_status, info.shell_proc_status);
         assert_eq!(deserialized.tsunami_port, info.tsunami_port);
         assert_eq!(deserialized.extra.get("key1"), Some(&serde_json::json!("value1")));
+    Ok(())
     }
 
     #[test]
-    fn test_store_basic_operations() {
+    fn test_store_basic_operations() -> Result<(), Box<dyn std::error::Error>> {
         let store = RTInfoStore::new();
 
         let info = ObjRTInfo {
@@ -181,7 +183,7 @@ mod tests {
 
         // set and get
         store.set(info.clone());
-        let retrieved = store.get("b1").unwrap();
+        let retrieved = store.get("b1").ok_or("unexpected None")?;
         assert_eq!(retrieved.block_id, "b1");
         assert_eq!(retrieved.shell_proc_status, Some(STATUS_INIT.to_string()));
 
@@ -190,7 +192,7 @@ mod tests {
             i.shell_proc_status = Some(STATUS_RUNNING.to_string());
         });
         assert!(updated);
-        let retrieved2 = store.get("b1").unwrap();
+        let retrieved2 = store.get("b1").ok_or("unexpected None")?;
         assert_eq!(retrieved2.shell_proc_status, Some(STATUS_RUNNING.to_string()));
 
         // get_all, len, is_empty
@@ -208,10 +210,11 @@ mod tests {
         store.set(info);
         store.clear();
         assert!(store.is_empty());
+    Ok(())
     }
 
     #[test]
-    fn test_merge_update() {
+    fn test_merge_update() -> Result<(), Box<dyn std::error::Error>> {
         let store = RTInfoStore::new();
 
         // 5. merge_update: new entry is inserted
@@ -222,7 +225,7 @@ mod tests {
         };
         store.merge_update(info.clone());
 
-        let retrieved = store.get("b1").unwrap();
+        let retrieved = store.get("b1").ok_or("unexpected None")?;
         assert_eq!(retrieved.shell_proc_status, Some(STATUS_INIT.to_string()));
         assert_eq!(retrieved.shell_proc_conn_name, None);
 
@@ -234,15 +237,16 @@ mod tests {
         };
         store.merge_update(partial);
 
-        let retrieved2 = store.get("b1").unwrap();
+        let retrieved2 = store.get("b1").ok_or("unexpected None")?;
         // The original shell_proc_status should remain
         assert_eq!(retrieved2.shell_proc_status, Some(STATUS_INIT.to_string()));
         // The new field should be set
         assert_eq!(retrieved2.shell_proc_conn_name, Some("local".to_string()));
+    Ok(())
     }
 
     #[test]
-    fn test_thread_safety() {
+    fn test_thread_safety() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(RTInfoStore::new());
         let mut handles = vec![];
 
@@ -270,28 +274,31 @@ mod tests {
         }
 
         for handle in handles {
-            handle.join().unwrap();
+            handle.join().map_err(|e| format!("thread error: {:?}", e))?;
         }
 
         assert_eq!(store.len(), 10);
+    Ok(())
     }
 
     #[test]
-    fn test_get_nonexistent() {
+    fn test_get_nonexistent() -> Result<(), Box<dyn std::error::Error>> {
         let store = RTInfoStore::new();
         assert!(store.get("nonexistent").is_none());
         assert!(store.get("").is_none());
+    Ok(())
     }
 
     #[test]
-    fn test_get_all_empty_store() {
+    fn test_get_all_empty_store() -> Result<(), Box<dyn std::error::Error>> {
         let store = RTInfoStore::new();
         let all = store.get_all();
         assert!(all.is_empty());
+    Ok(())
     }
 
     #[test]
-    fn test_len_and_is_empty() {
+    fn test_len_and_is_empty() -> Result<(), Box<dyn std::error::Error>> {
         let store = RTInfoStore::new();
         assert_eq!(store.len(), 0);
         assert!(store.is_empty());
@@ -300,17 +307,19 @@ mod tests {
         store.set(info);
         assert_eq!(store.len(), 1);
         assert!(!store.is_empty());
+    Ok(())
     }
 
     #[test]
-    fn test_clear_empty_store() {
+    fn test_clear_empty_store() -> Result<(), Box<dyn std::error::Error>> {
         let store = RTInfoStore::new();
         store.clear();
         assert!(store.is_empty());
+    Ok(())
     }
 
     #[test]
-    fn test_clear_after_set() {
+    fn test_clear_after_set() -> Result<(), Box<dyn std::error::Error>> {
         let store = RTInfoStore::new();
         for i in 0..5 {
             store.set(ObjRTInfo { block_id: format!("b{}", i), ..Default::default() });
@@ -319,26 +328,29 @@ mod tests {
         store.clear();
         assert!(store.is_empty());
         assert_eq!(store.len(), 0);
+    Ok(())
     }
 
     #[test]
-    fn test_delete_nonexistent() {
+    fn test_delete_nonexistent() -> Result<(), Box<dyn std::error::Error>> {
         let store = RTInfoStore::new();
         assert!(!store.delete("nonexistent"));
         assert!(!store.delete(""));
+    Ok(())
     }
 
     #[test]
-    fn test_update_nonexistent() {
+    fn test_update_nonexistent() -> Result<(), Box<dyn std::error::Error>> {
         let store = RTInfoStore::new();
         let result = store.update("nonexistent", |i| {
             i.shell_proc_status = Some(STATUS_RUNNING.to_string());
         });
         assert!(!result);
+    Ok(())
     }
 
     #[test]
-    fn test_update_multiple_calls() {
+    fn test_update_multiple_calls() -> Result<(), Box<dyn std::error::Error>> {
         let store = RTInfoStore::new();
         store.set(ObjRTInfo {
             block_id: "b1".to_string(),
@@ -358,12 +370,13 @@ mod tests {
         });
         assert!(ok2);
 
-        let retrieved = store.get("b1").unwrap();
+        let retrieved = store.get("b1").ok_or("unexpected None")?;
         assert_eq!(retrieved.shell_proc_status, Some(STATUS_DONE.to_string()));
+    Ok(())
     }
 
     #[test]
-    fn test_set_overwrite() {
+    fn test_set_overwrite() -> Result<(), Box<dyn std::error::Error>> {
         let store = RTInfoStore::new();
         store.set(ObjRTInfo {
             block_id: "b1".to_string(),
@@ -379,15 +392,16 @@ mod tests {
             ..Default::default()
         });
 
-        let retrieved = store.get("b1").unwrap();
+        let retrieved = store.get("b1").ok_or("unexpected None")?;
         assert_eq!(retrieved.shell_proc_status, Some(STATUS_RUNNING.to_string()));
         assert_eq!(retrieved.tsunami_port, Some(3000));
         assert_eq!(retrieved.shell_proc_conn_name, None);
         assert_eq!(store.len(), 1);
+    Ok(())
     }
 
     #[test]
-    fn test_objrtinfo_default() {
+    fn test_objrtinfo_default() -> Result<(), Box<dyn std::error::Error>> {
         let info = ObjRTInfo::default();
         assert_eq!(info.block_id, String::new());
         assert!(info.shell_proc_status.is_none());
@@ -397,17 +411,19 @@ mod tests {
         assert!(info.wave_ai_status.is_none());
         assert!(info.builder_status.is_none());
         assert!(info.extra.is_empty());
+    Ok(())
     }
 
     #[test]
-    fn test_rtinfostore_default() {
+    fn test_rtinfostore_default() -> Result<(), Box<dyn std::error::Error>> {
         let store = RTInfoStore::default();
         assert_eq!(store.len(), 0);
         assert!(store.is_empty());
+    Ok(())
     }
 
     #[test]
-    fn test_merge_update_overwrites_all_fields() {
+    fn test_merge_update_overwrites_all_fields() -> Result<(), Box<dyn std::error::Error>> {
         let store = RTInfoStore::new();
 
         store.set(ObjRTInfo {
@@ -433,17 +449,18 @@ mod tests {
             extra: HashMap::new(),
         });
 
-        let retrieved = store.get("b1").unwrap();
+        let retrieved = store.get("b1").ok_or("unexpected None")?;
         assert_eq!(retrieved.shell_proc_status, Some(STATUS_RUNNING.to_string()));
         assert_eq!(retrieved.shell_proc_conn_name, Some("new_conn".to_string()));
         assert_eq!(retrieved.shell_proc_exit_code, Some(42));
         assert_eq!(retrieved.tsunami_port, Some(3000));
         assert_eq!(retrieved.wave_ai_status, Some("busy".to_string()));
         assert_eq!(retrieved.builder_status, Some("building".to_string()));
+    Ok(())
     }
 
     #[test]
-    fn test_merge_update_preserves_none_fields() {
+    fn test_merge_update_preserves_none_fields() -> Result<(), Box<dyn std::error::Error>> {
         let store = RTInfoStore::new();
 
         store.set(ObjRTInfo {
@@ -463,16 +480,17 @@ mod tests {
             ..Default::default()
         });
 
-        let retrieved = store.get("b1").unwrap();
+        let retrieved = store.get("b1").ok_or("unexpected None")?;
         // None fields preserve original
         assert_eq!(retrieved.shell_proc_status, Some(STATUS_RUNNING.to_string()));
         assert_eq!(retrieved.shell_proc_exit_code, Some(0));
         // Some fields get updated
         assert_eq!(retrieved.shell_proc_conn_name, Some("conn2".to_string()));
+    Ok(())
     }
 
     #[test]
-    fn test_merge_update_extra_hashmap() {
+    fn test_merge_update_extra_hashmap() -> Result<(), Box<dyn std::error::Error>> {
         let store = RTInfoStore::new();
 
         let mut initial_extra = HashMap::new();
@@ -496,17 +514,18 @@ mod tests {
             ..Default::default()
         });
 
-        let retrieved = store.get("b1").unwrap();
+        let retrieved = store.get("b1").ok_or("unexpected None")?;
         // key1 overwritten
         assert_eq!(retrieved.extra.get("key1"), Some(&serde_json::json!("overwritten")));
         // key2 preserved
         assert_eq!(retrieved.extra.get("key2"), Some(&serde_json::json!("val2")));
         // key3 added
         assert_eq!(retrieved.extra.get("key3"), Some(&serde_json::json!("val3")));
+    Ok(())
     }
 
     #[test]
-    fn test_merge_update_inserts_new_entry() {
+    fn test_merge_update_inserts_new_entry() -> Result<(), Box<dyn std::error::Error>> {
         let store = RTInfoStore::new();
         assert!(store.is_empty());
 
@@ -517,13 +536,14 @@ mod tests {
         });
 
         assert_eq!(store.len(), 1);
-        let retrieved = store.get("new_block").unwrap();
+        let retrieved = store.get("new_block").ok_or("unexpected None")?;
         assert_eq!(retrieved.block_id, "new_block");
         assert_eq!(retrieved.shell_proc_status, Some(STATUS_INIT.to_string()));
+    Ok(())
     }
 
     #[test]
-    fn test_merge_update_empty_extra_no_change() {
+    fn test_merge_update_empty_extra_no_change() -> Result<(), Box<dyn std::error::Error>> {
         let store = RTInfoStore::new();
         store.set(ObjRTInfo {
             block_id: "b1".to_string(),
@@ -538,12 +558,13 @@ mod tests {
             ..Default::default()
         });
 
-        let retrieved = store.get("b1").unwrap();
+        let retrieved = store.get("b1").ok_or("unexpected None")?;
         assert!(retrieved.extra.is_empty());
+    Ok(())
     }
 
     #[test]
-    fn test_serde_objrtinfo_all_none() {
+    fn test_serde_objrtinfo_all_none() -> Result<(), Box<dyn std::error::Error>> {
         let info = ObjRTInfo {
             block_id: "b1".to_string(),
             shell_proc_status: None,
@@ -555,16 +576,17 @@ mod tests {
             extra: HashMap::new(),
         };
 
-        let json = serde_json::to_string(&info).unwrap();
-        let deserialized: ObjRTInfo = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&info)?;
+        let deserialized: ObjRTInfo = serde_json::from_str(&json)?;
         assert_eq!(deserialized.block_id, "b1");
         assert!(deserialized.shell_proc_status.is_none());
         assert!(deserialized.tsunami_port.is_none());
         assert!(deserialized.extra.is_empty());
+    Ok(())
     }
 
     #[test]
-    fn test_serde_objrtinfo_all_fields() {
+    fn test_serde_objrtinfo_all_fields() -> Result<(), Box<dyn std::error::Error>> {
         let mut extra = HashMap::new();
         extra.insert("key1".to_string(), serde_json::json!("val1"));
         extra.insert("key2".to_string(), serde_json::json!(42));
@@ -580,8 +602,8 @@ mod tests {
             extra,
         };
 
-        let json = serde_json::to_string(&info).unwrap();
-        let deserialized: ObjRTInfo = serde_json::from_str(&json).unwrap();
+        let json = serde_json::to_string(&info)?;
+        let deserialized: ObjRTInfo = serde_json::from_str(&json)?;
         assert_eq!(deserialized.block_id, info.block_id);
         assert_eq!(deserialized.shell_proc_status, info.shell_proc_status);
         assert_eq!(deserialized.shell_proc_conn_name, info.shell_proc_conn_name);
@@ -591,42 +613,46 @@ mod tests {
         assert_eq!(deserialized.builder_status, info.builder_status);
         assert_eq!(deserialized.extra.get("key1"), Some(&serde_json::json!("val1")));
         assert_eq!(deserialized.extra.get("key2"), Some(&serde_json::json!(42)));
+    Ok(())
     }
 
     #[test]
-    fn test_serde_skip_serializing_if_none() {
+    fn test_serde_skip_serializing_if_none() -> Result<(), Box<dyn std::error::Error>> {
         let info = ObjRTInfo { block_id: "b1".to_string(), ..Default::default() };
 
-        let json = serde_json::to_value(&info).unwrap();
+        let json = serde_json::to_value(&info)?;
         // None fields should be skipped
         assert!(json.get("shell_proc_status").is_none());
         assert!(json.get("tsunami_port").is_none());
         assert!(json.get("builder_status").is_none());
         // block_id (no skip) should be present
         assert_eq!(json["block_id"], "b1");
+    Ok(())
     }
 
     #[test]
-    fn test_serde_extra_empty_skipped() {
+    fn test_serde_extra_empty_skipped() -> Result<(), Box<dyn std::error::Error>> {
         let info = ObjRTInfo { block_id: "b1".to_string(), ..Default::default() };
 
-        let json = serde_json::to_value(&info).unwrap();
+        let json = serde_json::to_value(&info)?;
         assert!(json.get("extra").is_none());
+    Ok(())
     }
 
     #[test]
-    fn test_serde_extra_present_when_non_empty() {
+    fn test_serde_extra_present_when_non_empty() -> Result<(), Box<dyn std::error::Error>> {
         let mut extra = HashMap::new();
         extra.insert("key".to_string(), serde_json::json!("val"));
 
         let info = ObjRTInfo { block_id: "b1".to_string(), extra, ..Default::default() };
 
-        let json = serde_json::to_value(&info).unwrap();
+        let json = serde_json::to_value(&info)?;
         assert!(json.get("extra").is_some());
+    Ok(())
     }
 
     #[test]
-    fn test_get_all_multiple_entries() {
+    fn test_get_all_multiple_entries() -> Result<(), Box<dyn std::error::Error>> {
         let store = RTInfoStore::new();
         for i in 0..5 {
             store.set(ObjRTInfo {
@@ -642,10 +668,11 @@ mod tests {
         let mut ids: Vec<String> = all.iter().map(|i| i.block_id.clone()).collect();
         ids.sort();
         assert_eq!(ids, vec!["block_0", "block_1", "block_2", "block_3", "block_4"]);
+    Ok(())
     }
 
     #[test]
-    fn test_clone_objrtinfo() {
+    fn test_clone_objrtinfo() -> Result<(), Box<dyn std::error::Error>> {
         let mut extra = HashMap::new();
         extra.insert("key".to_string(), serde_json::json!("val"));
 
@@ -662,10 +689,11 @@ mod tests {
 
         let cloned = info.clone();
         assert_eq!(info, cloned);
+    Ok(())
     }
 
     #[test]
-    fn test_concurrent_get_and_set() {
+    fn test_concurrent_get_and_set() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(RTInfoStore::new());
         let mut handles = vec![];
 
@@ -692,14 +720,15 @@ mod tests {
         }
 
         for handle in handles {
-            handle.join().unwrap();
+            handle.join().map_err(|e| format!("thread error: {:?}", e))?;
         }
 
         assert_eq!(store.len(), 20);
+    Ok(())
     }
 
     #[test]
-    fn test_concurrent_delete() {
+    fn test_concurrent_delete() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(RTInfoStore::new());
 
         for i in 0..10 {
@@ -715,9 +744,10 @@ mod tests {
         }
 
         for handle in handles {
-            handle.join().unwrap();
+            handle.join().map_err(|e| format!("thread error: {:?}", e))?;
         }
 
         assert_eq!(store.len(), 0);
+    Ok(())
     }
 }

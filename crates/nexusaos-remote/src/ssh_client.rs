@@ -56,7 +56,6 @@ mod tests {
         // since the method is hardcoded to Ok(true), any server key is accepted.
         // In a real scenario we'd pass a mock PublicKey, but the implementation
         // doesn't inspect it, so we verify the contract here.
-        assert!(true); // The handler unconditionally accepts all server keys
     }
 
     #[tokio::test]

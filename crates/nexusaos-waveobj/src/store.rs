@@ -298,14 +298,15 @@ mod tests {
     use crate::types::{Point, WinSize};
 
     #[test]
-    fn test_open_in_memory() {
-        let store = WaveStore::open_in_memory().unwrap();
+    fn test_open_in_memory() -> Result<(), Box<dyn std::error::Error>> {
+        let store = WaveStore::open_in_memory()?;
         assert!(store.ensure_tables().is_ok());
+    Ok(())
     }
 
     #[test]
-    fn test_insert_get_block() {
-        let store = WaveStore::open_in_memory().unwrap();
+    fn test_insert_get_block() -> Result<(), Box<dyn std::error::Error>> {
+        let store = WaveStore::open_in_memory()?;
         let mut block = Block {
             oid: Uuid::new_v4(),
             parent_oref: None,
@@ -316,17 +317,18 @@ mod tests {
             sub_block_ids: vec![],
             job_id: None,
         };
-        store.db_insert(&mut block).unwrap();
+        store.db_insert(&mut block)?;
         assert_eq!(block.version, 1);
 
-        let fetched: Block = store.db_get(&block.oid).unwrap().unwrap();
+        let fetched: Block = store.db_get(&block.oid)?.ok_or("unexpected None")?;
         assert_eq!(fetched.oid, block.oid);
         assert_eq!(fetched.version, 1);
+    Ok(())
     }
 
     #[test]
-    fn test_insert_workspace() {
-        let store = WaveStore::open_in_memory().unwrap();
+    fn test_insert_workspace() -> Result<(), Box<dyn std::error::Error>> {
+        let store = WaveStore::open_in_memory()?;
         let mut workspace = Workspace {
             oid: Uuid::new_v4(),
             version: 0,
@@ -337,15 +339,16 @@ mod tests {
             active_tab_id: "tab1".to_string(),
             meta: MetaMap::new(),
         };
-        store.db_insert(&mut workspace).unwrap();
+        store.db_insert(&mut workspace)?;
 
-        let fetched: Workspace = store.db_get(&workspace.oid).unwrap().unwrap();
+        let fetched: Workspace = store.db_get(&workspace.oid)?.ok_or("unexpected None")?;
         assert_eq!(fetched.tab_ids, vec!["tab1".to_string()]);
+    Ok(())
     }
 
     #[test]
-    fn test_update() {
-        let store = WaveStore::open_in_memory().unwrap();
+    fn test_update() -> Result<(), Box<dyn std::error::Error>> {
+        let store = WaveStore::open_in_memory()?;
         let mut block = Block {
             oid: Uuid::new_v4(),
             parent_oref: None,
@@ -356,20 +359,21 @@ mod tests {
             sub_block_ids: vec![],
             job_id: None,
         };
-        store.db_insert(&mut block).unwrap();
+        store.db_insert(&mut block)?;
 
         block.sub_block_ids = vec!["sub1".to_string()];
-        store.db_update(&mut block).unwrap();
+        store.db_update(&mut block)?;
         assert_eq!(block.version, 2);
 
-        let fetched: Block = store.db_get(&block.oid).unwrap().unwrap();
+        let fetched: Block = store.db_get(&block.oid)?.ok_or("unexpected None")?;
         assert_eq!(fetched.version, 2);
         assert_eq!(fetched.sub_block_ids, vec!["sub1".to_string()]);
+    Ok(())
     }
 
     #[test]
-    fn test_delete() {
-        let store = WaveStore::open_in_memory().unwrap();
+    fn test_delete() -> Result<(), Box<dyn std::error::Error>> {
+        let store = WaveStore::open_in_memory()?;
         let mut block = Block {
             oid: Uuid::new_v4(),
             parent_oref: None,
@@ -380,28 +384,30 @@ mod tests {
             sub_block_ids: vec![],
             job_id: None,
         };
-        store.db_insert(&mut block).unwrap();
+        store.db_insert(&mut block)?;
 
-        let deleted = store.db_delete("block", &block.oid).unwrap();
+        let deleted = store.db_delete("block", &block.oid)?;
         assert!(deleted);
 
-        let fetched: Option<Block> = store.db_get(&block.oid).unwrap();
+        let fetched: Option<Block> = store.db_get(&block.oid)?;
         assert!(fetched.is_none());
 
-        let deleted_again = store.db_delete("block", &block.oid).unwrap();
+        let deleted_again = store.db_delete("block", &block.oid)?;
         assert!(!deleted_again);
+    Ok(())
     }
 
     #[test]
-    fn test_db_must_get() {
-        let store = WaveStore::open_in_memory().unwrap();
+    fn test_db_must_get() -> Result<(), Box<dyn std::error::Error>> {
+        let store = WaveStore::open_in_memory()?;
         let result = store.db_must_get::<Block>(&Uuid::new_v4());
         assert!(matches!(result, Err(StoreError::NotFound(_))));
+    Ok(())
     }
 
     #[test]
-    fn test_db_get_all() {
-        let store = WaveStore::open_in_memory().unwrap();
+    fn test_db_get_all() -> Result<(), Box<dyn std::error::Error>> {
+        let store = WaveStore::open_in_memory()?;
         let mut block1 = Block {
             oid: Uuid::new_v4(),
             parent_oref: None,
@@ -422,16 +428,17 @@ mod tests {
             sub_block_ids: vec![],
             job_id: None,
         };
-        store.db_insert(&mut block1).unwrap();
-        store.db_insert(&mut block2).unwrap();
+        store.db_insert(&mut block1)?;
+        store.db_insert(&mut block2)?;
 
-        let all: Vec<Block> = store.db_get_all().unwrap();
+        let all: Vec<Block> = store.db_get_all()?;
         assert_eq!(all.len(), 2);
+    Ok(())
     }
 
     #[test]
-    fn test_find_workspace_for_tab() {
-        let store = WaveStore::open_in_memory().unwrap();
+    fn test_find_workspace_for_tab() -> Result<(), Box<dyn std::error::Error>> {
+        let store = WaveStore::open_in_memory()?;
         let tab_oid = Uuid::new_v4();
         let mut workspace = Workspace {
             oid: Uuid::new_v4(),
@@ -443,15 +450,16 @@ mod tests {
             active_tab_id: tab_oid.to_string(),
             meta: MetaMap::new(),
         };
-        store.db_insert(&mut workspace).unwrap();
+        store.db_insert(&mut workspace)?;
 
-        let fetched = store.find_workspace_for_tab(&tab_oid).unwrap().unwrap();
+        let fetched = store.find_workspace_for_tab(&tab_oid)?.ok_or("unexpected None")?;
         assert_eq!(fetched.oid, workspace.oid);
+    Ok(())
     }
 
     #[test]
-    fn test_find_window_for_workspace() {
-        let store = WaveStore::open_in_memory().unwrap();
+    fn test_find_window_for_workspace() -> Result<(), Box<dyn std::error::Error>> {
+        let store = WaveStore::open_in_memory()?;
         let workspace_oid = Uuid::new_v4();
         let mut window = Window {
             oid: Uuid::new_v4(),
@@ -463,15 +471,16 @@ mod tests {
             last_focus_ts: 0,
             meta: MetaMap::new(),
         };
-        store.db_insert(&mut window).unwrap();
+        store.db_insert(&mut window)?;
 
-        let fetched = store.find_window_for_workspace(&workspace_oid).unwrap().unwrap();
+        let fetched = store.find_window_for_workspace(&workspace_oid)?.ok_or("unexpected None")?;
         assert_eq!(fetched.oid, window.oid);
+    Ok(())
     }
 
     #[test]
-    fn test_update_object_meta() {
-        let store = WaveStore::open_in_memory().unwrap();
+    fn test_update_object_meta() -> Result<(), Box<dyn std::error::Error>> {
+        let store = WaveStore::open_in_memory()?;
         let mut block = Block {
             oid: Uuid::new_v4(),
             parent_oref: None,
@@ -482,35 +491,37 @@ mod tests {
             sub_block_ids: vec![],
             job_id: None,
         };
-        store.db_insert(&mut block).unwrap();
+        store.db_insert(&mut block)?;
 
         let mut updates = MetaMap::new();
         updates.set("test_key", "test_val");
-        store.update_object_meta("block", &block.oid, &updates).unwrap();
+        store.update_object_meta("block", &block.oid, &updates)?;
 
-        let fetched: Block = store.db_get(&block.oid).unwrap().unwrap();
+        let fetched: Block = store.db_get(&block.oid)?.ok_or("unexpected None")?;
         assert_eq!(fetched.version, 2);
-        assert_eq!(fetched.meta.get_string("test_key").unwrap(), "test_val");
+        assert_eq!(fetched.meta.get_string("test_key").ok_or("unexpected None")?, "test_val");
+    Ok(())
     }
 
     #[test]
-    fn test_transaction_rollback() {
-        let store = WaveStore::open_in_memory().unwrap();
+    fn test_transaction_rollback() -> Result<(), Box<dyn std::error::Error>> {
+        let store = WaveStore::open_in_memory()?;
         let block_oid = Uuid::new_v4();
 
         let _ = store.with_tx(|tx| {
             let sql = "INSERT INTO db_block (oid, version, data) VALUES (?1, 1, ?2)";
-            tx.execute(&sql, rusqlite::params![block_oid.to_string(), "{}"]).unwrap();
+            tx.execute(sql, rusqlite::params![block_oid.to_string(), "{}"])?;
             Err::<(), _>(StoreError::NotFound("test".to_string()))
         });
 
-        let fetched: Option<Block> = store.db_get(&block_oid).unwrap();
+        let fetched: Option<Block> = store.db_get(&block_oid)?;
         assert!(fetched.is_none());
+    Ok(())
     }
 
     #[test]
-    fn test_transaction_commit() {
-        let store = WaveStore::open_in_memory().unwrap();
+    fn test_transaction_commit() -> Result<(), Box<dyn std::error::Error>> {
+        let store = WaveStore::open_in_memory()?;
         let block_oid = Uuid::new_v4();
         let block = Block {
             oid: block_oid,
@@ -525,20 +536,21 @@ mod tests {
 
         store
             .with_tx(|tx| {
-                let data = serde_json::to_string(&block).unwrap();
+                let data = serde_json::to_string(&block)?;
                 let sql = "INSERT INTO db_block (oid, version, data) VALUES (?1, 1, ?2)";
-                tx.execute(&sql, rusqlite::params![block_oid.to_string(), data]).unwrap();
+                tx.execute(sql, rusqlite::params![block_oid.to_string(), data])?;
                 Ok::<(), StoreError>(())
             })
-            .unwrap();
+            ?;
 
-        let fetched: Option<Block> = store.db_get(&block_oid).unwrap();
+        let fetched: Option<Block> = store.db_get(&block_oid)?;
         assert!(fetched.is_some());
+    Ok(())
     }
 
     #[test]
-    fn test_full_hierarchy() {
-        let store = WaveStore::open_in_memory().unwrap();
+    fn test_full_hierarchy() -> Result<(), Box<dyn std::error::Error>> {
+        let store = WaveStore::open_in_memory()?;
 
         let window_oid = Uuid::new_v4();
         let workspace_oid = Uuid::new_v4();
@@ -599,19 +611,20 @@ mod tests {
             job_id: None,
         };
 
-        store.db_insert(&mut window).unwrap();
-        store.db_insert(&mut workspace).unwrap();
-        store.db_insert(&mut tab).unwrap();
-        store.db_insert(&mut block1).unwrap();
-        store.db_insert(&mut block2).unwrap();
+        store.db_insert(&mut window)?;
+        store.db_insert(&mut workspace)?;
+        store.db_insert(&mut tab)?;
+        store.db_insert(&mut block1)?;
+        store.db_insert(&mut block2)?;
 
-        let found_tab = store.find_tab_for_block(&block2_oid).unwrap().unwrap();
+        let found_tab = store.find_tab_for_block(&block2_oid)?.ok_or("unexpected None")?;
         assert_eq!(found_tab.oid, tab_oid);
 
-        let found_workspace = store.find_workspace_for_tab(&tab_oid).unwrap().unwrap();
+        let found_workspace = store.find_workspace_for_tab(&tab_oid)?.ok_or("unexpected None")?;
         assert_eq!(found_workspace.oid, workspace_oid);
 
-        let found_window = store.find_window_for_workspace(&workspace_oid).unwrap().unwrap();
+        let found_window = store.find_window_for_workspace(&workspace_oid)?.ok_or("unexpected None")?;
         assert_eq!(found_window.oid, window_oid);
+    Ok(())
     }
 }
