@@ -166,19 +166,22 @@ impl AcpSessionManager {
 
     /// Get a session by ID.
     pub async fn get_session(&self, session_id: &str) -> Option<AcpSession> {
-        let sessions = self.sessions.read().await;
+        let mut sessions = self.sessions.write().await;
+        self.cleanup_expired(&mut sessions).await;
         sessions.iter().find(|s| s.session_id == session_id).cloned()
     }
 
     /// List all active sessions.
     pub async fn active_sessions(&self) -> Vec<AcpSession> {
-        let sessions = self.sessions.read().await;
+        let mut sessions = self.sessions.write().await;
+        self.cleanup_expired(&mut sessions).await;
         sessions.iter().filter(|s| s.is_active()).cloned().collect()
     }
 
     /// Terminate a session by ID.
     pub async fn terminate_session(&self, session_id: &str) -> AcpResult<()> {
         let mut sessions = self.sessions.write().await;
+        self.cleanup_expired(&mut sessions).await;
         if let Some(session) = sessions.iter_mut().find(|s| s.session_id == session_id) {
             session.terminate().await;
             Ok(())
@@ -187,6 +190,22 @@ impl AcpSessionManager {
                 message: format!("Session not found: {}", session_id),
             }))
         }
+    }
+
+    /// Remove expired sessions from the list.
+    async fn cleanup_expired(&self, sessions: &mut Vec<AcpSession>) {
+        let now = Utc::now();
+        sessions.retain(|s| {
+            if let Some(expires) = s.expires_at {
+                if now >= expires && s.state == crate::AcpSessionState::Active {
+                    false
+                } else {
+                    true
+                }
+            } else {
+                true
+            }
+        });
     }
 
     /// Evaluate a policy decision for an ACP action.

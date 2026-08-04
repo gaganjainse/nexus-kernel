@@ -176,6 +176,10 @@ impl crate::storage::EventStore for JsonlEventStore {
     async fn read_since(&self, sequence: u64) -> Result<Vec<Event>, crate::error::NexusError> {
         Self::read_since(self, sequence).await.map_err(crate::error::NexusError::Storage)
     }
+
+    async fn current_sequence(&self) -> Result<u64, crate::error::NexusError> {
+        Self::current_sequence(self).await.map_err(crate::error::NexusError::Storage)
+    }
 }
 
 #[cfg(test)]
