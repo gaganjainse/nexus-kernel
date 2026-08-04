@@ -446,7 +446,7 @@ mod tests {
 
     #[test]
     fn test_worker_state_transitions() {
-        let states = vec![
+        let states = [
             WorkerState::Idle,
             WorkerState::Busy,
             WorkerState::Failed,

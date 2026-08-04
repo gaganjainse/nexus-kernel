@@ -1164,7 +1164,6 @@ fn truncate_output(output: &str, max_size: usize) -> &str {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used)]
 mod tests {
     use std::{path::PathBuf, sync::Mutex};
 
@@ -1231,32 +1230,32 @@ mod tests {
     #[async_trait]
     impl EventStore for MockEventStore {
         async fn append(&self, event: Event) -> Result<(), NexusError> {
-            self.events.lock().unwrap().push(event);
+            self.events.lock().map_err(|e| std::io::Error::other(e.to_string()))?.push(event);
             Ok(())
         }
         async fn get_all_events(&self) -> Result<Vec<Event>, NexusError> {
-            Ok(self.events.lock().unwrap().clone())
+            Ok(self.events.lock().map_err(|e| std::io::Error::other(e.to_string()))?.clone())
         }
         async fn get_task_events(&self, task_id: &TaskId) -> Result<Vec<Event>, NexusError> {
             Ok(self
                 .events
                 .lock()
-                .unwrap()
+                .map_err(|e| std::io::Error::other(e.to_string()))?
                 .iter()
                 .filter(|e| e.task_id == Some(*task_id))
                 .cloned()
                 .collect())
         }
         async fn read_since(&self, _sequence: u64) -> Result<Vec<Event>, NexusError> {
-            Ok(self.events.lock().unwrap().clone())
+            Ok(self.events.lock().map_err(|e| std::io::Error::other(e.to_string()))?.clone())
         }
         async fn current_sequence(&self) -> Result<u64, NexusError> {
-            Ok(self.events.lock().unwrap().len() as u64)
+            Ok(self.events.lock().map_err(|e| std::io::Error::other(e.to_string()))?.len() as u64)
         }
     }
 
     #[tokio::test]
-    async fn test_submit_task_allowed() {
+    async fn test_submit_task_allowed() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(MockEventStore::new());
         let rule = crate::policy::PolicyRule {
             name: "allow".into(),
@@ -1283,16 +1282,16 @@ mod tests {
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
-        .await
-        .unwrap();
+        .await?;
 
-        let id = kernel.submit_task(TaskInput::Text("test".into())).await.unwrap();
-        let state = kernel.task_state(&id).await.unwrap();
+        let id = kernel.submit_task(TaskInput::Text("test".into())).await?;
+        let state = kernel.task_state(&id).await?;
         assert_eq!(state, TaskState::Classified);
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_submit_task_denied() {
+    async fn test_submit_task_denied() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(MockEventStore::new());
         let policy = PolicyEngine::deny_all();
         let registry = Arc::new(ProviderRegistry::new());
@@ -1312,15 +1311,15 @@ mod tests {
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
-        .await
-        .unwrap();
+        .await?;
 
         let result = kernel.submit_task(TaskInput::Text("test".into())).await;
         assert!(matches!(result, Err(NexusError::Policy(_))));
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_task_transition() {
+    async fn test_task_transition() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(MockEventStore::new());
         let rule = crate::policy::PolicyRule {
             name: "allow".into(),
@@ -1347,16 +1346,16 @@ mod tests {
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
-        .await
-        .unwrap();
+        .await?;
 
-        let id = kernel.submit_task(TaskInput::Text("test".into())).await.unwrap();
-        kernel.transition_task(&id, TaskState::Planned).await.unwrap();
-        assert_eq!(kernel.task_state(&id).await.unwrap(), TaskState::Planned);
+        let id = kernel.submit_task(TaskInput::Text("test".into())).await?;
+        kernel.transition_task(&id, TaskState::Planned).await?;
+        assert_eq!(kernel.task_state(&id).await?, TaskState::Planned);
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_invalid_task_transition() {
+    async fn test_invalid_task_transition() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(MockEventStore::new());
         let rule = crate::policy::PolicyRule {
             name: "allow".into(),
@@ -1383,17 +1382,17 @@ mod tests {
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
-        .await
-        .unwrap();
+        .await?;
 
-        let id = kernel.submit_task(TaskInput::Text("test".into())).await.unwrap();
+        let id = kernel.submit_task(TaskInput::Text("test".into())).await?;
         // Classified -> Completed is invalid
         let result = kernel.transition_task(&id, TaskState::Completed).await;
         assert!(matches!(result, Err(NexusError::Task(_))));
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_execute_task() {
+    async fn test_execute_task() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(MockEventStore::new());
         let rule = crate::policy::PolicyRule {
             name: "allow".into(),
@@ -1434,24 +1433,24 @@ mod tests {
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
-        .await
-        .unwrap();
+        .await?;
 
-        let id = kernel.submit_task(TaskInput::Text("fix this".into())).await.unwrap();
+        let id = kernel.submit_task(TaskInput::Text("fix this".into())).await?;
 
         // Execute task should run Planner -> Coder -> Reviewer
-        let outcome = kernel.execute_task(&id).await.unwrap();
+        let outcome = kernel.execute_task(&id).await?;
         assert!(outcome.success);
-        let final_output = outcome.output.unwrap();
+        let final_output = outcome.output.ok_or("output was None")?;
         assert!(final_output.contains("Here is the code."));
         assert!(final_output.contains("Review: Looks good."));
 
-        let state = kernel.task_state(&id).await.unwrap();
+        let state = kernel.task_state(&id).await?;
         assert_eq!(state, TaskState::Completed);
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_task_state_not_found() {
+    async fn test_task_state_not_found() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(MockEventStore::new());
         let rule = crate::policy::PolicyRule {
             name: "allow".into(),
@@ -1478,8 +1477,7 @@ mod tests {
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
-        .await
-        .unwrap();
+        .await?;
 
         let fake_id = TaskId::new();
         let result = kernel.task_state(&fake_id).await;
@@ -1488,10 +1486,11 @@ mod tests {
             NexusError::Task(TaskError::NotFound { .. }) => {}
             _ => panic!("Expected TaskNotFound"),
         }
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_tasks_in_state() {
+    async fn test_tasks_in_state() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(MockEventStore::new());
         let rule = crate::policy::PolicyRule {
             name: "allow".into(),
@@ -1518,11 +1517,10 @@ mod tests {
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
-        .await
-        .unwrap();
+        .await?;
 
-        let id1 = kernel.submit_task(TaskInput::Text("task1".into())).await.unwrap();
-        let id2 = kernel.submit_task(TaskInput::Text("task2".into())).await.unwrap();
+        let id1 = kernel.submit_task(TaskInput::Text("task1".into())).await?;
+        let id2 = kernel.submit_task(TaskInput::Text("task2".into())).await?;
 
         let classified = kernel.tasks_in_state(&TaskState::Classified).await;
         assert_eq!(classified.len(), 2);
@@ -1531,10 +1529,11 @@ mod tests {
 
         let received = kernel.tasks_in_state(&TaskState::Received).await;
         assert!(received.is_empty());
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_task_count() {
+    async fn test_task_count() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(MockEventStore::new());
         let rule = crate::policy::PolicyRule {
             name: "allow".into(),
@@ -1561,18 +1560,18 @@ mod tests {
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
-        .await
-        .unwrap();
+        .await?;
 
         assert_eq!(kernel.task_count().await, 0);
-        kernel.submit_task(TaskInput::Text("t1".into())).await.unwrap();
+        kernel.submit_task(TaskInput::Text("t1".into())).await?;
         assert_eq!(kernel.task_count().await, 1);
-        kernel.submit_task(TaskInput::Text("t2".into())).await.unwrap();
+        kernel.submit_task(TaskInput::Text("t2".into())).await?;
         assert_eq!(kernel.task_count().await, 2);
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_transition_task_not_found() {
+    async fn test_transition_task_not_found() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(MockEventStore::new());
         let rule = crate::policy::PolicyRule {
             name: "allow".into(),
@@ -1599,16 +1598,16 @@ mod tests {
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
-        .await
-        .unwrap();
+        .await?;
 
         let fake_id = TaskId::new();
         let result = kernel.transition_task(&fake_id, TaskState::Planned).await;
         assert!(result.is_err());
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_execute_task_no_planner() {
+    async fn test_execute_task_no_planner() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(MockEventStore::new());
         let rule = crate::policy::PolicyRule {
             name: "allow".into(),
@@ -1635,20 +1634,20 @@ mod tests {
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
-        .await
-        .unwrap();
+        .await?;
 
-        let id = kernel.submit_task(TaskInput::Text("do something".into())).await.unwrap();
+        let id = kernel.submit_task(TaskInput::Text("do something".into())).await?;
         let result = kernel.execute_task(&id).await;
         assert!(result.is_err());
         match result.unwrap_err() {
             NexusError::Provider(crate::error::ProviderError::Unavailable { .. }) => {}
             _ => panic!("Expected Provider Unavailable"),
         }
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_submit_task_events_emitted() {
+    async fn test_submit_task_events_emitted() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(MockEventStore::new());
         let rule = crate::policy::PolicyRule {
             name: "allow".into(),
@@ -1675,21 +1674,21 @@ mod tests {
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
-        .await
-        .unwrap();
+        .await?;
 
-        let _id = kernel.submit_task(TaskInput::Text("test".into())).await.unwrap();
+        let _id = kernel.submit_task(TaskInput::Text("test".into())).await?;
 
-        let events = store.get_all_events().await.unwrap();
+        let events = store.get_all_events().await?;
         // Should have at least TaskCreated and TaskClassified events
         assert!(events.len() >= 2);
         let kinds: Vec<_> = events.iter().map(|e| &e.kind).collect();
         assert!(kinds.contains(&&EventKind::TaskCreated));
         assert!(kinds.contains(&&EventKind::TaskClassified));
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_execute_task_planner_only_no_code() {
+    async fn test_execute_task_planner_only_no_code() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(MockEventStore::new());
         let rule = crate::policy::PolicyRule {
             name: "allow".into(),
@@ -1722,19 +1721,18 @@ mod tests {
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
-        .await
-        .unwrap();
+        .await?;
 
-        let id = kernel.submit_task(TaskInput::Text("plan something".into())).await.unwrap();
-        let outcome = kernel.execute_task(&id).await.unwrap();
+        let id = kernel.submit_task(TaskInput::Text("plan something".into())).await?;
+        let outcome = kernel.execute_task(&id).await?;
         assert!(outcome.success);
-        assert!(outcome.output.unwrap().contains("architectural plan"));
+        assert!(outcome.output.ok_or("output was None")?.contains("architectural plan"));
 
-        let state = kernel.task_state(&id).await.unwrap();
+        let state = kernel.task_state(&id).await?;
         assert_eq!(state, TaskState::Completed);
 
         // Verify reviewer was skipped: no ModelRequest events for "Reviewer"
-        let events = store.get_all_events().await.unwrap();
+        let events = store.get_all_events().await?;
         let reviewer_events: Vec<_> = events
             .iter()
             .filter(|e| {
@@ -1749,10 +1747,11 @@ mod tests {
             reviewer_events.is_empty(),
             "Reviewer should be skipped when only planner is registered"
         );
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_kernel_new() {
+    async fn test_kernel_new() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(MockEventStore::new());
         let policy = PolicyEngine::deny_all();
         let registry = Arc::new(ProviderRegistry::new());
@@ -1772,13 +1771,13 @@ mod tests {
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
-        .await
-        .unwrap();
+        .await?;
         assert_eq!(kernel.task_count().await, 0);
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_transition_through_multiple_states() {
+    async fn test_transition_through_multiple_states() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(MockEventStore::new());
         let rule = crate::policy::PolicyRule {
             name: "allow".into(),
@@ -1805,31 +1804,31 @@ mod tests {
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
-        .await
-        .unwrap();
+        .await?;
 
-        let id = kernel.submit_task(TaskInput::Text("test".into())).await.unwrap();
-        assert_eq!(kernel.task_state(&id).await.unwrap(), TaskState::Classified);
+        let id = kernel.submit_task(TaskInput::Text("test".into())).await?;
+        assert_eq!(kernel.task_state(&id).await?, TaskState::Classified);
 
-        kernel.transition_task(&id, TaskState::Planned).await.unwrap();
-        assert_eq!(kernel.task_state(&id).await.unwrap(), TaskState::Planned);
+        kernel.transition_task(&id, TaskState::Planned).await?;
+        assert_eq!(kernel.task_state(&id).await?, TaskState::Planned);
 
-        kernel.transition_task(&id, TaskState::AwaitingConfirmation).await.unwrap();
-        assert_eq!(kernel.task_state(&id).await.unwrap(), TaskState::AwaitingConfirmation);
+        kernel.transition_task(&id, TaskState::AwaitingConfirmation).await?;
+        assert_eq!(kernel.task_state(&id).await?, TaskState::AwaitingConfirmation);
 
-        kernel.transition_task(&id, TaskState::Executing).await.unwrap();
-        assert_eq!(kernel.task_state(&id).await.unwrap(), TaskState::Executing);
+        kernel.transition_task(&id, TaskState::Executing).await?;
+        assert_eq!(kernel.task_state(&id).await?, TaskState::Executing);
 
-        kernel.transition_task(&id, TaskState::Blocked).await.unwrap();
-        assert_eq!(kernel.task_state(&id).await.unwrap(), TaskState::Blocked);
+        kernel.transition_task(&id, TaskState::Blocked).await?;
+        assert_eq!(kernel.task_state(&id).await?, TaskState::Blocked);
 
-        kernel.transition_task(&id, TaskState::Executing).await.unwrap();
-        kernel.transition_task(&id, TaskState::Completed).await.unwrap();
-        assert_eq!(kernel.task_state(&id).await.unwrap(), TaskState::Completed);
+        kernel.transition_task(&id, TaskState::Executing).await?;
+        kernel.transition_task(&id, TaskState::Completed).await?;
+        assert_eq!(kernel.task_state(&id).await?, TaskState::Completed);
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_vision_task_input() {
+    async fn test_vision_task_input() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(MockEventStore::new());
         let rule = crate::policy::PolicyRule {
             name: "allow".into(),
@@ -1856,21 +1855,20 @@ mod tests {
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
-        .await
-        .unwrap();
+        .await?;
 
         let id = kernel
             .submit_task(TaskInput::Vision {
                 text: "describe this image".into(),
                 image_paths: vec![PathBuf::from("/tmp/img.png")],
             })
-            .await
-            .unwrap();
-        assert_eq!(kernel.task_state(&id).await.unwrap(), TaskState::Classified);
+            .await?;
+        assert_eq!(kernel.task_state(&id).await?, TaskState::Classified);
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_multi_task_input() {
+    async fn test_multi_task_input() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(MockEventStore::new());
         let rule = crate::policy::PolicyRule {
             name: "allow".into(),
@@ -1897,18 +1895,18 @@ mod tests {
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
-        .await
-        .unwrap();
+        .await?;
 
         let input = TaskInput::Multi {
             parts: vec![TaskInput::Text("part1".into()), TaskInput::Text("part2".into())],
         };
-        let id = kernel.submit_task(input).await.unwrap();
-        assert_eq!(kernel.task_state(&id).await.unwrap(), TaskState::Classified);
+        let id = kernel.submit_task(input).await?;
+        assert_eq!(kernel.task_state(&id).await?, TaskState::Classified);
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_submit_task_creates_record_with_correct_state_history() {
+    async fn test_submit_task_creates_record_with_correct_state_history() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(MockEventStore::new());
         let rule = crate::policy::PolicyRule {
             name: "allow".into(),
@@ -1935,20 +1933,20 @@ mod tests {
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
-        .await
-        .unwrap();
+        .await?;
 
-        let id = kernel.submit_task(TaskInput::Text("test".into())).await.unwrap();
+        let id = kernel.submit_task(TaskInput::Text("test".into())).await?;
 
         // The projection should have the task with state history
-        let events = store.get_task_events(&id).await.unwrap();
+        let events = store.get_task_events(&id).await?;
         assert!(!events.is_empty());
+        Ok(())
     }
 
     // === v1 Acceptance Criteria Tests ===
 
     #[tokio::test]
-    async fn test_v1_tasks_are_traceable() {
+    async fn test_v1_tasks_are_traceable() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(MockEventStore::new());
         let rule = crate::policy::PolicyRule {
             name: "allow".into(),
@@ -1975,16 +1973,16 @@ mod tests {
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
-        .await
-        .unwrap();
+        .await?;
 
-        let id = kernel.submit_task(TaskInput::Text("test traceability".into())).await.unwrap();
-        let events = store.get_task_events(&id).await.unwrap();
+        let id = kernel.submit_task(TaskInput::Text("test traceability".into())).await?;
+        let events = store.get_task_events(&id).await?;
         assert!(!events.is_empty(), "Task must have traceable events");
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_v1_router_chooses_specialists_consistently() {
+    async fn test_v1_router_chooses_specialists_consistently() -> Result<(), Box<dyn std::error::Error>> {
         let decision = TaskRouter::route("write a function to sort an array", false);
         assert_eq!(decision.primary_role, ModelRole::Coder);
 
@@ -1993,10 +1991,11 @@ mod tests {
 
         let decision = TaskRouter::route("look at this screenshot", true);
         assert_eq!(decision.primary_role, ModelRole::Vision);
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_v1_checkpoint_created_before_tool_execution() {
+    async fn test_v1_checkpoint_created_before_tool_execution() -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(MockEventStore::new());
         let rule = crate::policy::PolicyRule {
             name: "allow".into(),
@@ -2008,7 +2007,7 @@ mod tests {
         let policy = PolicyEngine::new(vec![rule], TrustTier::Autonomous);
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
-        let snapshot_dir = tempfile::tempdir().unwrap();
+        let snapshot_dir = tempfile::tempdir()?;
         let snapshot_store =
             Arc::new(crate::storage::SnapshotStore::new(snapshot_dir.path().to_path_buf()));
         let kernel = Kernel::new(KernelConfig {
@@ -2026,20 +2025,20 @@ mod tests {
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
-        .await
-        .unwrap();
+        .await?;
 
-        let id = kernel.submit_task(TaskInput::Text("test checkpoint".into())).await.unwrap();
-        let events = store.get_task_events(&id).await.unwrap();
+        let id = kernel.submit_task(TaskInput::Text("test checkpoint".into())).await?;
+        let events = store.get_task_events(&id).await?;
         let _checkpoint_events: Vec<_> =
             events.iter().filter(|e| matches!(e.kind, EventKind::CheckpointCreated)).collect();
         // Checkpoint events are created when tools are executed during execute_task,
         // not during submit_task. This test verifies the snapshot store is configured.
-        assert!(snapshot_store.list().await.unwrap().is_empty());
+        assert!(snapshot_store.list().await?.is_empty());
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_v1_performance_monitor_detects_bottlenecks() {
+    async fn test_v1_performance_monitor_detects_bottlenecks() -> Result<(), Box<dyn std::error::Error>> {
         let monitor = crate::runtime::kernel::PerformanceMonitor::new();
 
         // Simulate a slow model load
@@ -2052,20 +2051,22 @@ mod tests {
         assert!(warnings.iter().any(|w| w.contains("Model loading bottleneck")));
         assert!(warnings.iter().any(|w| w.contains("Context growth bottleneck")));
         assert!(warnings.iter().any(|w| w.contains("Tool latency bottleneck")));
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_v1_secret_redaction() {
+    async fn test_v1_secret_redaction() -> Result<(), Box<dyn std::error::Error>> {
         let text = "api_key=sk-secret123 token=bearer-abc password=pass123";
         let redacted = Kernel::redact_secrets(text);
         assert!(!redacted.contains("sk-secret123"));
         assert!(!redacted.contains("bearer-abc"));
         assert!(!redacted.contains("pass123"));
         assert!(redacted.contains("***REDACTED***"));
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_v1_manifest_lifecycle() {
+    async fn test_v1_manifest_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
         let manifest = crate::manifest::Manifest::new(
             "v1.0".to_string(),
             serde_json::json!({"name": "test"}),
@@ -2073,5 +2074,6 @@ mod tests {
             "test-user".to_string(),
         );
         assert_eq!(manifest.state, crate::manifest::ManifestState::Draft);
+        Ok(())
     }
 }
