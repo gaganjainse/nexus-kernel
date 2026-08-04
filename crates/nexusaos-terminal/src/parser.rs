@@ -180,10 +180,8 @@ impl<'a> vte::Perform for ScreenPerformer<'a> {
                 }
             }
             b'\x07' => {}
-            b'\x08' => {
-                if self.screen.cursor.1 > 0 {
-                    self.screen.cursor.1 -= 1;
-                }
+            b'\x08' if self.screen.cursor.1 > 0 => {
+                self.screen.cursor.1 -= 1;
             }
             _ => {}
         }

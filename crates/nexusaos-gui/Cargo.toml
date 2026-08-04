@@ -9,6 +9,7 @@ tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
 iced = { version = "0.14", features = ["tokio", "canvas"] }
 portable-pty = { workspace = true }
 vte = "0.13"
+nexusaos-kernel = { workspace = true }
 nexusaos-wps = { workspace = true }
 nexusaos-waveobj = { workspace = true }
 nexusaos-blockctl = { workspace = true }

@@ -204,6 +204,11 @@ impl AcpSessionManager {
         let full_action = format!("acp.{}.{}", agent_id, action);
         self.policy.evaluate(&full_action)
     }
+
+    /// Get a reference to the policy engine.
+    pub fn policy(&self) -> &Arc<PolicyEngine> {
+        &self.policy
+    }
 }
 
 #[cfg(test)]

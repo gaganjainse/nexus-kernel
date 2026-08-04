@@ -48,10 +48,7 @@ impl PtyManager {
     /// - `Enter` is translated to `\r` (0x0D)
     /// - `Ctrl+<letter>` is translated to the control character via `(c & 0x1F)`
     pub fn translate_input(&self, input: &[u8]) -> Vec<u8> {
-        input
-            .iter()
-            .map(|&b| if b == b'\n' { b'\r' } else { b })
-            .collect()
+        input.iter().map(|&b| if b == b'\n' { b'\r' } else { b }).collect()
     }
 
     /// Read raw output bytes from the PTY master with backpressure.

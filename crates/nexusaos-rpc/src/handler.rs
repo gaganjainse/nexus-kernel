@@ -5,7 +5,7 @@ use nexusaos_wps::broker::Broker;
 use serde_json::json;
 use tokio::net::UnixStream;
 
-use crate::message::{RpcId, RpcRequest, RpcResponse};
+use crate::message::{RpcRequest, RpcResponse};
 
 pub struct RpcHandler {
     broker: Arc<Broker>,

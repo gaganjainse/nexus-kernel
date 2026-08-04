@@ -3090,6 +3090,7 @@ dependencies = [
  "iced",
  "nexusaos-ai",
  "nexusaos-blockctl",
+ "nexusaos-kernel",
  "nexusaos-remote",
  "nexusaos-waveobj",
  "nexusaos-wconfig",
