@@ -994,7 +994,7 @@ mod tests {
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
         let kernel =
-            Kernel::new(store.clone(), Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+            Kernel::new(store.clone(), Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None)
                 .await
                 .unwrap();
 
@@ -1178,7 +1178,7 @@ mod tests {
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
         let kernel =
-            Kernel::new(store.clone(), Arc::new(RwLock::new(policy)), registry, broker, 1_048_576)
+            Kernel::new(store.clone(), Arc::new(RwLock::new(policy)), registry, broker, 1_048_576, None)
                 .await
                 .unwrap();
 
