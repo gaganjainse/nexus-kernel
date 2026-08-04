@@ -13,6 +13,8 @@ members = [
     "crates/nexusaos-vault",
     "crates/nexusaos-tui",
     "crates/nexusaos-terminal",
+    "crates/nexusaos-mcp",
+    "crates/nexusaos-acp",
     "bin/nexusaos-cli",
 ]
 
