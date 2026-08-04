@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::time::Instant;
 
 use chrono::Utc;
 use tokio::sync::RwLock;
@@ -13,12 +14,86 @@ use crate::{
         types::{ChatMessage, ChatRole, CompletionRequest, CompletionResponse},
     },
     policy::PolicyEngine,
+    resource::SystemPressure,
     router::TaskRouter,
     state::{TaskRecord, TaskState},
     storage::{EventStore, SnapshotStore, TaskProjection},
     task::{TaskId, TaskInput, TaskRequest},
     tools::broker::ToolBroker,
 };
+
+/// Tracks performance metrics for model loading, context growth, and tool latency.
+#[derive(Debug, Clone)]
+pub struct PerformanceMonitor {
+    model_load_times: Arc<RwLock<Vec<(String, u128)>>>,
+    context_sizes: Arc<RwLock<Vec<(String, usize)>>>,
+    tool_latencies: Arc<RwLock<Vec<(String, u128)>>>,
+}
+
+impl PerformanceMonitor {
+    pub fn new() -> Self {
+        Self {
+            model_load_times: Arc::new(RwLock::new(Vec::new())),
+            context_sizes: Arc::new(RwLock::new(Vec::new())),
+            tool_latencies: Arc::new(RwLock::new(Vec::new())),
+        }
+    }
+
+    /// Record a model loading time in milliseconds.
+    pub async fn record_model_load(&self, model_name: &str, duration_ms: u128) {
+        let mut times = self.model_load_times.write().await;
+        times.push((model_name.to_string(), duration_ms));
+    }
+
+    /// Record a context size for a given role.
+    pub async fn record_context_size(&self, role: &str, size: usize) {
+        let mut sizes = self.context_sizes.write().await;
+        sizes.push((role.to_string(), size));
+    }
+
+    /// Record a tool invocation latency in milliseconds.
+    pub async fn record_tool_latency(&self, tool_name: &str, duration_ms: u128) {
+        let mut latencies = self.tool_latencies.write().await;
+        latencies.push((tool_name.to_string(), duration_ms));
+    }
+
+    /// Check for bottlenecks and return warnings.
+    pub async fn check_bottlenecks(&self) -> Vec<String> {
+        let mut warnings = Vec::new();
+
+        let times = self.model_load_times.read().await;
+        if let Some((_, max_time)) = times.iter().max_by_key(|(_, t)| *t) {
+            if *max_time > 5000 {
+                warnings.push(format!(
+                    "Model loading bottleneck: {}ms exceeds 5s threshold",
+                    max_time
+                ));
+            }
+        }
+
+        let sizes = self.context_sizes.read().await;
+        if let Some((_, max_size)) = sizes.iter().max_by_key(|(_, s)| *s) {
+            if *max_size > 8000 {
+                warnings.push(format!(
+                    "Context growth bottleneck: {} tokens exceeds 8K threshold",
+                    max_size
+                ));
+            }
+        }
+
+        let latencies = self.tool_latencies.read().await;
+        if let Some((_, max_lat)) = latencies.iter().max_by_key(|(_, l)| *l) {
+            if *max_lat > 10000 {
+                warnings.push(format!(
+                    "Tool latency bottleneck: {}ms exceeds 10s threshold",
+                    max_lat
+                ));
+            }
+        }
+
+        warnings
+    }
+}
 
 /// The NexusAOS kernel — owns task lifecycle, policy, and state.
 pub struct Kernel {
@@ -29,6 +104,7 @@ pub struct Kernel {
     tool_broker: Arc<ToolBroker>,
     max_tool_output_size: usize,
     snapshot_store: Option<Arc<SnapshotStore>>,
+    performance_monitor: Arc<PerformanceMonitor>,
 }
 
 impl Kernel {
@@ -49,6 +125,7 @@ impl Kernel {
             tool_broker,
             max_tool_output_size,
             snapshot_store,
+            performance_monitor: Arc::new(PerformanceMonitor::new()),
         };
         Ok(kernel)
     }
