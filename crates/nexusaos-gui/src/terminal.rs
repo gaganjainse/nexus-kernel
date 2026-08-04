@@ -781,8 +781,8 @@ mod tests {
         let mut p = make_performer();
         let mut parser = Parser::new();
         feed(&mut p, &mut parser, "\x1b[1;31mA\x1b[0mB");
-        assert_eq!(p.grid[0][0].attr.bold, true);
-        assert_eq!(p.grid[0][1].attr.bold, false);
+        assert!(p.grid[0][0].attr.bold);
+        assert!(!p.grid[0][1].attr.bold);
         assert_eq!(p.grid[0][1].attr.fg, TermColor::Default);
     }
 

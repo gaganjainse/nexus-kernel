@@ -416,6 +416,6 @@ mod tests {
         for i in 0..20 {
             emulator.feed(format!("L{}\n", i).as_bytes());
         }
-        assert!(emulator.scrollback_lines().len() > 0);
+        assert!(!emulator.scrollback_lines().is_empty());
     }
 }
