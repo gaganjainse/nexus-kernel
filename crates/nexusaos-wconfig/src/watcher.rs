@@ -139,10 +139,11 @@ mod tests {
         file.sync_all()?;
 
         // Await event
-        let (route, event) = timeout(Duration::from_secs(1), subscriber.recv())
-            .await
-            .expect("Timeout waiting for event")
-            .expect("Channel closed");
+        let (route, event) = match timeout(Duration::from_secs(1), subscriber.recv()).await {
+            Ok(Ok(result)) => result,
+            Ok(Err(_)) => return Err("Channel closed".into()),
+            Err(_) => return Err("Timeout waiting for event".into()),
+        };
 
         assert_eq!(route, "test_route");
         assert_eq!(event.topic, EVENT_CONFIG);
@@ -215,10 +216,11 @@ mod tests {
 
         let mut routes = Vec::new();
         for _ in 0..2 {
-            let (r, ev) = timeout(Duration::from_secs(1), subscriber.recv())
-                .await
-                .expect("Timeout")
-                .expect("Channel closed");
+            let (r, ev) = match timeout(Duration::from_secs(1), subscriber.recv()).await {
+                Ok(Ok(result)) => result,
+                Ok(Err(_)) => return Err("Channel closed".into()),
+                Err(_) => return Err("Timeout waiting for event".into()),
+            };
             routes.push(r);
             assert_eq!(ev.data, test_json);
         }
@@ -274,10 +276,11 @@ mod tests {
         file.write_all(serde_json::to_string(&test_json)?.as_bytes())?;
         file.sync_all()?;
 
-        let (route, event) = timeout(Duration::from_secs(1), subscriber.recv())
-            .await
-            .expect("Timeout")
-            .expect("Channel closed");
+        let (route, event) = match timeout(Duration::from_secs(1), subscriber.recv()).await {
+            Ok(Ok(result)) => result,
+            Ok(Err(_)) => return Err("Channel closed".into()),
+            Err(_) => return Err("Timeout waiting for event".into()),
+        };
 
         assert_eq!(route, "test_route");
         assert_eq!(event.data, test_json);

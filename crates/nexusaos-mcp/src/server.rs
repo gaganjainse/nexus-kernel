@@ -162,7 +162,7 @@ async fn handle_request(
             let arguments =
                 params.and_then(|p| p.get("arguments")).cloned().unwrap_or(serde_json::json!({}));
 
-            let decision = super::validate_mcp_request(policy, tool_name, &arguments).await;
+            let decision = super::validate_mcp_request(policy, tool_name).await;
             match decision {
                 PolicyDecision::Deny(reason) => McpResponse {
                     jsonrpc: "2.0".to_string(),
