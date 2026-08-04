@@ -331,7 +331,7 @@ mod tests {
     }
 
     #[test]
-    fn test_memory_pressure_exact_boundary() {
+    fn test_memory_pressure_exact_boundary() -> Result<(), Box<dyn std::error::Error>> {
         let pressure = SystemPressure {
             ram_available_mb: 2048,
             ram_total_mb: 16000,
@@ -345,6 +345,7 @@ mod tests {
         assert!(!ResourceMonitor::is_memory_pressure(&pressure, 2048));
         // One less: 2048 < 2049 = true
         assert!(ResourceMonitor::is_memory_pressure(&pressure, 2049));
+        Ok(())
     }
 
     #[test]

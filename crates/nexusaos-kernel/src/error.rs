@@ -519,9 +519,10 @@ mod tests {
     }
 
     #[test]
-    fn test_nexus_error_debug() {
+    fn test_nexus_error_debug() -> Result<(), Box<dyn std::error::Error>> {
         let err = NexusError::Task(TaskError::NotFound { id: "x".into() });
         let debug_str = format!("{:?}", err);
         assert!(debug_str.contains("Task"));
+        Ok(())
     }
 }

@@ -399,7 +399,7 @@ mod tests {
     }
 
     #[test]
-    fn test_event_kind_variants() {
+    fn test_event_kind_variants() -> Result<(), Box<dyn std::error::Error>> {
         // Ensure all EventKind variants are constructible and debuggable
         let kinds = vec![
             EventKind::TaskCreated,
@@ -442,6 +442,7 @@ mod tests {
         for kind in kinds {
             let debug = format!("{:?}", kind);
             assert!(!debug.is_empty());
+        Ok(())
         }
     }
 

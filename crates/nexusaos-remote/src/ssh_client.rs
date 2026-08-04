@@ -28,10 +28,11 @@ mod tests {
     }
 
     #[test]
-    fn test_client_handler_debug() {
+    fn test_client_handler_debug() -> Result<(), Box<dyn std::error::Error>> {
         let handler = ClientHandler {};
         let debug_str = format!("{:?}", handler);
         assert!(debug_str.contains("ClientHandler"));
+        Ok(())
     }
 
     #[test]
@@ -59,7 +60,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_client_handler_multiple_instances() {
+    async fn test_client_handler_multiple_instances() -> Result<(), Box<dyn std::error::Error>> {
         let h1 = ClientHandler {};
         let h2 = ClientHandler {};
         let h3 = h1.clone();
@@ -68,5 +69,6 @@ mod tests {
         // Verify Debug format is consistent
         assert!(format!("{:?}", h1).contains("ClientHandler"));
         assert!(format!("{:?}", h2).contains("ClientHandler"));
+        Ok(())
     }
 }

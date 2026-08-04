@@ -214,17 +214,19 @@ mod tests {
     }
 
     #[test]
-    fn test_route_with_images() {
+    fn test_route_with_images() -> Result<(), Box<dyn std::error::Error>> {
         let decision = TaskRouter::route("What does this show?", true);
         assert_eq!(decision.primary_role, ModelRole::Vision);
         assert!(decision.confidence >= 0.8);
+        Ok(())
     }
 
     #[test]
-    fn test_route_ambiguous() {
+    fn test_route_ambiguous() -> Result<(), Box<dyn std::error::Error>> {
         let decision = TaskRouter::route("Hello, how are you?", false);
         assert_eq!(decision.primary_role, ModelRole::Planner);
         assert!(decision.confidence <= 0.5);
+        Ok(())
     }
 
     #[test]
