@@ -58,10 +58,7 @@ impl AcpServer {
     }
 }
 
-async fn handle_connection(
-    stream: UnixStream,
-    manager: Arc<AcpSessionManager>,
-) -> AcpResult<()> {
+async fn handle_connection(stream: UnixStream, manager: Arc<AcpSessionManager>) -> AcpResult<()> {
     let (reader, mut writer) = tokio::io::split(stream);
     let mut reader = BufReader::new(reader);
     let mut line = String::new();
@@ -107,10 +104,7 @@ async fn handle_connection(
     Ok(())
 }
 
-async fn handle_request(
-    req: &AcpRequest,
-    manager: &AcpSessionManager,
-) -> AcpResponse {
+async fn handle_request(req: &AcpRequest, manager: &AcpSessionManager) -> AcpResponse {
     match req.method.as_str() {
         "authenticate" => {
             let agent_id = req
@@ -120,8 +114,8 @@ async fn handle_request(
                 .and_then(|v| v.as_str())
                 .unwrap_or("unknown");
 
-            let decision = crate::validate_acp_request(manager.policy(), agent_id, "authenticate")
-                .await;
+            let decision =
+                crate::validate_acp_request(manager.policy(), agent_id, "authenticate").await;
             if !matches!(decision, nexusaos_kernel::policy::PolicyDecision::Allow) {
                 return AcpResponse {
                     jsonrpc: "2.0".to_string(),
@@ -160,10 +154,7 @@ async fn handle_request(
                 Err(e) => AcpResponse {
                     jsonrpc: "2.0".to_string(),
                     result: None,
-                    error: Some(crate::client::AcpError {
-                        code: -32001,
-                        message: e.to_string(),
-                    }),
+                    error: Some(crate::client::AcpError { code: -32001, message: e.to_string() }),
                     id: req.id.clone(),
                 },
             }
@@ -176,8 +167,8 @@ async fn handle_request(
                 .and_then(|v| v.as_str())
                 .unwrap_or("unknown");
 
-            let decision = crate::validate_acp_request(manager.policy(), agent_id, "capability_grant")
-                .await;
+            let decision =
+                crate::validate_acp_request(manager.policy(), agent_id, "capability_grant").await;
             if !matches!(decision, nexusaos_kernel::policy::PolicyDecision::Allow) {
                 return AcpResponse {
                     jsonrpc: "2.0".to_string(),
@@ -197,21 +188,21 @@ async fn handle_request(
                 .cloned()
                 .unwrap_or(serde_json::json!({"type": "Global"}));
 
-            let scope: nexusaos_kernel::capability::Scope =
-                match serde_json::from_value(scope_json) {
-                    Ok(s) => s,
-                    Err(e) => {
-                        return AcpResponse {
-                            jsonrpc: "2.0".to_string(),
-                            result: None,
-                            error: Some(crate::client::AcpError {
-                                code: -32002,
-                                message: format!("Invalid scope: {}", e),
-                            }),
-                            id: req.id.clone(),
-                        }
+            let scope: nexusaos_kernel::capability::Scope = match serde_json::from_value(scope_json)
+            {
+                Ok(s) => s,
+                Err(e) => {
+                    return AcpResponse {
+                        jsonrpc: "2.0".to_string(),
+                        result: None,
+                        error: Some(crate::client::AcpError {
+                            code: -32002,
+                            message: format!("Invalid scope: {}", e),
+                        }),
+                        id: req.id.clone(),
                     }
-                };
+                }
+            };
 
             let capability = nexusaos_kernel::capability::Capability {
                 name: format!("acp.{}", agent_id),
@@ -219,11 +210,8 @@ async fn handle_request(
                 description: "ACP granted capability".to_string(),
             };
 
-            let ttl_seconds = req
-                .params
-                .as_ref()
-                .and_then(|p| p.get("ttl_seconds"))
-                .and_then(|v| v.as_u64());
+            let ttl_seconds =
+                req.params.as_ref().and_then(|p| p.get("ttl_seconds")).and_then(|v| v.as_u64());
 
             let agent = crate::AcpAgent {
                 id: agent_id.to_string(),
@@ -236,9 +224,7 @@ async fn handle_request(
             match manager.create_session(agent).await {
                 Ok(session) => {
                     let ttl = ttl_seconds.map(std::time::Duration::from_secs);
-                    match session
-                        .grant_capability(capability, "acp-server".to_string(), ttl)
-                        .await
+                    match session.grant_capability(capability, "acp-server".to_string(), ttl).await
                     {
                         Ok(lease) => {
                             let result = serde_json::json!({
@@ -267,10 +253,7 @@ async fn handle_request(
                 Err(e) => AcpResponse {
                     jsonrpc: "2.0".to_string(),
                     result: None,
-                    error: Some(crate::client::AcpError {
-                        code: -32001,
-                        message: e.to_string(),
-                    }),
+                    error: Some(crate::client::AcpError { code: -32001, message: e.to_string() }),
                     id: req.id.clone(),
                 },
             }
@@ -295,12 +278,14 @@ async fn handle_request(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use nexusaos_kernel::policy::PolicyEngine;
+
+    use super::*;
 
     #[tokio::test]
     async fn test_handle_request_ping() {
-        let manager = Arc::new(AcpSessionManager::new(10, 3600, Arc::new(PolicyEngine::deny_all())));
+        let manager =
+            Arc::new(AcpSessionManager::new(10, 3600, Arc::new(PolicyEngine::deny_all())));
         let req = AcpRequest {
             jsonrpc: "2.0".to_string(),
             method: "ping".to_string(),
@@ -313,7 +298,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_handle_request_unknown_method() {
-        let manager = Arc::new(AcpSessionManager::new(10, 3600, Arc::new(PolicyEngine::deny_all())));
+        let manager =
+            Arc::new(AcpSessionManager::new(10, 3600, Arc::new(PolicyEngine::deny_all())));
         let req = AcpRequest {
             jsonrpc: "2.0".to_string(),
             method: "unknown".to_string(),
@@ -324,4 +310,3 @@ mod tests {
         assert!(resp.error.is_some());
     }
 }
-

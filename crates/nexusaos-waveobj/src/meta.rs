@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 /// A metadata map wrapping serde_json::Map for typed access.
-/// This is the Rust equivalent of Wave Terminal's MetaMapType (map[string]any in Go).
+/// This is the Rust equivalent of Wave Terminal's MetaMapType (map from String to Value in Go).
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct MetaMap(pub serde_json::Map<String, serde_json::Value>);
 

@@ -68,7 +68,7 @@ enum Commands {
         command: String,
     },
 
-    /// Test native Zig VT100 parser & PTY shell bridge
+    /// Test native VT100 parser & PTY shell bridge
     Pty,
 }
 

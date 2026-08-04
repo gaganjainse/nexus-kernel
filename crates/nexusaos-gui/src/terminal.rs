@@ -65,7 +65,7 @@ impl Default for Cell {
 // ──────────────────────────────────────────────────────────────────────────────
 
 pub struct TermPerformer {
-    /// Active screen grid [row][col].
+    /// Active screen grid, indexed by row then column.
     pub grid: Vec<Vec<Cell>>,
     pub cursor_row: usize,
     pub cursor_col: usize,

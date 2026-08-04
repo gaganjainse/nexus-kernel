@@ -769,7 +769,6 @@ impl Kernel {
 
     /// Redact common secret patterns from strings before storing in events.
     /// Prevents secrets from leaking into the audit log.
-    #[allow(clippy::manual_pattern_char_comparison)]
     fn redact_secrets(text: &str) -> String {
         let mut result = text.to_string();
         let secret_patterns = ["api_key=", "apikey=", "secret=", "token=", "password=", "passwd="];
@@ -791,7 +790,7 @@ impl Kernel {
                 if let Some(colon_pos) = result[pos..].find(':') {
                     let value_start = pos + colon_pos + 1;
                     let value_end = result[value_start..]
-                        .find(|c: char| c == ',' || c == '}' || c == '\n')
+                        .find([',', '}', '\n'])
                         .map(|i| value_start + i)
                         .unwrap_or(result.len());
                     result.replace_range(value_start..value_end, " \"***REDACTED***\"");
