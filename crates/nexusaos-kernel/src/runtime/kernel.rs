@@ -451,7 +451,14 @@ impl Kernel {
 
             self.emit_tool_requested(*task_id, &tool_call.tool_name, tool_call.arguments).await?;
 
-            match self.tool_broker.execute(&tool_req).await {
+            let tool_start = Instant::now();
+            let broker_result = self.tool_broker.execute(&tool_req).await;
+            let tool_duration = tool_start.elapsed().as_millis();
+            self.performance_monitor
+                .record_tool_latency(&tool_call.tool_name, tool_duration)
+                .await;
+
+            match broker_result {
                 Ok(crate::tools::broker::BrokerResult::Completed(res)) => {
                     self.emit_tool_result(
                         *task_id,
