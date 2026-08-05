@@ -147,7 +147,7 @@ mod tests {
         let projection = TaskProjection::rebuild(&[event1, event2]);
 
         assert_eq!(projection.task_count(), 1);
-        let task = projection.get_task(&task_id).unwrap();
+        let task = projection.get_task(&task_id)?;
         assert_eq!(task.current_state, TaskState::Classified);
 
         let classified_tasks = projection.tasks_in_state(&TaskState::Classified);
@@ -181,7 +181,7 @@ mod tests {
 
         proj.apply(&event);
         assert_eq!(proj.task_count(), 1);
-        let task = proj.get_task(&task_id).unwrap();
+        let task = proj.get_task(&task_id)?;
         assert_eq!(task.current_state, TaskState::Received);
         assert_eq!(task.assigned_role, None);
     }
@@ -209,7 +209,7 @@ mod tests {
         e2.sequence = crate::events::SequenceNumber(2);
         proj.apply(&e2);
 
-        let task = proj.get_task(&task_id).unwrap();
+        let task = proj.get_task(&task_id)?;
         assert_eq!(task.current_state, TaskState::Executing);
     }
 
@@ -240,7 +240,7 @@ mod tests {
         e2.sequence = crate::events::SequenceNumber(2);
         proj.apply(&e2);
 
-        let task = proj.get_task(&task_id).unwrap();
+        let task = proj.get_task(&task_id)?;
         assert_eq!(task.assigned_role, Some(crate::state::ModelRole::Coder));
     }
 
@@ -280,7 +280,7 @@ mod tests {
         e2.sequence = crate::events::SequenceNumber(2);
         proj.apply(&e2);
 
-        let task = proj.get_task(&task_id).unwrap();
+        let task = proj.get_task(&task_id)?;
         assert_eq!(task.current_state, TaskState::Received); // unchanged
     }
 
@@ -347,8 +347,8 @@ mod tests {
 
         let proj = TaskProjection::rebuild(&[e1, e2, e3]);
         assert_eq!(proj.task_count(), 2);
-        assert_eq!(proj.get_task(&t1).unwrap().current_state, TaskState::Completed);
-        assert_eq!(proj.get_task(&t2).unwrap().current_state, TaskState::Received);
+        assert_eq!(proj.get_task(&t1)?.current_state, TaskState::Completed);
+        assert_eq!(proj.get_task(&t2)?.current_state, TaskState::Received);
     }
 
     #[test]
@@ -392,7 +392,7 @@ mod tests {
         e2.sequence = crate::events::SequenceNumber(2);
         proj.apply(&e2);
 
-        let task = proj.get_task(&task_id).unwrap();
+        let task = proj.get_task(&task_id)?;
         assert_eq!(task.state_history.len(), 2);
         assert_eq!(task.state_history[1].0, TaskState::Classified);
         assert_eq!(task.state_history[1].1, ts2);

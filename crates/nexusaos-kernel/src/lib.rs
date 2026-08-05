@@ -31,7 +31,3 @@ pub mod worker;
 // Re-export commonly used types at crate root
 pub use error::NexusError;
 pub type Result<T> = std::result::Result<T, NexusError>;
-
-#![warn(clippy::unwrap_used)]
-#![warn(clippy::expect_used)]
-#![warn(clippy::panic)]

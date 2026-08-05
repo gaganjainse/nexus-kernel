@@ -140,10 +140,10 @@ mod tests {
     async fn test_enqueue_dequeue() {
         let scheduler = Scheduler::new(10);
         let task_id = TaskId::new();
-        let _ = scheduler.enqueue(task_id, Priority::Normal).await.unwrap();
+        let _ = scheduler.enqueue(task_id, Priority::Normal).await?;
         assert_eq!(scheduler.queue_depth(), 1);
 
-        let entry = scheduler.dequeue().await.unwrap();
+        let entry = scheduler.dequeue().await?;
         assert_eq!(entry.task_id, task_id);
         assert_eq!(scheduler.queue_depth(), 0);
     }
@@ -151,7 +151,7 @@ mod tests {
     #[tokio::test]
     async fn test_overflow() {
         let scheduler = Scheduler::new(1);
-        let _ = scheduler.enqueue(TaskId::new(), Priority::Normal).await.unwrap();
+        let _ = scheduler.enqueue(TaskId::new(), Priority::Normal).await?;
         let result = scheduler.enqueue(TaskId::new(), Priority::Normal).await;
         assert!(matches!(result, Err(TaskError::QueueFull { .. })));
     }
@@ -160,7 +160,7 @@ mod tests {
     async fn test_cancel() {
         let scheduler = Scheduler::new(10);
         let task_id = TaskId::new();
-        let _ = scheduler.enqueue(task_id, Priority::Normal).await.unwrap();
+        let _ = scheduler.enqueue(task_id, Priority::Normal).await?;
         assert!(scheduler.cancel(&task_id).await);
         assert_eq!(scheduler.queue_depth(), 0);
         assert!(scheduler.dequeue().await.is_none());
@@ -173,13 +173,13 @@ mod tests {
         let task2 = TaskId::new();
         let task3 = TaskId::new();
 
-        let _ = scheduler.enqueue(task1, Priority::Low).await.unwrap();
-        let _ = scheduler.enqueue(task2, Priority::High).await.unwrap();
-        let _ = scheduler.enqueue(task3, Priority::Normal).await.unwrap();
+        let _ = scheduler.enqueue(task1, Priority::Low).await?;
+        let _ = scheduler.enqueue(task2, Priority::High).await?;
+        let _ = scheduler.enqueue(task3, Priority::Normal).await?;
 
-        assert_eq!(scheduler.dequeue().await.unwrap().task_id, task2);
-        assert_eq!(scheduler.dequeue().await.unwrap().task_id, task3);
-        assert_eq!(scheduler.dequeue().await.unwrap().task_id, task1);
+        assert_eq!(scheduler.dequeue().await?.task_id, task2);
+        assert_eq!(scheduler.dequeue().await?.task_id, task3);
+        assert_eq!(scheduler.dequeue().await?.task_id, task1);
     }
 
     #[tokio::test]
@@ -198,16 +198,16 @@ mod tests {
     #[tokio::test]
     async fn test_queue_depth_after_enqueue() {
         let scheduler = Scheduler::new(10);
-        let _ = scheduler.enqueue(TaskId::new(), Priority::Normal).await.unwrap();
+        let _ = scheduler.enqueue(TaskId::new(), Priority::Normal).await?;
         assert_eq!(scheduler.queue_depth(), 1);
     }
 
     #[tokio::test]
     async fn test_queue_depth_after_dequeue() {
         let scheduler = Scheduler::new(10);
-        let _ = scheduler.enqueue(TaskId::new(), Priority::Normal).await.unwrap();
+        let _ = scheduler.enqueue(TaskId::new(), Priority::Normal).await?;
         assert_eq!(scheduler.queue_depth(), 1);
-        let _ = scheduler.dequeue().await.unwrap();
+        let _ = scheduler.dequeue().await?;
         assert_eq!(scheduler.queue_depth(), 0);
     }
 
@@ -223,7 +223,7 @@ mod tests {
     async fn test_cancel_then_dequeue_none() {
         let scheduler = Scheduler::new(10);
         let task_id = TaskId::new();
-        let _ = scheduler.enqueue(task_id, Priority::Normal).await.unwrap();
+        let _ = scheduler.enqueue(task_id, Priority::Normal).await?;
         assert!(scheduler.cancel(&task_id).await);
         assert_eq!(scheduler.queue_depth(), 0);
         assert!(scheduler.dequeue().await.is_none());
@@ -234,8 +234,8 @@ mod tests {
         let scheduler = Scheduler::new(10);
         let t1 = TaskId::new();
         let t2 = TaskId::new();
-        let _ = scheduler.enqueue(t1, Priority::Normal).await.unwrap();
-        let _ = scheduler.enqueue(t2, Priority::High).await.unwrap();
+        let _ = scheduler.enqueue(t1, Priority::Normal).await?;
+        let _ = scheduler.enqueue(t2, Priority::High).await?;
         assert_eq!(scheduler.queue_depth(), 2);
 
         let drained = scheduler.drain().await;
@@ -256,9 +256,9 @@ mod tests {
         let scheduler = Scheduler::new(10);
         let low_id = TaskId::new();
         let crit_id = TaskId::new();
-        let _ = scheduler.enqueue(low_id, Priority::Low).await.unwrap();
-        let _ = scheduler.enqueue(crit_id, Priority::Critical).await.unwrap();
-        assert_eq!(scheduler.dequeue().await.unwrap().task_id, crit_id);
+        let _ = scheduler.enqueue(low_id, Priority::Low).await?;
+        let _ = scheduler.enqueue(crit_id, Priority::Critical).await?;
+        assert_eq!(scheduler.dequeue().await?.task_id, crit_id);
     }
 
     #[tokio::test]
@@ -293,35 +293,35 @@ mod tests {
         let scheduler = Scheduler::new(10);
         let t1 = TaskId::new();
         let t2 = TaskId::new();
-        let _ = scheduler.enqueue(t1, Priority::Normal).await.unwrap();
+        let _ = scheduler.enqueue(t1, Priority::Normal).await?;
         // Small delay to ensure different timestamps
         tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
-        let _ = scheduler.enqueue(t2, Priority::Normal).await.unwrap();
+        let _ = scheduler.enqueue(t2, Priority::Normal).await?;
 
         // Earlier enqueued should come first
-        assert_eq!(scheduler.dequeue().await.unwrap().task_id, t1);
-        assert_eq!(scheduler.dequeue().await.unwrap().task_id, t2);
+        assert_eq!(scheduler.dequeue().await?.task_id, t1);
+        assert_eq!(scheduler.dequeue().await?.task_id, t2);
     }
 
     #[tokio::test]
     async fn test_enqueue_dequeue_mixed_priorities() {
         let scheduler = Scheduler::new(10);
         for _ in 0..5 {
-            let _ = scheduler.enqueue(TaskId::new(), Priority::Low).await.unwrap();
+            let _ = scheduler.enqueue(TaskId::new(), Priority::Low).await?;
         }
-        let _ = scheduler.enqueue(TaskId::new(), Priority::Critical).await.unwrap();
+        let _ = scheduler.enqueue(TaskId::new(), Priority::Critical).await?;
         for _ in 0..3 {
-            let _ = scheduler.enqueue(TaskId::new(), Priority::High).await.unwrap();
+            let _ = scheduler.enqueue(TaskId::new(), Priority::High).await?;
         }
 
         // Critical first, then High, then Low
-        let first = scheduler.dequeue().await.unwrap();
+        let first = scheduler.dequeue().await?;
         assert_eq!(first.priority, Priority::Critical);
         for _ in 0..3 {
-            assert_eq!(scheduler.dequeue().await.unwrap().priority, Priority::High);
+            assert_eq!(scheduler.dequeue().await?.priority, Priority::High);
         }
         for _ in 0..5 {
-            assert_eq!(scheduler.dequeue().await.unwrap().priority, Priority::Low);
+            assert_eq!(scheduler.dequeue().await?.priority, Priority::Low);
         }
     }
 
@@ -331,17 +331,17 @@ mod tests {
         let t1 = TaskId::new();
         let t2 = TaskId::new();
         let t3 = TaskId::new();
-        let _ = scheduler.enqueue(t1, Priority::Normal).await.unwrap();
-        let _ = scheduler.enqueue(t2, Priority::Normal).await.unwrap();
-        let _ = scheduler.enqueue(t3, Priority::Normal).await.unwrap();
+        let _ = scheduler.enqueue(t1, Priority::Normal).await?;
+        let _ = scheduler.enqueue(t2, Priority::Normal).await?;
+        let _ = scheduler.enqueue(t3, Priority::Normal).await?;
 
         // Cancel the middle one
         assert!(scheduler.cancel(&t2).await);
         assert_eq!(scheduler.queue_depth(), 2);
 
-        let first = scheduler.dequeue().await.unwrap();
+        let first = scheduler.dequeue().await?;
         assert_eq!(first.task_id, t1);
-        let second = scheduler.dequeue().await.unwrap();
+        let second = scheduler.dequeue().await?;
         assert_eq!(second.task_id, t3);
     }
 }
