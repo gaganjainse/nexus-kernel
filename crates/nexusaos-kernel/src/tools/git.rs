@@ -113,6 +113,7 @@ mod tests {
         // Since we are running in a real environment which may or may not be a git repo
         // we just assert that we got some output from git.
         assert!(!res.output.is_empty());
+        Ok(())
     }
 
     #[tokio::test]
@@ -127,10 +128,13 @@ mod tests {
             ToolRequest { tool_name: "git".to_string(), arguments: json!({ "action": "diff" }) };
         let res = tool.execute(&req).await?;
         assert!(res.success); // diff with no changes returns empty but succeeds
+        Ok(())
     }
 
     #[tokio::test]
     async fn test_git_diff_staged() -> Result<(), Box<dyn std::error::Error>> {
+        let temp_dir = TempDir::new()?;
+        let _ = Command::new("git").arg("init").current_dir(tem{
         let temp_dir = TempDir::new()?;
         let _ = Command::new("git").arg("init").current_dir(temp_dir.path()).output().await;
         let _ = Command::new("git")
@@ -162,10 +166,9 @@ mod tests {
         let res = tool.execute(&req).await?;
         // staged diff should show the added file
         assert!(res.success);
-    }
-
-    #[tokio::test]
-    async fn test_git_log() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+     temp_dir = TempDir::new()?;
+        let _ = Command::new("git").arg("init").{
         let temp_dir = TempDir::new()?;
         let _ = Command::new("git").arg("init").current_dir(temp_dir.path()).output().await;
         let _ = Command::new("git")
@@ -202,10 +205,10 @@ mod tests {
         let res = tool.execute(&req).await?;
         assert!(res.success);
         assert!(res.output.contains("initial"));
-    }
-
-    #[tokio::test]
-    async fn test_git_add() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    > {
+        let temp_dir = TempDir::new()?;
+        let _ = Command::new("git{
         let temp_dir = TempDir::new()?;
         let _ = Command::new("git").arg("init").current_dir(temp_dir.path()).output().await;
         let _ = Command::new("git")
@@ -230,10 +233,10 @@ mod tests {
         };
         let res = tool.execute(&req).await?;
         assert!(res.success);
-    }
-
-    #[tokio::test]
-    async fn test_git_commit() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    std::error::Error>> {
+        let temp_dir = TempDir::new()?;
+        let _ = Co{
         let temp_dir = TempDir::new()?;
         let _ = Command::new("git").arg("init").current_dir(temp_dir.path()).output().await;
         let _ = Command::new("git")
@@ -265,10 +268,10 @@ mod tests {
         let res = tool.execute(&req).await?;
         assert!(res.success);
         assert!(res.output.contains("add test file") || res.output.contains("1 file"));
-    }
-
-    #[tokio::test]
-    async fn test_git_unknown_action() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+     -> Result<(), Box<dyn std::error::Error>> {
+        let temp_dir = TempDir::new()?;
+   {
         let temp_dir = TempDir::new()?;
         let tool = GitTool::new(temp_dir.path().to_path_buf());
 
@@ -279,10 +282,9 @@ mod tests {
             ToolError::ExecutionFailed { reason, .. } => assert!(reason.contains("Unknown action")),
             _ => unreachable!("Expected ExecutionFailed"),
         }
-    }
-
-    #[tokio::test]
-    async fn test_git_missing_message_for_commit() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    issing_message_for_commit() -> Result<(), Box<dyn std::error::Error>> {
+        let temp_dir = TempD{
         let temp_dir = TempDir::new()?;
         let tool = GitTool::new(temp_dir.path().to_path_buf());
 
@@ -295,10 +297,9 @@ mod tests {
             }
             _ => unreachable!("Expected ExecutionFailed"),
         }
-    }
-
-    #[tokio::test]
-    async fn test_git_in_non_repo_directory() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    c fn test_git_in_non_repo_directory() -> Result<(), Box<dyn std::error::Error>> {
+        let t{
         let temp_dir = TempDir::new()?;
         let tool = GitTool::new(temp_dir.path().to_path_buf());
 
@@ -307,9 +308,8 @@ mod tests {
         let res = tool.execute(&req).await?;
         // In a non-git directory, git status will fail
         assert!(!res.success || res.output.contains("fatal") || res.output.contains("not a git"));
-    }
-
-    #[tokio::test]
+        Ok(())
+    :test]
     async fn test_git_log_default_count() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let _ = Command::new("git").arg("init").current_dir(temp_dir.path()).output().await;
@@ -345,5 +345,6 @@ mod tests {
             ToolRequest { tool_name: "git".to_string(), arguments: json!({ "action": "log" }) };
         let res = tool.execute(&req).await?;
         assert!(res.success);
+        Ok(())
     }
 }

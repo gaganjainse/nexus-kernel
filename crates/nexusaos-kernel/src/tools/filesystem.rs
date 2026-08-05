@@ -229,6 +229,7 @@ mod tests {
             }),
         };
         assert!(tool.execute(&deny_req).await.is_err());
+        Ok(())
     }
 
     #[tokio::test]
@@ -251,10 +252,15 @@ mod tests {
         assert!(res.success);
         assert!(res.output.contains("a.txt"));
         assert!(res.output.contains("b.txt"));
+        Ok(())
     }
 
     #[tokio::test]
     async fn test_filesystem_delete_file() -> Result<(), Box<dyn std::error::Error>> {
+        let temp_dir = TempDir::new()?;
+        let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
+
+       {
         let temp_dir = TempDir::new()?;
         let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
 
@@ -271,10 +277,9 @@ mod tests {
         let res = tool.execute(&req).await?;
         assert!(res.success);
         assert!(!file_path.exists());
-    }
-
-    #[tokio::test]
-    async fn test_filesystem_unknown_action() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    TempDir::new()?;
+        let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], ve{
         let temp_dir = TempDir::new()?;
         let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
 
@@ -290,10 +295,9 @@ mod tests {
             ToolError::ExecutionFailed { reason, .. } => assert!(reason.contains("Unknown action")),
             _ => unreachable!("Expected ExecutionFailed"),
         }
-    }
-
-    #[tokio::test]
-    async fn test_filesystem_missing_path_argument() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+           let temp_dir = TempDir::new()?;
+        let tool = FilesystemTool::new(vec![temp_dir.path().to_{
         let temp_dir = TempDir::new()?;
         let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
 
@@ -311,10 +315,10 @@ mod tests {
             }
             _ => unreachable!("Expected ExecutionFailed"),
         }
-    }
-
-    #[tokio::test]
-    async fn test_filesystem_missing_content_for_write() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    :error::Error>> {
+        let temp_dir = TempDir::new()?;
+        let tool = FilesystemTool::new(vec![temp{
         let temp_dir = TempDir::new()?;
         let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
 
@@ -333,10 +337,10 @@ mod tests {
             }
             _ => unreachable!("Expected ExecutionFailed"),
         }
-    }
-
-    #[tokio::test]
-    async fn test_filesystem_path_denied_for_write() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    ox<dyn std::error::Error>> {
+        let temp_dir = TempDir::new()?;
+        // Empty allowed paths me{
         let temp_dir = TempDir::new()?;
         // Empty allowed paths means nothing is allowed
         let tool = FilesystemTool::new(vec![], vec![]);
@@ -354,10 +358,10 @@ mod tests {
             ToolError::PathDenied { .. } => {}
             _ => unreachable!("Expected PathDenied"),
         }
-    }
-
-    #[tokio::test]
-    async fn test_filesystem_empty_allowed_paths() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+     Result<(), Box<dyn std::error::Error>> {
+        let tool = FilesystemTool::new(vec![], vec![]);
+  {
         let tool = FilesystemTool::new(vec![], vec![]);
         let req = ToolRequest {
             tool_name: "filesystem".to_string(),
@@ -371,10 +375,10 @@ mod tests {
             ToolError::PathDenied { .. } => {}
             _ => unreachable!("Expected PathDenied"),
         }
-    }
-
-    #[tokio::test]
-    async fn test_filesystem_denied_pattern_in_path() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    ttern_in_path() -> Result<(), Box<dyn std::error::Error>> {
+        let temp_dir = TempDir::new()?;
+   {
         let temp_dir = TempDir::new()?;
         // Create a .env file inside allowed path
         let env_path = temp_dir.path().join(".env");
@@ -395,10 +399,9 @@ mod tests {
             ToolError::PathDenied { .. } => {}
             _ => unreachable!("Expected PathDenied"),
         }
-    }
-
-    #[tokio::test]
-    async fn test_filesystem_read_nonexistent_file() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    ystem_read_nonexistent_file() -> Result<(), Box<dyn std::error::Error>> {
+        let temp_dir = TempD{
         let temp_dir = TempDir::new()?;
         let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
 
@@ -414,10 +417,9 @@ mod tests {
             ToolError::Io(_) => {}
             _ => unreachable!("Expected Io error"),
         }
-    }
-
-    #[tokio::test]
-    async fn test_filesystem_read_empty_file() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    c fn test_filesystem_read_empty_file() -> Result<(), Box<dyn std::error::Error>> {
+        let t{
         let temp_dir = TempDir::new()?;
         let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
 
@@ -434,9 +436,8 @@ mod tests {
         let res = tool.execute(&req).await?;
         assert!(res.success);
         assert_eq!(res.output, "");
-    }
-
-    #[tokio::test]
+        Ok(())
+    :test]
     async fn test_filesystem_delete_nonexistent_file() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
@@ -453,5 +454,6 @@ mod tests {
             ToolError::Io(_) => {}
             _ => unreachable!("Expected Io error"),
         }
+        Ok(())
     }
 }

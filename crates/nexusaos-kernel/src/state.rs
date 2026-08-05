@@ -168,6 +168,7 @@ mod tests {
             let back: ModelRole = serde_json::from_str(&json)?;
             assert_eq!(role, back);
         }
+        Ok(())
     }
 
     #[test]
@@ -189,6 +190,7 @@ mod tests {
             let back: TaskState = serde_json::from_str(&json)?;
             assert_eq!(state, back);
         }
+        Ok(())
     }
 
     #[test]
@@ -315,6 +317,7 @@ mod tests {
         assert_eq!(record.task_id, back.task_id);
         assert_eq!(record.current_state, back.current_state);
         assert_eq!(record.assigned_role, back.assigned_role);
+        Ok(())
     }
 
     #[test]

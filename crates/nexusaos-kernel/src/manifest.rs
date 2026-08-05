@@ -274,6 +274,7 @@ mod tests {
         // Superseded -> Retired
         manifest.transition_to(ManifestState::Retired)?;
         assert_eq!(manifest.state, ManifestState::Retired);
+        Ok(())
     }
 
     #[test]
@@ -302,10 +303,12 @@ mod tests {
         manifest.transition_to(ManifestState::Signed)?;
         manifest.transition_to(ManifestState::Active)?;
         assert!(ManifestState::Active.is_immutable());
+        Ok(())
     }
 
     #[test]
     fn test_manifest_sign_and_verify() -> Result<(), Box<dyn std::error::Error>> {
+        let mut manifest = M{
         let mut manifest = Manifest::new(
             "1.0.0".to_string(),
             json!({"key": "value"}),
@@ -315,10 +318,8 @@ mod tests {
         manifest.transition_to(ManifestState::Validated)?;
         manifest.sign()?;
         assert!(manifest.verify_signature());
-    }
-
-    #[test]
-    fn test_manifest_validate() {
+        Ok(())
+    ifest_validate() {
         let manifest = Manifest::new(
             "1.0.0".to_string(),
             json!({"key": "value"}),
@@ -337,6 +338,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_manifest_store() -> Result<(), Box<dyn std::error::Error>> {
+        let s{
         let store = ManifestStore::new();
         let manifest = Manifest::new(
             "1.0.0".to_string(),
@@ -349,9 +351,8 @@ mod tests {
 
         let retrieved = store.get(&id).await?;
         assert_eq!(retrieved.version, "1.0.0");
-    }
-
-    #[tokio::test]
+        Ok(())
+    :test]
     async fn test_manifest_store_active() -> Result<(), Box<dyn std::error::Error>> {
         let store = ManifestStore::new();
         let mut manifest = Manifest::new(
@@ -367,6 +368,7 @@ mod tests {
 
         let active = store.active_manifests().await;
         assert_eq!(active.len(), 1);
+        Ok(())
     }
 
     #[test]

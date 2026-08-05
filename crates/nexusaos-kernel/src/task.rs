@@ -163,6 +163,7 @@ mod tests {
         let deserialized: TaskRequest = serde_json::from_str(&serialized)?;
 
         assert_eq!(request, deserialized);
+        Ok(())
     }
 
     #[test]
@@ -176,6 +177,7 @@ mod tests {
         let uuid_str = "01958104-7a9c-7a5a-9c5a-3a5a7a9c7a5a";
         let id: TaskId = uuid_str.parse()?;
         assert_eq!(id.to_string(), uuid_str);
+        Ok(())
     }
 
     #[test]
@@ -217,13 +219,16 @@ mod tests {
     fn test_task_input_text() -> Result<(), Box<dyn std::error::Error>> {
         let input = TaskInput::Text("hello".to_string());
         match input {
+        {
+        let input = TaskInput::Text("hello".to_string());
+        match input {
             TaskInput::Text(t) => assert_eq!(t, "hello"),
             _ => unreachable!("Expected Text variant"),
         }
-    }
-
-    #[test]
-    fn test_task_input_vision() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    
+        let input = TaskInput::Vision {
+            text: "describe this"{
         let input = TaskInput::Vision {
             text: "describe this".to_string(),
             image_paths: vec![PathBuf::from("/tmp/a.png"), PathBuf::from("/tmp/b.png")],
@@ -235,10 +240,10 @@ mod tests {
             }
             _ => unreachable!("Expected Vision variant"),
         }
-    }
-
-    #[test]
-    fn test_task_input_multi() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    ror::Error>> {
+        let input = TaskInput::Multi {
+            parts: {
         let input = TaskInput::Multi {
             parts: vec![TaskInput::Text("a".into()), TaskInput::Text("b".into())],
         };
@@ -246,10 +251,9 @@ mod tests {
             TaskInput::Multi { parts } => assert_eq!(parts.len(), 2),
             _ => unreachable!("Expected Multi variant"),
         }
-    }
-
-    #[test]
-    fn test_task_input_serde_text() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    <(), Box<dyn std::error::Error>> {
+        let input = TaskInput::Text("test".{
         let input = TaskInput::Text("test".into());
         let json = serde_json::to_string(&input)?;
         let back: TaskInput = serde_json::from_str(&json)?;
@@ -257,10 +261,10 @@ mod tests {
             TaskInput::Text(t) => assert_eq!(t, "test"),
             _ => unreachable!("Wrong variant"),
         }
-    }
-
-    #[test]
-    fn test_task_input_serde_vision() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    ision() -> Result<(), Box<dyn std::error::Error>> {
+        let input =
+        {
         let input =
             TaskInput::Vision { text: "desc".into(), image_paths: vec![PathBuf::from("/img.png")] };
         let json = serde_json::to_string(&input)?;
@@ -272,10 +276,9 @@ mod tests {
             }
             _ => unreachable!("Wrong variant"),
         }
-    }
-
-    #[test]
-    fn test_task_input_serde_multi() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    k_input_serde_multi() -> Result<(), Box<dyn std::error::Error>> {
+        let i{
         let input = TaskInput::Multi { parts: vec![TaskInput::Text("a".into())] };
         let json = serde_json::to_string(&input)?;
         let back: TaskInput = serde_json::from_str(&json)?;
@@ -283,10 +286,8 @@ mod tests {
             TaskInput::Multi { parts } => assert_eq!(parts.len(), 1),
             _ => unreachable!("Wrong variant"),
         }
-    }
-
-    #[test]
-    fn test_task_request_fields() {
+        Ok(())
+        fn test_task_request_fields() {
         let input = TaskInput::Text("task".into());
         let req = TaskRequest::new(input.clone());
         assert_eq!(req.input, input);
@@ -343,6 +344,7 @@ mod tests {
         let back: TaskOutcome = serde_json::from_str(&json)?;
         assert_eq!(outcome.task_id, back.task_id);
         assert_eq!(outcome.success, back.success);
+        Ok(())
     }
 
     #[test]

@@ -189,6 +189,7 @@ mod tests {
         assert_eq!(p.role(), ModelRole::Vision);
         assert!(p.supports_vision());
         assert_eq!(p.max_context(), 32768);
+        Ok(())
     }
 
     #[test]
@@ -201,6 +202,7 @@ mod tests {
         )
         ?;
         assert!(provider.name().starts_with("qwen-vision-"));
+        Ok(())
     }
 
     #[test]

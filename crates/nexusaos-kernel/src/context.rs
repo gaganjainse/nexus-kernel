@@ -271,6 +271,7 @@ mod tests {
             ?;
         assert_eq!(budget.max_tokens, 8192);
         assert!(!budget.was_clamped);
+        Ok(())
     }
 
     #[test]
@@ -280,31 +281,32 @@ mod tests {
             .estimate_budget(TaskComplexity::Architecture, &normal_pressure(), 65536)
             ?;
         assert_eq!(budget.max_tokens, 65536);
+        Ok(())
     }
 
     #[test]
     fn test_clamp_to_model_max() -> Result<(), Box<dyn std::error::Error>> {
         let mgr = ContextManager::new(test_config());
         let budget = mgr
+            .estimate_budget(TaskComple{
+        let mgr = ContextManager::new(test_config());
+        let budget = mgr
             .estimate_budget(TaskComplexity::Architecture, &normal_pressure(), 32768)
             ?;
         assert_eq!(budget.max_tokens, 32768);
         assert!(budget.was_clamped);
-    }
-
-    #[test]
-    fn test_memory_pressure_halves_budget() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+     ContextManager::new(test_config());
+        let budget = mgr
+            .estimate_bu{
         let mgr = ContextManager::new(test_config());
         let budget = mgr
             .estimate_budget(TaskComplexity::Feature, &high_pressure(), 65536)
             ?;
         assert_eq!(budget.max_tokens, 16384); // 32768 / 2
         assert!(budget.was_clamped);
-    }
-
-    #[test]
-    fn test_memory_pressure_refuses_tiny_budget() {
-        let mgr = ContextManager::new(test_config());
+        Ok(())
+    test_config());
         // Simple question halved = 4096, which is < simple_question (8192)
         let result = mgr.estimate_budget(TaskComplexity::Simple, &high_pressure(), 65536);
         assert!(result.is_err());
@@ -377,6 +379,8 @@ mod tests {
     #[test]
     fn test_budget_all_complexity_levels() -> Result<(), Box<dyn std::error::Error>> {
         let mgr = ContextManager::new(test_config());
+        let pressure = normal_pres{
+        let mgr = ContextManager::new(test_config());
         let pressure = normal_pressure();
 
         let simple = mgr.estimate_budget(TaskComplexity::Simple, &pressure, 65536)?;
@@ -398,29 +402,28 @@ mod tests {
         assert_eq!(arch.max_tokens, 65536);
         assert!(!arch.was_clamped);
         assert!(arch.clamp_reason.is_none());
-    }
-
-    #[test]
-    fn test_budget_clamp_reason_set() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    or>> {
+        let mgr = ContextManager::new(test_config());
+        let pressur{
         let mgr = ContextManager::new(test_config());
         let pressure = normal_pressure();
         let budget = mgr.estimate_budget(TaskComplexity::Architecture, &pressure, 32768)?;
         assert!(budget.was_clamped);
         assert!(budget.clamp_reason.is_some());
         assert!(budget.clamp_reason?.contains("32768"));
-    }
-
-    #[test]
-    fn test_budget_no_clamp_reason_when_not_clamped() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    ult<(), Box<dyn std::error::Error>> {
+        let mgr = ContextManager::new(test_config());
+    {
         let mgr = ContextManager::new(test_config());
         let pressure = normal_pressure();
         let budget = mgr.estimate_budget(TaskComplexity::Simple, &pressure, 65536)?;
         assert!(!budget.was_clamped);
         assert!(budget.clamp_reason.is_none());
-    }
-
-    #[test]
-    fn test_budget_memory_pressure_clamp_reason() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    on() -> Result<(), Box<dyn std::error::Error>> {
+        let mgr = ContextManager::new(test_{
         let mgr = ContextManager::new(test_config());
         let pressure = high_pressure();
         let budget = mgr.estimate_budget(TaskComplexity::Feature, &pressure, 65536)?;
@@ -430,30 +433,26 @@ mod tests {
         assert!(reason.contains("RAM pressure"));
         assert!(reason.contains("1000"));
         assert!(reason.contains("2048"));
-    }
-
-    #[test]
-    fn test_budget_model_max_zero() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    ero() -> Result<(), Box<dyn std::error::Error>> {
+        let mgr = ContextMan{
         let mgr = ContextManager::new(test_config());
         let pressure = normal_pressure();
         // model_max_context = 0 means everything gets clamped to 0
         let budget = mgr.estimate_budget(TaskComplexity::Simple, &pressure, 0)?;
         assert_eq!(budget.max_tokens, 0);
         assert!(budget.was_clamped);
-    }
-
-    #[test]
-    fn test_budget_model_max_less_than_simple_question() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    get_model_max_less_than_simple_question() -> Result<(), Box<dyn std::error::Error>> {
+        let m{
         let mgr = ContextManager::new(test_config());
         let pressure = normal_pressure();
         // model max is 4096, simple_question is 8192, so clamped to 4096
         let budget = mgr.estimate_budget(TaskComplexity::Simple, &pressure, 4096)?;
         assert_eq!(budget.max_tokens, 4096);
         assert!(budget.was_clamped);
-    }
-
-    #[test]
-    fn test_estimate_from_input_max_usize() {
+        Ok(())
+        fn test_estimate_from_input_max_usize() {
         assert_eq!(
             TaskComplexity::estimate_from_input(&"x".repeat(10_000_000), false),
             TaskComplexity::Architecture
@@ -466,5 +465,6 @@ mod tests {
         let budget =
             mgr.estimate_budget(TaskComplexity::CodeEdit, &normal_pressure(), 65536)?;
         assert_eq!(budget.complexity, TaskComplexity::CodeEdit);
+        Ok(())
     }
 }

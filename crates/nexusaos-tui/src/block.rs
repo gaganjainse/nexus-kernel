@@ -254,6 +254,7 @@ mod tests {
         let active = grid.active_block();
         assert!(active.is_some());
         assert_eq!(active?.id, 1);
+        Ok(())
     }
 
     #[test]
@@ -300,6 +301,7 @@ mod tests {
         assert!(grid.active_block()?.is_maximized);
         grid.toggle_maximize();
         assert!(!grid.active_block()?.is_maximized);
+        Ok(())
     }
 
     #[test]
@@ -329,5 +331,6 @@ mod tests {
             block.is_maximized = true;
         }
         assert!(grid.active_block()?.is_maximized);
+        Ok(())
     }
 }

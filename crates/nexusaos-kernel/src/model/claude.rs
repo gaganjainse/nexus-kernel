@@ -202,6 +202,7 @@ mod tests {
         assert_eq!(provider.role(), ModelRole::Coder);
         assert_eq!(provider.max_context(), 200_000);
         assert!(provider.supports_vision());
+        Ok(())
     }
 
     #[test]
@@ -220,26 +221,28 @@ mod tests {
             ClaudeProvider::new("key".into(), "claude-haiku".into(), ModelRole::Reviewer)?;
         assert_eq!(reviewer.role(), ModelRole::Reviewer);
         assert!(reviewer.supports_vision());
+        Ok(())
     }
 
     #[test]
     fn test_claude_provider_max_context_constant() -> Result<(), Box<dyn std::error::Error>> {
         let provider =
+            ClaudeProvider::new("key".into(), "any{
+        let provider =
             ClaudeProvider::new("key".into(), "any-model".into(), ModelRole::Coder)?;
         assert_eq!(provider.max_context(), 200_000);
-    }
-
-    #[test]
-    fn test_claude_provider_health_check_with_key() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    t<(), Box<dyn std::error::Error>> {
+        let provider =
+            ClaudeProvider::new("va{
         let provider =
             ClaudeProvider::new("valid-key".into(), "claude-3".into(), ModelRole::Coder)?;
         // health_check checks if api_key is non-empty
         // We can't easily test the async method synchronously, but we can test the field
         assert!(!provider.api_key.is_empty());
-    }
-
-    #[test]
-    fn test_claude_provider_name_format() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    Result<(), Box<dyn std::error::Error>> {
+        let provider = ClaudeProvider::new({
         let provider = ClaudeProvider::new(
             "key".into(),
             "claude-3-5-sonnet-20240620".into(),
@@ -247,18 +250,17 @@ mod tests {
         )
         ?;
         assert_eq!(provider.name(), "anthropic-claude-claude-3-5-sonnet-20240620");
-    }
-
-    #[test]
-    fn test_claude_provider_empty_api_key() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    pty_api_key() -> Result<(), Box<dyn std::error::Error>> {
+        let provider =
+     {
         let provider =
             ClaudeProvider::new(String::new(), "model".into(), ModelRole::Coder)?;
         assert!(provider.api_key.is_empty());
         assert!(provider.supports_vision());
-    }
-
-    #[test]
-    fn test_claude_provider_always_supports_vision() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    ude_provider_always_supports_vision() -> Result<(), Box<dyn std::error::Error>> {
+        for r{
         for role in [ModelRole::Planner, ModelRole::Coder, ModelRole::Vision, ModelRole::Reviewer] {
             let provider = ClaudeProvider::new("key".into(), "model".into(), role)?;
             assert!(
@@ -267,11 +269,10 @@ mod tests {
                 role
             );
         }
-    }
-
-    #[test]
-    fn test_claude_provider_client_built() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+        fn test_claude_provider_client_built() -> Result<(), Box<dyn std::error::Error>> {
         let _provider =
             ClaudeProvider::new("key".into(), "model".into(), ModelRole::Coder)?;
+        Ok(())
     }
 }

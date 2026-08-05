@@ -129,6 +129,7 @@ mod tests {
         let pty = PtyManager::spawn(80, 24)?;
         let translated = pty.translate_input(b"\n");
         assert_eq!(translated, vec![b'\r']);
+        Ok(())
     }
 
     #[test]
@@ -136,6 +137,7 @@ mod tests {
         let pty = PtyManager::spawn(80, 24)?;
         let translated = pty.translate_input(b"\x03");
         assert_eq!(translated, vec![b'\x03']);
+        Ok(())
     }
 
     #[test]
@@ -169,6 +171,7 @@ mod tests {
             assert!(n.is_ok());
             assert!(n? <= buf.len());
         }
+        Ok(())
     }
 
     #[test]

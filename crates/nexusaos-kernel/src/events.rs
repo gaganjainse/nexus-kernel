@@ -361,6 +361,7 @@ mod tests {
             let deserialized: EventPayload = serde_json::from_str(&serialized)?;
             assert_eq!(payload, deserialized);
         }
+        Ok(())
     }
 
     #[test]
@@ -444,10 +445,12 @@ mod tests {
             assert!(!debug.is_empty());
         Ok(())
         }
+        Ok(())
     }
 
     #[test]
     fn test_event_policy_check_with_reason() -> Result<(), Box<dyn std::error::Error>> {
+        let payload = EventP{
         let payload = EventPayload::PolicyCheck {
             action: "filesystem.write".to_string(),
             decision: "deny".to_string(),
@@ -461,10 +464,9 @@ mod tests {
             }
             _ => unreachable!("Wrong variant"),
         }
-    }
-
-    #[test]
-    fn test_event_error_event_with_details() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    nt_error_event_with_details() -> Result<(), Box<dyn std::error::Error>> {
+        let p{
         let payload = EventPayload::ErrorEvent { message: "fatal".to_string(), details: None };
         let json = serde_json::to_string(&payload)?;
         let back: EventPayload = serde_json::from_str(&json)?;
@@ -475,10 +477,8 @@ mod tests {
             }
             _ => unreachable!("Wrong variant"),
         }
-    }
-
-    #[test]
-    fn test_event_sequence_number_default() {
+        Ok(())
+        fn test_event_sequence_number_default() {
         let seq = SequenceNumber(0);
         assert_eq!(seq, SequenceNumber(0));
         assert!(seq < SequenceNumber(1));
@@ -490,6 +490,7 @@ mod tests {
         let json = serde_json::to_string(&kind)?;
         let back: EventKind = serde_json::from_str(&json)?;
         assert_eq!(kind, back);
+        Ok(())
     }
 
     #[test]

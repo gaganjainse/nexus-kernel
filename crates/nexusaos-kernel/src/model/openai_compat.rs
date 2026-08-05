@@ -317,6 +317,7 @@ mod tests {
         assert_eq!(provider.name(), "test-openai");
         assert_eq!(provider.role(), ModelRole::Coder);
         assert_eq!(provider.base_url, "http://localhost:11434");
+        Ok(())
     }
 
     #[test]
@@ -350,10 +351,15 @@ mod tests {
         let provider = OpenAiCompatProvider::new(&config)?;
         assert_eq!(provider.name(), "test");
         assert_eq!(provider.role(), ModelRole::Planner);
+        Ok(())
     }
 
     #[test]
     fn test_base_url_trailing_slash_trimmed() -> Result<(), Box<dyn std::error::Error>> {
+        let config = ModelProviderConfig {
+            name: "test".to_string(),
+            role: "coder".to_string(),
+            base_url: "http:{
         let config = ModelProviderConfig {
             name: "test".to_string(),
             role: "coder".to_string(),
@@ -366,10 +372,10 @@ mod tests {
         };
         let provider = OpenAiCompatProvider::new(&config)?;
         assert_eq!(provider.base_url, "http://localhost:11434");
-    }
-
-    #[test]
-    fn test_base_url_no_trailing_slash() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+         name: "test".to_string(),
+            role: "coder".to_string(),
+            b{
         let config = ModelProviderConfig {
             name: "test".to_string(),
             role: "coder".to_string(),
@@ -382,10 +388,10 @@ mod tests {
         };
         let provider = OpenAiCompatProvider::new(&config)?;
         assert_eq!(provider.base_url, "http://localhost:11434");
-    }
-
-    #[test]
-    fn test_provider_uppercase_role() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    ig {
+            name: "test".to_string(),
+            role: "PLANNER".to_string{
         let config = ModelProviderConfig {
             name: "test".to_string(),
             role: "PLANNER".to_string(),
@@ -398,10 +404,10 @@ mod tests {
         };
         let provider = OpenAiCompatProvider::new(&config)?;
         assert_eq!(provider.role(), ModelRole::Planner);
-    }
-
-    #[test]
-    fn test_provider_mixed_case_role() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    odelProviderConfig {
+            name: "test".to_string(),
+            role: "CoD{
         let config = ModelProviderConfig {
             name: "test".to_string(),
             role: "CoDeR".to_string(),
@@ -414,10 +420,10 @@ mod tests {
         };
         let provider = OpenAiCompatProvider::new(&config)?;
         assert_eq!(provider.role(), ModelRole::Coder);
-    }
-
-    #[test]
-    fn test_provider_max_context() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+     config = ModelProviderConfig {
+            name: "test".to_string(),
+       {
         let config = ModelProviderConfig {
             name: "test".to_string(),
             role: "vision".to_string(),
@@ -430,10 +436,10 @@ mod tests {
         };
         let provider = OpenAiCompatProvider::new(&config)?;
         assert_eq!(provider.max_context(), 8192);
-    }
-
-    #[test]
-    fn test_provider_supports_vision() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    ror>> {
+        let config = ModelProviderConfig {
+            name: "test".to_st{
         let config = ModelProviderConfig {
             name: "test".to_string(),
             role: "vision".to_string(),
@@ -446,10 +452,10 @@ mod tests {
         };
         let provider = OpenAiCompatProvider::new(&config)?;
         assert!(provider.supports_vision());
-    }
-
-    #[test]
-    fn test_provider_no_vision() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    error::Error>> {
+        let config = ModelProviderConfig {
+            nam{
         let config = ModelProviderConfig {
             name: "test".to_string(),
             role: "coder".to_string(),
@@ -462,10 +468,10 @@ mod tests {
         };
         let provider = OpenAiCompatProvider::new(&config)?;
         assert!(!provider.supports_vision());
-    }
-
-    #[test]
-    fn test_provider_name() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    <dyn std::error::Error>> {
+        let config = ModelProviderConfig {
+{
         let config = ModelProviderConfig {
             name: "my-provider".to_string(),
             role: "planner".to_string(),
@@ -478,10 +484,9 @@ mod tests {
         };
         let provider = OpenAiCompatProvider::new(&config)?;
         assert_eq!(provider.name(), "my-provider");
-    }
-
-    #[test]
-    fn test_provider_model_id_stored() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    stored() -> Result<(), Box<dyn std::error::Error>> {
+        let config = ModelPr{
         let config = ModelProviderConfig {
             name: "test".to_string(),
             role: "planner".to_string(),
@@ -494,10 +499,9 @@ mod tests {
         };
         let provider = OpenAiCompatProvider::new(&config)?;
         assert_eq!(provider.model_id, "llama3-70b");
-    }
-
-    #[test]
-    fn test_client_builder_success() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    ent_builder_success() -> Result<(), Box<dyn std::error::Error>> {
+        let c{
         let config = ModelProviderConfig {
             name: "test".to_string(),
             role: "planner".to_string(),
@@ -511,10 +515,8 @@ mod tests {
         let provider = OpenAiCompatProvider::new(&config)?;
         // Verify the provider was constructed successfully with a client
         assert_eq!(provider.name(), "test");
-    }
-
-    #[test]
-    fn test_all_roles() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+        fn test_all_roles() -> Result<(), Box<dyn std::error::Error>> {
         let roles = vec![
             ("planner", ModelRole::Planner),
             ("coder", ModelRole::Coder),
@@ -535,5 +537,6 @@ mod tests {
             let provider = OpenAiCompatProvider::new(&config)?;
             assert_eq!(provider.role(), expected);
         }
+        Ok(())
     }
 }

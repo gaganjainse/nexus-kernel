@@ -285,6 +285,7 @@ mod tests {
             Some(Ok(true)) => {}
             _ => unreachable!("Expected coder to be healthy"),
         }
+        Ok(())
     }
 
     #[tokio::test]
@@ -341,6 +342,7 @@ mod tests {
             Some(Err(_)) => {}
             _ => unreachable!("Expected reviewer to be err"),
         }
+        Ok(())
     }
 
     #[test]

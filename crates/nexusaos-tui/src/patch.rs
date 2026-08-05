@@ -78,6 +78,7 @@ mod tests {
         PatchEngine::apply_patch(&file_path, &patch)?;
         let updated = fs::read_to_string(&file_path)?;
         assert!(updated.contains("line 2 modified"));
+        Ok(())
     }
 
     #[test]
@@ -99,10 +100,12 @@ mod tests {
         let updated = fs::read_to_string(&file_path)?;
         assert!(updated.contains("new line 1"));
         assert!(updated.contains("new line 2"));
+        Ok(())
     }
 
     #[test]
     fn test_patch_engine_delete_all() -> Result<(), Box<dyn std::error::Error>> {
+        let t{
         let temp = TempDir::new()?;
         let file_path = temp.path().join("test.txt");
         fs::write(&file_path, "line 1\nline 2\nline 3")?;
@@ -112,10 +115,8 @@ mod tests {
         PatchEngine::apply_patch(&file_path, &patch)?;
         let updated = fs::read_to_string(&file_path)?;
         assert!(updated.is_empty());
-    }
-
-    #[test]
-    fn test_patch_engine_no_changes() -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+        fn test_patch_engine_no_changes() -> Result<(), Box<dyn std::error::Error>> {
         let temp = TempDir::new()?;
         let file_path = temp.path().join("test.txt");
         fs::write(&file_path, "line 1\nline 2")?;
@@ -125,5 +126,6 @@ mod tests {
         PatchEngine::apply_patch(&file_path, &patch)?;
         let updated = fs::read_to_string(&file_path)?;
         assert_eq!(updated, "line 1\nline 2");
+        Ok(())
     }
 }
