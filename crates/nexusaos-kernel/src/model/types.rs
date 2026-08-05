@@ -67,7 +67,6 @@ mod tests {
         assert_eq!(serialized, "\"system\"");
         let deserialized: ChatRole = serde_json::from_str(&serialized)?;
         assert_eq!(deserialized, role);
-        Ok(())
     }
 
     #[test]
@@ -86,17 +85,18 @@ mod tests {
             let back: ChatRole = serde_json::from_str(&json)?;
             assert_eq!(role, back);
         }
-        Ok(())
     }
 
     #[test]
     fn test_chat_role_serde_strings() -> Result<(), Box<dyn std::error::Error>> {
-        assert_eq!(serde_json::to_string(&ChatRole::System)?, "\"system\"{
         assert_eq!(serde_json::to_string(&ChatRole::System)?, "\"system\"");
         assert_eq!(serde_json::to_string(&ChatRole::User)?, "\"user\"");
         assert_eq!(serde_json::to_string(&ChatRole::Assistant)?, "\"assistant\"");
-        Ok(())
-    ChatMessage { role: ChatRole::User, content: "hello".into(), images: None };
+    }
+
+    #[test]
+    fn test_chat_message_construction() {
+        let msg = ChatMessage { role: ChatRole::User, content: "hello".into(), images: None };
         assert_eq!(msg.role, ChatRole::User);
         assert_eq!(msg.content, "hello");
         assert!(msg.images.is_none());
@@ -105,26 +105,26 @@ mod tests {
     #[test]
     fn test_chat_message_with_images() -> Result<(), Box<dyn std::error::Error>> {
         let msg = ChatMessage {
-            role: ChatRole{
-        let msg = ChatMessage {
             role: ChatRole::User,
             content: "describe".into(),
             images: Some(vec!["base64data".into()]),
         };
         assert!(msg.images.is_some());
         assert_eq!(msg.images?.len(), 1);
-        Ok(())
-    , Box<dyn std::error::Error>> {
-        let msg =
-            ChatMessage {{
+    }
+
+    #[test]
+    fn test_chat_message_serde() -> Result<(), Box<dyn std::error::Error>> {
         let msg =
             ChatMessage { role: ChatRole::Assistant, content: "response".into(), images: None };
         let json = serde_json::to_string(&msg)?;
         let back: ChatMessage = serde_json::from_str(&json)?;
         assert_eq!(msg.role, back.role);
         assert_eq!(msg.content, back.content);
-        Ok(())
-    _with_stop_sequences() {
+    }
+
+    #[test]
+    fn test_completion_request_with_stop_sequences() {
         let req = CompletionRequest {
             messages: vec![],
             max_tokens: 100,
@@ -138,7 +138,6 @@ mod tests {
 
     #[test]
     fn test_completion_request_serde() -> Result<(), Box<dyn std::error::Error>> {
-        let req = Completion{
         let req = CompletionRequest::new(
             vec![ChatMessage { role: ChatRole::User, content: "hi".into(), images: None }],
             "gpt-4",
@@ -148,8 +147,10 @@ mod tests {
         let back: CompletionRequest = serde_json::from_str(&json)?;
         assert_eq!(req.model, back.model);
         assert_eq!(req.max_tokens, back.max_tokens);
-        Ok(())
-    pletion_response_construction() {
+    }
+
+    #[test]
+    fn test_completion_response_construction() {
         let resp = CompletionResponse {
             content: "hello".into(),
             finish_reason: Some("stop".into()),
@@ -165,7 +166,6 @@ mod tests {
 
     #[test]
     fn test_completion_response_serde() -> Result<(), Box<dyn std::error::Error>> {
-        let r{
         let resp = CompletionResponse {
             content: "hi".into(),
             finish_reason: None,
@@ -177,8 +177,10 @@ mod tests {
         let back: CompletionResponse = serde_json::from_str(&json)?;
         assert_eq!(resp.content, back.content);
         assert_eq!(resp.model, back.model);
-        Ok(())
-        fn test_token_usage_default() {
+    }
+
+    #[test]
+    fn test_token_usage_default() {
         let usage = TokenUsage::default();
         assert_eq!(usage.prompt_tokens, 0);
         assert_eq!(usage.completion_tokens, 0);
@@ -198,7 +200,6 @@ mod tests {
         let json = serde_json::to_string(&usage)?;
         let back: TokenUsage = serde_json::from_str(&json)?;
         assert_eq!(usage.total_tokens, back.total_tokens);
-        Ok(())
     }
 
     #[test]

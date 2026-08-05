@@ -152,7 +152,6 @@ mod tests {
 
         let classified_tasks = projection.tasks_in_state(&TaskState::Classified);
         assert_eq!(classified_tasks.len(), 1);
-        Ok(())
     }
 
     #[test]
@@ -185,13 +184,10 @@ mod tests {
         let task = proj.get_task(&task_id)?;
         assert_eq!(task.current_state, TaskState::Received);
         assert_eq!(task.assigned_role, None);
-        Ok(())
     }
 
     #[test]
     fn test_apply_state_changed() -> Result<(), Box<dyn std::error::Error>> {
-        let mut proj = TaskProjection::new();
-        let {
         let mut proj = TaskProjection::new();
         let task_id = TaskId::new();
 
@@ -215,9 +211,10 @@ mod tests {
 
         let task = proj.get_task(&task_id)?;
         assert_eq!(task.current_state, TaskState::Executing);
-        Ok(())
-    _role() -> Result<(), Box<dyn std::error::Error>> {
-        let mut proj = TaskProjection::new({
+    }
+
+    #[test]
+    fn test_apply_model_request_sets_assigned_role() -> Result<(), Box<dyn std::error::Error>> {
         let mut proj = TaskProjection::new();
         let task_id = TaskId::new();
 
@@ -245,8 +242,10 @@ mod tests {
 
         let task = proj.get_task(&task_id)?;
         assert_eq!(task.assigned_role, Some(crate::state::ModelRole::Coder));
-        Ok(())
-    _ignored() {
+    }
+
+    #[test]
+    fn test_apply_system_event_ignored() {
         let mut proj = TaskProjection::new();
         let mut event = Event::system(
             EventKind::SystemStarted,
@@ -260,7 +259,6 @@ mod tests {
 
     #[test]
     fn test_apply_unknown_state_skipped() -> Result<(), Box<dyn std::error::Error>> {
-        let mut proj = TaskP{
         let mut proj = TaskProjection::new();
         let task_id = TaskId::new();
 
@@ -284,8 +282,10 @@ mod tests {
 
         let task = proj.get_task(&task_id)?;
         assert_eq!(task.current_state, TaskState::Received); // unchanged
-        Ok(())
-    _task_not_found() {
+    }
+
+    #[test]
+    fn test_get_task_not_found() {
         let proj = TaskProjection::new();
         let fake_id = TaskId::new();
         assert!(proj.get_task(&fake_id).is_none());
@@ -320,7 +320,6 @@ mod tests {
 
     #[test]
     fn test_rebuild_multiple_tasks_different_states() -> Result<(), Box<dyn std::error::Error>> {
-        let t{
         let t1 = TaskId::new();
         let t2 = TaskId::new();
 
@@ -350,8 +349,10 @@ mod tests {
         assert_eq!(proj.task_count(), 2);
         assert_eq!(proj.get_task(&t1)?.current_state, TaskState::Completed);
         assert_eq!(proj.get_task(&t2)?.current_state, TaskState::Received);
-        Ok(())
-        fn test_projection_last_sequence_updated() {
+    }
+
+    #[test]
+    fn test_projection_last_sequence_updated() {
         let mut proj = TaskProjection::new();
         let mut event = Event::new(
             TaskId::new(),
@@ -395,6 +396,5 @@ mod tests {
         assert_eq!(task.state_history.len(), 2);
         assert_eq!(task.state_history[1].0, TaskState::Classified);
         assert_eq!(task.state_history[1].1, ts2);
-        Ok(())
     }
 }

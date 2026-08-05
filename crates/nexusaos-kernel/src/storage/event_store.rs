@@ -218,7 +218,6 @@ mod tests {
 
         let since_events = store.read_since(1).await?;
         assert_eq!(since_events.len(), 1);
-        Ok(())
     }
 
     #[tokio::test]
@@ -228,13 +227,10 @@ mod tests {
         tokio::fs::create_dir_all(&new_path).await?;
         let store = JsonlEventStore::open(new_path).await?;
         assert_eq!(store.count().await, 0);
-        Ok(())
     }
 
     #[tokio::test]
     async fn test_event_store_duplicate_rejected() -> Result<(), Box<dyn std::error::Error>> {
-        let temp_dir = TempDir::new()?;
-        let store = JsonlEventStore::open(temp_dir.path().to_pa{
         let temp_dir = TempDir::new()?;
         let store = JsonlEventStore::open(temp_dir.path().to_path_buf()).await?;
 
@@ -254,10 +250,10 @@ mod tests {
             StorageError::DuplicateEvent { .. } => {}
             _ => unreachable!("Expected DuplicateEvent"),
         }
-        Ok(())
-    rror::Error>> {
-        let temp_dir = TempDir::new()?;
-        let store = JsonlEventStore::open(temp_d{
+    }
+
+    #[tokio::test]
+    async fn test_event_store_read_for_task_no_match() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store = JsonlEventStore::open(temp_dir.path().to_path_buf()).await?;
 
@@ -273,10 +269,10 @@ mod tests {
         let other_id = TaskId::new();
         let events = store.read_for_task(&other_id).await?;
         assert!(events.is_empty());
-        Ok(())
-    ::error::Error>> {
-        let temp_dir = TempDir::new()?;
-        let store = JsonlEventSto{
+    }
+
+    #[tokio::test]
+    async fn test_event_store_read_since() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store = JsonlEventStore::open(temp_dir.path().to_path_buf()).await?;
 
@@ -315,10 +311,10 @@ mod tests {
 
         let since_4 = store.read_since(4).await?;
         assert!(since_4.is_empty());
-        Ok(())
-    sult<(), Box<dyn std::error::Error>> {
-        let temp_dir = TempDir::new()?;
-        let store {
+    }
+
+    #[tokio::test]
+    async fn test_event_store_multiple_events() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store = JsonlEventStore::open(temp_dir.path().to_path_buf()).await?;
 
@@ -335,10 +331,10 @@ mod tests {
         assert_eq!(store.count().await, 10);
         let all = store.read_all().await?;
         assert_eq!(all.len(), 10);
-        Ok(())
-    reserves_index() -> Result<(), Box<dyn std::error::Error>> {
-        let temp_dir = TempDir::new()?;
-   {
+    }
+
+    #[tokio::test]
+    async fn test_event_store_reopen_preserves_index() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let path = temp_dir.path().to_path_buf();
 
@@ -359,9 +355,10 @@ mod tests {
         assert_eq!(store2.count().await, 1);
         let events = store2.read_all().await?;
         assert_eq!(events.len(), 1);
-        Ok(())
-    _store_get_all_events_trait() -> Result<(), Box<dyn std::error::Error>> {
-        let temp_dir = TempD{
+    }
+
+    #[tokio::test]
+    async fn test_event_store_get_all_events_trait() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store: Arc<dyn crate::storage::EventStore> =
             Arc::new(JsonlEventStore::open(temp_dir.path().to_path_buf()).await?);
@@ -377,9 +374,10 @@ mod tests {
 
         let all = store.get_all_events().await?;
         assert_eq!(all.len(), 1);
-        Ok(())
-    c fn test_event_store_get_task_events_trait() -> Result<(), Box<dyn std::error::Error>> {
-        let t{
+    }
+
+    #[tokio::test]
+    async fn test_event_store_get_task_events_trait() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store: Arc<dyn crate::storage::EventStore> =
             Arc::new(JsonlEventStore::open(temp_dir.path().to_path_buf()).await?);
@@ -395,8 +393,9 @@ mod tests {
 
         let task_events = store.get_task_events(&task_id).await?;
         assert_eq!(task_events.len(), 1);
-        Ok(())
-    :test]
+    }
+
+    #[tokio::test]
     async fn test_event_store_invalid_json_line_skipped() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let path = temp_dir.path().to_path_buf();
@@ -407,6 +406,5 @@ mod tests {
 
         let store = JsonlEventStore::open(path).await?;
         assert_eq!(store.count().await, 0);
-        Ok(())
     }
 }

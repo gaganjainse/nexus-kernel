@@ -330,7 +330,6 @@ mod tests {
         let json = serde_json::to_string(&decision)?;
         let back: PolicyDecision = serde_json::from_str(&json)?;
         assert_eq!(decision, back);
-        Ok(())
     }
 
     #[test]
@@ -395,7 +394,6 @@ mod tests {
         };
         assert!(msg.contains("maybe"));
         assert!(msg.contains("bad-rule"));
-        Ok(())
     }
 
     #[test]
@@ -450,7 +448,6 @@ mod tests {
 
     #[test]
     fn test_policy_rule_serde_roundtrip() -> Result<(), Box<dyn std::error::Error>> {
-        let rule = PolicyRul{
         let rule = PolicyRule {
             name: "test".into(),
             action_pattern: "test.*".into(),
@@ -462,8 +459,10 @@ mod tests {
         let back: PolicyRule = serde_json::from_str(&json)?;
         assert_eq!(rule.name, back.name);
         assert_eq!(rule.trust_tier, back.trust_tier);
-        Ok(())
-    icy_violation_construction() {
+    }
+
+    #[test]
+    fn test_policy_violation_construction() {
         let violation = PolicyViolation {
             action: "fs.write".to_string(),
             rule_name: "deny-writes".to_string(),
@@ -477,7 +476,6 @@ mod tests {
 
     #[test]
     fn test_policy_decision_serde_all_variants() -> Result<(), Box<dyn std::error::Error>> {
-        let d{
         let decisions = vec![
             PolicyDecision::Allow,
             PolicyDecision::Deny("reason".into()),
@@ -488,8 +486,10 @@ mod tests {
             let back: PolicyDecision = serde_json::from_str(&json)?;
             assert_eq!(d, back);
         }
-        Ok(())
-        fn test_trust_tier_from_level_all_values() {
+    }
+
+    #[test]
+    fn test_trust_tier_from_level_all_values() {
         assert!(matches!(TrustTier::from_level(0), Ok(TrustTier::Untrusted)));
         assert!(matches!(TrustTier::from_level(1), Ok(TrustTier::Basic)));
         assert!(matches!(TrustTier::from_level(2), Ok(TrustTier::Trusted)));
@@ -511,7 +511,6 @@ mod tests {
             _ => unreachable!("expected require confirmation"),
         };
         assert!(msg.contains("need-approval"));
-        Ok(())
     }
 
     #[test]

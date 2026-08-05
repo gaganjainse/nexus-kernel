@@ -171,7 +171,6 @@ mod tests {
 
         assert_eq!(task.current_state, TaskState::Classified);
         assert_eq!(task.state_history.len(), 2);
-        Ok(())
     }
 
     #[tokio::test]
@@ -179,13 +178,10 @@ mod tests {
         let store = MockEventStore::new();
         let projection = ReplayEngine::replay(&store).await?;
         assert_eq!(projection.tasks.len(), 0);
-        Ok(())
     }
 
     #[tokio::test]
     async fn test_task_history() -> Result<(), Box<dyn std::error::Error>> {
-        let store = MockEventStore::new();
-        let task_id = TaskId::{
         let store = MockEventStore::new();
         let task_id = TaskId::new();
 
@@ -200,17 +196,18 @@ mod tests {
         let history = ReplayEngine::task_history(&store, &task_id).await?;
         assert_eq!(history.len(), 1);
         assert_eq!(history[0].kind, EventKind::TaskCreated);
-        Ok(())
-    Box<dyn std::error::Error>> {
-        let store = MockEventStore::new();
-        let tas{
+    }
+
+    #[tokio::test]
+    async fn test_task_history_empty() -> Result<(), Box<dyn std::error::Error>> {
         let store = MockEventStore::new();
         let task_id = TaskId::new();
         let history = ReplayEngine::task_history(&store, &task_id).await?;
         assert!(history.is_empty());
-        Ok(())
-    s() -> Result<(), Box<dyn std::error::Error>> {
-        use crate::task::{TaskInput, TaskRe{
+    }
+
+    #[tokio::test]
+    async fn test_replay_multiple_tasks() -> Result<(), Box<dyn std::error::Error>> {
         use crate::task::{TaskInput, TaskRequest};
 
         let store = MockEventStore::new();
@@ -247,9 +244,10 @@ mod tests {
         assert_eq!(projection.tasks.len(), 2);
         assert_eq!(projection.tasks.get(&t1)?.current_state, TaskState::Classified);
         assert_eq!(projection.tasks.get(&t2)?.current_state, TaskState::Received);
-        Ok(())
-    y_ignores_system_events() -> Result<(), Box<dyn std::error::Error>> {
-        let store = MockEven{
+    }
+
+    #[tokio::test]
+    async fn test_replay_ignores_system_events() -> Result<(), Box<dyn std::error::Error>> {
         let store = MockEventStore::new();
 
         // System event (no task_id) should be ignored
@@ -262,9 +260,10 @@ mod tests {
 
         let projection = ReplayEngine::replay(&store).await?;
         assert_eq!(projection.tasks.len(), 0);
-        Ok(())
-    c fn test_replay_unknown_state_skipped() -> Result<(), Box<dyn std::error::Error>> {
-        use c{
+    }
+
+    #[tokio::test]
+    async fn test_replay_unknown_state_skipped() -> Result<(), Box<dyn std::error::Error>> {
         use crate::task::{TaskInput, TaskRequest};
 
         let store = MockEventStore::new();
@@ -291,8 +290,9 @@ mod tests {
         let task = projection.tasks.get(&task_id)?;
         // Unknown state is skipped, so state remains Received
         assert_eq!(task.current_state, TaskState::Received);
-        Ok(())
-    :test]
+    }
+
+    #[tokio::test]
     async fn test_replay_state_history_preserved() -> Result<(), Box<dyn std::error::Error>> {
         use crate::task::{TaskInput, TaskRequest};
 
@@ -330,6 +330,5 @@ mod tests {
         let task = projection.tasks.get(&task_id)?;
         assert_eq!(task.current_state, TaskState::Planned);
         assert_eq!(task.state_history.len(), 3);
-        Ok(())
     }
 }
