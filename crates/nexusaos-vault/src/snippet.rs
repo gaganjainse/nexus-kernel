@@ -149,16 +149,14 @@ mod tests {
     fn test_vault_store_load_all_missing_file() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store_path = temp_dir.path().join("nonexistent.jsonl");
-        let store = Vault{
-        let temp_dir = TempDir::new()?;
-        let store_path = temp_dir.path().join("nonexistent.jsonl");
         let store = VaultStore::new(store_path);
         let loaded = store.load_all()?;
         assert!(loaded.is_empty());
         Ok(())
-    ::new()?;
-        let store_path = temp_dir.path().join("empty.jsonl");
-        std::fs:{
+    }
+
+    #[test]
+    fn test_vault_store_load_all_empty_file() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store_path = temp_dir.path().join("empty.jsonl");
         std::fs::write(&store_path, "")?;
@@ -166,8 +164,10 @@ mod tests {
         let loaded = store.load_all()?;
         assert!(loaded.is_empty());
         Ok(())
-     let temp_dir = TempDir::new()?;
-        let store_path = temp_dir.path().join("invalid.jsonl");{
+    }
+
+    #[test]
+    fn test_vault_store_load_all_invalid_lines() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store_path = temp_dir.path().join("invalid.jsonl");
         std::fs::write(&store_path, "not json\nalso not json\n")?;
@@ -175,9 +175,10 @@ mod tests {
         let loaded = store.load_all()?;
         assert!(loaded.is_empty());
         Ok(())
-    rror>> {
-        let temp_dir = TempDir::new()?;
-        let store_path = temp_dir.path().join("m{
+    }
+
+    #[test]
+    fn test_vault_store_load_all_mixed_content() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store_path = temp_dir.path().join("mixed.jsonl");
 
@@ -190,9 +191,10 @@ mod tests {
         assert_eq!(loaded.len(), 1);
         assert_eq!(loaded[0].name, "cmd");
         Ok(())
-    d::error::Error>> {
-        let temp_dir = TempDir::new()?;
-        let store_path = temp_dir{
+    }
+
+    #[test]
+    fn test_vault_store_save_creates_nested_dir() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store_path = temp_dir.path().join("nested/dir/vault.jsonl");
         let store = VaultStore::new(store_path.clone());
@@ -201,9 +203,10 @@ mod tests {
         store.save(&snippet)?;
         assert!(store_path.exists());
         Ok(())
-    yn std::error::Error>> {
-        let temp_dir = TempDir::new()?;
-        let store_{
+    }
+
+    #[test]
+    fn test_vault_store_save_multiple() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store_path = temp_dir.path().join("multi.jsonl");
         let store = VaultStore::new(store_path);
@@ -221,9 +224,10 @@ mod tests {
         let loaded = store.load_all()?;
         assert_eq!(loaded.len(), 5);
         Ok(())
-    ip() -> Result<(), Box<dyn std::error::Error>> {
-        let temp_dir = TempDir::new()?;
-   {
+    }
+
+    #[test]
+    fn test_roundtrip() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store_path = temp_dir.path().join("roundtrip.jsonl");
         let store = VaultStore::new(store_path);
@@ -239,8 +243,10 @@ mod tests {
         assert_eq!(loaded[0].description, "Roundtrip test");
         assert_eq!(loaded[0].tags, vec!["test"]);
         Ok(())
-    _behavior() -> Result<(), Box<dyn std::error::Error>> {
-        let temp_dir = TempD{
+    }
+
+    #[test]
+    fn test_append_behavior() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store_path = temp_dir.path().join("append.jsonl");
         let store = VaultStore::new(store_path.clone());
@@ -254,8 +260,10 @@ mod tests {
         let loaded = store.load_all()?;
         assert_eq!(loaded.len(), 2);
         Ok(())
-    lt_store_whitespace_lines_ignored() -> Result<(), Box<dyn std::error::Error>> {
-        let t{
+    }
+
+    #[test]
+    fn test_whitespace_lines_ignored() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store_path = temp_dir.path().join("whitespace.jsonl");
 
@@ -267,7 +275,10 @@ mod tests {
         let loaded = store.load_all()?;
         assert_eq!(loaded.len(), 1);
         Ok(())
-        fn test_command_snippet_serialization() -> Result<(), Box<dyn std::error::Error>> {
+    }
+
+    #[test]
+    fn test_command_snippet_serialization() -> Result<(), Box<dyn std::error::Error>> {
         let snippet = CommandSnippet::new(
             "serialize",
             "docker run <image>",

@@ -146,6 +146,7 @@ mod tests {
         let entry = scheduler.dequeue().await?;
         assert_eq!(entry.task_id, task_id);
         assert_eq!(scheduler.queue_depth(), 0);
+        Ok(())
     }
 
     #[tokio::test]
@@ -154,6 +155,7 @@ mod tests {
         let _ = scheduler.enqueue(TaskId::new(), Priority::Normal).await?;
         let result = scheduler.enqueue(TaskId::new(), Priority::Normal).await;
         assert!(matches!(result, Err(TaskError::QueueFull { .. })));
+        Ok(())
     }
 
     #[tokio::test]
@@ -164,6 +166,7 @@ mod tests {
         assert!(scheduler.cancel(&task_id).await);
         assert_eq!(scheduler.queue_depth(), 0);
         assert!(scheduler.dequeue().await.is_none());
+        Ok(())
     }
 
     #[tokio::test]
@@ -180,6 +183,7 @@ mod tests {
         assert_eq!(scheduler.dequeue().await?.task_id, task2);
         assert_eq!(scheduler.dequeue().await?.task_id, task3);
         assert_eq!(scheduler.dequeue().await?.task_id, task1);
+        Ok(())
     }
 
     #[tokio::test]
@@ -200,6 +204,7 @@ mod tests {
         let scheduler = Scheduler::new(10);
         let _ = scheduler.enqueue(TaskId::new(), Priority::Normal).await?;
         assert_eq!(scheduler.queue_depth(), 1);
+        Ok(())
     }
 
     #[tokio::test]
@@ -209,6 +214,7 @@ mod tests {
         assert_eq!(scheduler.queue_depth(), 1);
         let _ = scheduler.dequeue().await?;
         assert_eq!(scheduler.queue_depth(), 0);
+        Ok(())
     }
 
     #[tokio::test]
@@ -227,6 +233,7 @@ mod tests {
         assert!(scheduler.cancel(&task_id).await);
         assert_eq!(scheduler.queue_depth(), 0);
         assert!(scheduler.dequeue().await.is_none());
+        Ok(())
     }
 
     #[tokio::test]
@@ -242,6 +249,7 @@ mod tests {
         assert_eq!(drained.len(), 2);
         assert_eq!(scheduler.queue_depth(), 0);
         assert!(scheduler.dequeue().await.is_none());
+        Ok(())
     }
 
     #[tokio::test]
@@ -259,6 +267,7 @@ mod tests {
         let _ = scheduler.enqueue(low_id, Priority::Low).await?;
         let _ = scheduler.enqueue(crit_id, Priority::Critical).await?;
         assert_eq!(scheduler.dequeue().await?.task_id, crit_id);
+        Ok(())
     }
 
     #[tokio::test]
@@ -301,6 +310,7 @@ mod tests {
         // Earlier enqueued should come first
         assert_eq!(scheduler.dequeue().await?.task_id, t1);
         assert_eq!(scheduler.dequeue().await?.task_id, t2);
+        Ok(())
     }
 
     #[tokio::test]
@@ -323,6 +333,7 @@ mod tests {
         for _ in 0..5 {
             assert_eq!(scheduler.dequeue().await?.priority, Priority::Low);
         }
+        Ok(())
     }
 
     #[tokio::test]
@@ -343,5 +354,6 @@ mod tests {
         assert_eq!(first.task_id, t1);
         let second = scheduler.dequeue().await?;
         assert_eq!(second.task_id, t3);
+        Ok(())
     }
 }

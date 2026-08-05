@@ -113,6 +113,7 @@ mod tests {
         // Since we are running in a real environment which may or may not be a git repo
         // we just assert that we got some output from git.
         assert!(!res.output.is_empty());
+        Ok(())
     }
 
     #[tokio::test]
@@ -127,6 +128,7 @@ mod tests {
             ToolRequest { tool_name: "git".to_string(), arguments: json!({ "action": "diff" }) };
         let res = tool.execute(&req).await?;
         assert!(res.success); // diff with no changes returns empty but succeeds
+        Ok(())
     }
 
     #[tokio::test]
@@ -162,6 +164,7 @@ mod tests {
         let res = tool.execute(&req).await?;
         // staged diff should show the added file
         assert!(res.success);
+        Ok(())
     }
 
     #[tokio::test]
@@ -202,6 +205,7 @@ mod tests {
         let res = tool.execute(&req).await?;
         assert!(res.success);
         assert!(res.output.contains("initial"));
+        Ok(())
     }
 
     #[tokio::test]
@@ -230,6 +234,7 @@ mod tests {
         };
         let res = tool.execute(&req).await?;
         assert!(res.success);
+        Ok(())
     }
 
     #[tokio::test]
@@ -265,6 +270,7 @@ mod tests {
         let res = tool.execute(&req).await?;
         assert!(res.success);
         assert!(res.output.contains("add test file") || res.output.contains("1 file"));
+        Ok(())
     }
 
     #[tokio::test]
@@ -279,6 +285,7 @@ mod tests {
             ToolError::ExecutionFailed { reason, .. } => assert!(reason.contains("Unknown action")),
             _ => unreachable!("Expected ExecutionFailed"),
         }
+        Ok(())
     }
 
     #[tokio::test]
@@ -295,6 +302,7 @@ mod tests {
             }
             _ => unreachable!("Expected ExecutionFailed"),
         }
+        Ok(())
     }
 
     #[tokio::test]
@@ -307,6 +315,7 @@ mod tests {
         let res = tool.execute(&req).await?;
         // In a non-git directory, git status will fail
         assert!(!res.success || res.output.contains("fatal") || res.output.contains("not a git"));
+        Ok(())
     }
 
     #[tokio::test]
@@ -345,5 +354,6 @@ mod tests {
             ToolRequest { tool_name: "git".to_string(), arguments: json!({ "action": "log" }) };
         let res = tool.execute(&req).await?;
         assert!(res.success);
+        Ok(())
     }
 }

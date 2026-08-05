@@ -105,7 +105,6 @@ mod tests {
 
     #[test]
     fn test_patch_engine_delete_all() -> Result<(), Box<dyn std::error::Error>> {
-        let t{
         let temp = TempDir::new()?;
         let file_path = temp.path().join("test.txt");
         fs::write(&file_path, "line 1\nline 2\nline 3")?;
@@ -116,7 +115,10 @@ mod tests {
         let updated = fs::read_to_string(&file_path)?;
         assert!(updated.is_empty());
         Ok(())
-        fn test_patch_engine_no_changes() -> Result<(), Box<dyn std::error::Error>> {
+    }
+
+    #[test]
+    fn test_patch_engine_no_changes() -> Result<(), Box<dyn std::error::Error>> {
         let temp = TempDir::new()?;
         let file_path = temp.path().join("test.txt");
         fs::write(&file_path, "line 1\nline 2")?;

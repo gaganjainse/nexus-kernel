@@ -42,6 +42,8 @@ feature_work = 32768
 architecture = 65536
 # RAM headroom required below available before allowing inference (MB)
 ram_headroom_mb = 2048
+# VRAM headroom required below available before allowing model loads (MB)
+vram_headroom_mb = 1024
 
 # Model provider configurations
 # Each provider maps to a role (planner, coder, vision)

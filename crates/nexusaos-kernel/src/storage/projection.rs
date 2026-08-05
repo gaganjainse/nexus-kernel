@@ -152,6 +152,7 @@ mod tests {
 
         let classified_tasks = projection.tasks_in_state(&TaskState::Classified);
         assert_eq!(classified_tasks.len(), 1);
+        Ok(())
     }
 
     #[test]
@@ -184,6 +185,7 @@ mod tests {
         let task = proj.get_task(&task_id)?;
         assert_eq!(task.current_state, TaskState::Received);
         assert_eq!(task.assigned_role, None);
+        Ok(())
     }
 
     #[test]
@@ -211,6 +213,7 @@ mod tests {
 
         let task = proj.get_task(&task_id)?;
         assert_eq!(task.current_state, TaskState::Executing);
+        Ok(())
     }
 
     #[test]
@@ -242,6 +245,7 @@ mod tests {
 
         let task = proj.get_task(&task_id)?;
         assert_eq!(task.assigned_role, Some(crate::state::ModelRole::Coder));
+        Ok(())
     }
 
     #[test]
@@ -282,6 +286,7 @@ mod tests {
 
         let task = proj.get_task(&task_id)?;
         assert_eq!(task.current_state, TaskState::Received); // unchanged
+        Ok(())
     }
 
     #[test]
@@ -349,6 +354,7 @@ mod tests {
         assert_eq!(proj.task_count(), 2);
         assert_eq!(proj.get_task(&t1)?.current_state, TaskState::Completed);
         assert_eq!(proj.get_task(&t2)?.current_state, TaskState::Received);
+        Ok(())
     }
 
     #[test]
@@ -396,5 +402,6 @@ mod tests {
         assert_eq!(task.state_history.len(), 2);
         assert_eq!(task.state_history[1].0, TaskState::Classified);
         assert_eq!(task.state_history[1].1, ts2);
+        Ok(())
     }
 }

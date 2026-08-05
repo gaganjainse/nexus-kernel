@@ -218,6 +218,7 @@ mod tests {
 
         let since_events = store.read_since(1).await?;
         assert_eq!(since_events.len(), 1);
+        Ok(())
     }
 
     #[tokio::test]
@@ -227,6 +228,7 @@ mod tests {
         tokio::fs::create_dir_all(&new_path).await?;
         let store = JsonlEventStore::open(new_path).await?;
         assert_eq!(store.count().await, 0);
+        Ok(())
     }
 
     #[tokio::test]
@@ -250,6 +252,7 @@ mod tests {
             StorageError::DuplicateEvent { .. } => {}
             _ => unreachable!("Expected DuplicateEvent"),
         }
+        Ok(())
     }
 
     #[tokio::test]
@@ -269,6 +272,7 @@ mod tests {
         let other_id = TaskId::new();
         let events = store.read_for_task(&other_id).await?;
         assert!(events.is_empty());
+        Ok(())
     }
 
     #[tokio::test]
@@ -311,6 +315,7 @@ mod tests {
 
         let since_4 = store.read_since(4).await?;
         assert!(since_4.is_empty());
+        Ok(())
     }
 
     #[tokio::test]
@@ -331,6 +336,7 @@ mod tests {
         assert_eq!(store.count().await, 10);
         let all = store.read_all().await?;
         assert_eq!(all.len(), 10);
+        Ok(())
     }
 
     #[tokio::test]
@@ -355,6 +361,7 @@ mod tests {
         assert_eq!(store2.count().await, 1);
         let events = store2.read_all().await?;
         assert_eq!(events.len(), 1);
+        Ok(())
     }
 
     #[tokio::test]
@@ -374,6 +381,7 @@ mod tests {
 
         let all = store.get_all_events().await?;
         assert_eq!(all.len(), 1);
+        Ok(())
     }
 
     #[tokio::test]
@@ -393,6 +401,7 @@ mod tests {
 
         let task_events = store.get_task_events(&task_id).await?;
         assert_eq!(task_events.len(), 1);
+        Ok(())
     }
 
     #[tokio::test]
@@ -406,5 +415,6 @@ mod tests {
 
         let store = JsonlEventStore::open(path).await?;
         assert_eq!(store.count().await, 0);
+        Ok(())
     }
 }

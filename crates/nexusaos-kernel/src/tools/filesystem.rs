@@ -229,6 +229,7 @@ mod tests {
             }),
         };
         assert!(tool.execute(&deny_req).await.is_err());
+        Ok(())
     }
 
     #[tokio::test]
@@ -251,6 +252,7 @@ mod tests {
         assert!(res.success);
         assert!(res.output.contains("a.txt"));
         assert!(res.output.contains("b.txt"));
+        Ok(())
     }
 
     #[tokio::test]
@@ -271,6 +273,7 @@ mod tests {
         let res = tool.execute(&req).await?;
         assert!(res.success);
         assert!(!file_path.exists());
+        Ok(())
     }
 
     #[tokio::test]
@@ -290,6 +293,7 @@ mod tests {
             ToolError::ExecutionFailed { reason, .. } => assert!(reason.contains("Unknown action")),
             _ => unreachable!("Expected ExecutionFailed"),
         }
+        Ok(())
     }
 
     #[tokio::test]
@@ -311,6 +315,7 @@ mod tests {
             }
             _ => unreachable!("Expected ExecutionFailed"),
         }
+        Ok(())
     }
 
     #[tokio::test]
@@ -333,6 +338,7 @@ mod tests {
             }
             _ => unreachable!("Expected ExecutionFailed"),
         }
+        Ok(())
     }
 
     #[tokio::test]
@@ -354,6 +360,7 @@ mod tests {
             ToolError::PathDenied { .. } => {}
             _ => unreachable!("Expected PathDenied"),
         }
+        Ok(())
     }
 
     #[tokio::test]
@@ -371,6 +378,7 @@ mod tests {
             ToolError::PathDenied { .. } => {}
             _ => unreachable!("Expected PathDenied"),
         }
+        Ok(())
     }
 
     #[tokio::test]
@@ -395,6 +403,7 @@ mod tests {
             ToolError::PathDenied { .. } => {}
             _ => unreachable!("Expected PathDenied"),
         }
+        Ok(())
     }
 
     #[tokio::test]
@@ -414,6 +423,7 @@ mod tests {
             ToolError::Io(_) => {}
             _ => unreachable!("Expected Io error"),
         }
+        Ok(())
     }
 
     #[tokio::test]
@@ -434,6 +444,7 @@ mod tests {
         let res = tool.execute(&req).await?;
         assert!(res.success);
         assert_eq!(res.output, "");
+        Ok(())
     }
 
     #[tokio::test]
@@ -453,5 +464,6 @@ mod tests {
             ToolError::Io(_) => {}
             _ => unreachable!("Expected Io error"),
         }
+        Ok(())
     }
 }

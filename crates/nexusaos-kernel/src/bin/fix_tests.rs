@@ -17,27 +17,47 @@ fn main() {
 
     for filepath in &args[1..] {
         let path = PathBuf::from(filepath);
+        println!("Processing: {}", filepath);
         if !path.exists() {
-            eprintln!("Skipping {}: file not found", filepath);
+            eprintln!("  Skipping: file not found");
             continue;
         }
 
         match fix_file(&path) {
-            Ok(_) => println!("Fixed: {}", filepath),
-            Err(e) => eprintln!("Error fixing {}: {}", filepath, e),
+            Ok(_) => println!("  Fixed: {}", filepath),
+            Err(e) => eprintln!("  Error: {}", e),
         }
     }
 }
 
 fn fix_file(path: &PathBuf) -> Result<(), String> {
     let content = fs::read_to_string(path).map_err(|e| e.to_string())?;
-    let mut file = parse_file(&content).map_err(|e| e.to_string())?;
+    println!("  File length: {}", content.len());
+    let file = parse_file(&content).map_err(|e| e.to_string())?;
+    println!("  Parsed {} top-level items", file.items.len());
     let mut modified = false;
+    let mut test_count = 0;
 
-    for item in &mut file.items {
-        if let Item::Fn(item_fn) = item {
+    for item in &file.items {
+        test_count += process_item(item, &mut modified);
+    }
+
+    println!("  Total test functions found: {}", test_count);
+    println!("  Modified: {}", modified);
+
+    if modified {
+        let new_content = file.to_token_stream().to_string();
+        fs::write(path, new_content).map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
+}
+
+fn process_item(item: &Item, modified: &mut bool) -> usize {
+    match item {
+        Item::Fn(item_fn) => {
             if is_test_function(item_fn) {
-                println!("  Found test: {}", item_fn.sig.ident);
+                println!("  [TEST] {}", item_fn.sig.ident);
                 println!("    returns_result: {}", returns_result(&item_fn.sig));
                 println!("    has_unwrap: {}", has_unwrap_or_expect_or_panic(&item_fn.block));
                 println!("    ends_with_ok: {}", ends_with_ok(&item_fn.block));
@@ -47,36 +67,39 @@ fn fix_file(path: &PathBuf) -> Result<(), String> {
 
                 if needs_result {
                     println!("    -> Converting to Result return type");
-                    item_fn.sig.output = syn::ReturnType::Type(
-                        syn::token::RArrow::default(),
-                        Box::new(syn::parse2(quote::quote! {
-                            Result<(), Box<dyn std::error::Error>>
-                        }).unwrap())
-                    );
-                    modified = true;
+                    *modified = true;
                 }
 
                 if has_unwrap_or_expect_or_panic(&item_fn.block) && returns_result(&item_fn.sig) {
                     println!("    -> Fixing function body");
-                    fix_function_body(&mut item_fn.block);
-                    modified = true;
+                    *modified = true;
                 }
 
                 if returns_result(&item_fn.sig) && !ends_with_ok(&item_fn.block) {
                     println!("    -> Adding Ok(())");
-                    add_ok_return(&mut item_fn.block);
-                    modified = true;
+                    *modified = true;
+                }
+                
+                return 1;
+            }
+            println!("  [FN] {}", item_fn.sig.ident);
+            0
+        }
+        Item::Mod(item_mod) => {
+            println!("  [MOD] {} (items: {})", item_mod.ident, item_mod.content.as_ref().map(|c| c.1.len()).unwrap_or(0));
+            let mut count = 0;
+            if let Some((_, ref items)) = item_mod.content {
+                for inner_item in items {
+                    count += process_item(inner_item, modified);
                 }
             }
+            count
+        }
+        _ => {
+            println!("  [OTHER] {}", item.to_token_stream().to_string().split_whitespace().next().unwrap_or("?"));
+            0
         }
     }
-
-    if modified {
-        let new_content = file.to_token_stream().to_string();
-        fs::write(path, new_content).map_err(|e| e.to_string())?;
-    }
-
-    Ok(())
 }
 
 fn is_test_function(item: &ItemFn) -> bool {
@@ -117,35 +140,4 @@ fn ends_with_ok(block: &syn::Block) -> bool {
         }
     }
     false
-}
-
-fn fix_function_body(block: &mut syn::Block) {
-    for stmt in &mut block.stmts {
-        let tokens = stmt.to_token_stream().to_string();
-        
-        if tokens.contains(".unwrap()") {
-            let new_tokens = tokens.replace(".unwrap()", "?");
-            *stmt = syn::parse2(new_tokens.parse().unwrap()).unwrap();
-        }
-        
-        if tokens.contains(".expect(") {
-            let stmt_str = stmt.to_token_stream().to_string();
-            let new_stmt_str = stmt_str.replace(".expect(", "?");
-            let new_stmt_str = new_stmt_str.replace("?\"", "?\"");
-            *stmt = syn::parse2(new_stmt_str.parse().unwrap()).unwrap();
-        }
-        
-        if tokens.contains("panic!(") {
-            let stmt_str = stmt.to_token_stream().to_string();
-            let new_stmt_str = stmt_str.replace("panic!", "unreachable!(");
-            *stmt = syn::parse2(new_stmt_str.parse().unwrap()).unwrap();
-        }
-    }
-}
-
-fn add_ok_return(block: &mut syn::Block) {
-    let ok_stmt: syn::Stmt = syn::parse2(quote::quote! {
-        Ok(())
-    }).unwrap();
-    block.stmts.push(ok_stmt);
 }
