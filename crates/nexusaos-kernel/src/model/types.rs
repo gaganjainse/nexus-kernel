@@ -67,6 +67,7 @@ mod tests {
         assert_eq!(serialized, "\"system\"");
         let deserialized: ChatRole = serde_json::from_str(&serialized)?;
         assert_eq!(deserialized, role);
+        Ok(())
     }
 
     #[test]
@@ -84,6 +85,7 @@ mod tests {
             let json = serde_json::to_string(&role)?;
             let back: ChatRole = serde_json::from_str(&json)?;
             assert_eq!(role, back);
+        Ok(())
         }
     }
 
@@ -92,6 +94,7 @@ mod tests {
         assert_eq!(serde_json::to_string(&ChatRole::System)?, "\"system\"");
         assert_eq!(serde_json::to_string(&ChatRole::User)?, "\"user\"");
         assert_eq!(serde_json::to_string(&ChatRole::Assistant)?, "\"assistant\"");
+        Ok(())
     }
 
     #[test]
@@ -111,6 +114,7 @@ mod tests {
         };
         assert!(msg.images.is_some());
         assert_eq!(msg.images?.len(), 1);
+        Ok(())
     }
 
     #[test]
@@ -121,6 +125,7 @@ mod tests {
         let back: ChatMessage = serde_json::from_str(&json)?;
         assert_eq!(msg.role, back.role);
         assert_eq!(msg.content, back.content);
+        Ok(())
     }
 
     #[test]
@@ -147,6 +152,7 @@ mod tests {
         let back: CompletionRequest = serde_json::from_str(&json)?;
         assert_eq!(req.model, back.model);
         assert_eq!(req.max_tokens, back.max_tokens);
+        Ok(())
     }
 
     #[test]
@@ -177,6 +183,7 @@ mod tests {
         let back: CompletionResponse = serde_json::from_str(&json)?;
         assert_eq!(resp.content, back.content);
         assert_eq!(resp.model, back.model);
+        Ok(())
     }
 
     #[test]
@@ -200,6 +207,7 @@ mod tests {
         let json = serde_json::to_string(&usage)?;
         let back: TokenUsage = serde_json::from_str(&json)?;
         assert_eq!(usage.total_tokens, back.total_tokens);
+        Ok(())
     }
 
     #[test]

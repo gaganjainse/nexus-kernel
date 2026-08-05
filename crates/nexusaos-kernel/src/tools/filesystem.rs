@@ -192,8 +192,8 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_filesystem_tool() -> Result<(), Box<dyn std::error::Error>> {
-        let temp_dir = TempDir::new()?;
+    async fn test_filesystem_tool() {
+        let temp_dir = TempDir::new().unwrap();
         let allowed_paths = vec![temp_dir.path().to_path_buf()];
         let denied_patterns = vec![".env".to_string()];
 
@@ -203,21 +203,21 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "write_file",
-                "path": temp_dir.path().join("test.txt").to_str()?,
+                "path": temp_dir.path().join("test.txt").to_str().unwrap(),
                 "content": "hello world"
             }),
         };
-        let write_res = tool.execute(&write_req).await?;
+        let write_res = tool.execute(&write_req).await.unwrap();
         assert!(write_res.success);
 
         let read_req = ToolRequest {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "read_file",
-                "path": temp_dir.path().join("test.txt").to_str()?
+                "path": temp_dir.path().join("test.txt").to_str().unwrap()
             }),
         };
-        let read_res = tool.execute(&read_req).await?;
+        let read_res = tool.execute(&read_req).await.unwrap();
         assert!(read_res.success);
         assert_eq!(read_res.output, "hello world");
 
@@ -225,62 +225,57 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "read_file",
-                "path": temp_dir.path().join(".env").to_str()?
+                "path": temp_dir.path().join(".env").to_str().unwrap()
             }),
         };
         assert!(tool.execute(&deny_req).await.is_err());
-        Ok(())
     }
 
     #[tokio::test]
-    async fn test_filesystem_list_dir() -> Result<(), Box<dyn std::error::Error>> {
-        let temp_dir = TempDir::new()?;
+    async fn test_filesystem_list_dir() {
+        let temp_dir = TempDir::new().unwrap();
         let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
 
         // Create some files
-        std::fs::write(temp_dir.path().join("a.txt"), "a")?;
-        std::fs::write(temp_dir.path().join("b.txt"), "b")?;
+        std::fs::write(temp_dir.path().join("a.txt"), "a").unwrap();
+        std::fs::write(temp_dir.path().join("b.txt"), "b").unwrap();
 
         let req = ToolRequest {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "list_dir",
-                "path": temp_dir.path().to_str()?
+                "path": temp_dir.path().to_str().unwrap()
             }),
         };
-        let res = tool.execute(&req).await?;
+        let res = tool.execute(&req).await.unwrap();
         assert!(res.success);
         assert!(res.output.contains("a.txt"));
         assert!(res.output.contains("b.txt"));
-        Ok(())
     }
 
     #[tokio::test]
-    async fn test_filesystem_delete_file() -> Result<(), Box<dyn std::error::Error>> {
-        let temp_dir = TempDir::new()?;
-        let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
-
-       {
-        let temp_dir = TempDir::new()?;
+    async fn test_filesystem_delete_file() {
+        let temp_dir = TempDir::new().unwrap();
         let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
 
         let file_path = temp_dir.path().join("to_delete.txt");
-        std::fs::write(&file_path, "temp")?;
+        std::fs::write(&file_path, "temp").unwrap();
 
         let req = ToolRequest {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "delete_file",
-                "path": file_path.to_str()?
+                "path": file_path.to_str().unwrap()
             }),
         };
-        let res = tool.execute(&req).await?;
+        let res = tool.execute(&req).await.unwrap();
         assert!(res.success);
         assert!(!file_path.exists());
-        Ok(())
-    TempDir::new()?;
-        let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], ve{
-        let temp_dir = TempDir::new()?;
+    }
+
+    #[tokio::test]
+    async fn test_filesystem_unknown_action() {
+        let temp_dir = TempDir::new().unwrap();
         let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
 
         let req = ToolRequest {
@@ -293,12 +288,13 @@ mod tests {
         let err = tool.execute(&req).await.unwrap_err();
         match err {
             ToolError::ExecutionFailed { reason, .. } => assert!(reason.contains("Unknown action")),
-            _ => unreachable!("Expected ExecutionFailed"),
+            _ => panic!("Expected ExecutionFailed"),
         }
-        Ok(())
-           let temp_dir = TempDir::new()?;
-        let tool = FilesystemTool::new(vec![temp_dir.path().to_{
-        let temp_dir = TempDir::new()?;
+    }
+
+    #[tokio::test]
+    async fn test_filesystem_missing_path_argument() {
+        let temp_dir = TempDir::new().unwrap();
         let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
 
         let req = ToolRequest {
@@ -313,20 +309,20 @@ mod tests {
             ToolError::ExecutionFailed { reason, .. } => {
                 assert!(reason.contains("Missing 'path' argument"))
             }
-            _ => unreachable!("Expected ExecutionFailed"),
+            _ => panic!("Expected ExecutionFailed"),
         }
-        Ok(())
-    :error::Error>> {
-        let temp_dir = TempDir::new()?;
-        let tool = FilesystemTool::new(vec![temp{
-        let temp_dir = TempDir::new()?;
+    }
+
+    #[tokio::test]
+    async fn test_filesystem_missing_content_for_write() {
+        let temp_dir = TempDir::new().unwrap();
         let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
 
         let req = ToolRequest {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "write_file",
-                "path": temp_dir.path().join("test.txt").to_str()?
+                "path": temp_dir.path().join("test.txt").to_str().unwrap()
                 // missing content
             }),
         };
@@ -335,13 +331,13 @@ mod tests {
             ToolError::ExecutionFailed { reason, .. } => {
                 assert!(reason.contains("Missing 'content' argument"))
             }
-            _ => unreachable!("Expected ExecutionFailed"),
+            _ => panic!("Expected ExecutionFailed"),
         }
-        Ok(())
-    ox<dyn std::error::Error>> {
-        let temp_dir = TempDir::new()?;
-        // Empty allowed paths me{
-        let temp_dir = TempDir::new()?;
+    }
+
+    #[tokio::test]
+    async fn test_filesystem_path_denied_for_write() {
+        let temp_dir = TempDir::new().unwrap();
         // Empty allowed paths means nothing is allowed
         let tool = FilesystemTool::new(vec![], vec![]);
 
@@ -349,19 +345,19 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "write_file",
-                "path": temp_dir.path().join("test.txt").to_str()?,
+                "path": temp_dir.path().join("test.txt").to_str().unwrap(),
                 "content": "data"
             }),
         };
         let err = tool.execute(&req).await.unwrap_err();
         match err {
             ToolError::PathDenied { .. } => {}
-            _ => unreachable!("Expected PathDenied"),
+            _ => panic!("Expected PathDenied"),
         }
-        Ok(())
-     Result<(), Box<dyn std::error::Error>> {
-        let tool = FilesystemTool::new(vec![], vec![]);
-  {
+    }
+
+    #[tokio::test]
+    async fn test_filesystem_empty_allowed_paths() {
         let tool = FilesystemTool::new(vec![], vec![]);
         let req = ToolRequest {
             tool_name: "filesystem".to_string(),
@@ -373,16 +369,16 @@ mod tests {
         let err = tool.execute(&req).await.unwrap_err();
         match err {
             ToolError::PathDenied { .. } => {}
-            _ => unreachable!("Expected PathDenied"),
+            _ => panic!("Expected PathDenied"),
         }
-        Ok(())
-    ttern_in_path() -> Result<(), Box<dyn std::error::Error>> {
-        let temp_dir = TempDir::new()?;
-   {
-        let temp_dir = TempDir::new()?;
+    }
+
+    #[tokio::test]
+    async fn test_filesystem_denied_pattern_in_path() {
+        let temp_dir = TempDir::new().unwrap();
         // Create a .env file inside allowed path
         let env_path = temp_dir.path().join(".env");
-        std::fs::write(&env_path, "SECRET=value")?;
+        std::fs::write(&env_path, "SECRET=value").unwrap();
 
         let tool =
             FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![".env".to_string()]);
@@ -391,69 +387,71 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "read_file",
-                "path": env_path.to_str()?
+                "path": env_path.to_str().unwrap()
             }),
         };
         let err = tool.execute(&req).await.unwrap_err();
         match err {
             ToolError::PathDenied { .. } => {}
-            _ => unreachable!("Expected PathDenied"),
+            _ => panic!("Expected PathDenied"),
         }
-        Ok(())
-    ystem_read_nonexistent_file() -> Result<(), Box<dyn std::error::Error>> {
-        let temp_dir = TempD{
-        let temp_dir = TempDir::new()?;
+    }
+
+    #[tokio::test]
+    async fn test_filesystem_read_nonexistent_file() {
+        let temp_dir = TempDir::new().unwrap();
         let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
 
         let req = ToolRequest {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "read_file",
-                "path": temp_dir.path().join("nonexistent.txt").to_str()?
+                "path": temp_dir.path().join("nonexistent.txt").to_str().unwrap()
             }),
         };
         let err = tool.execute(&req).await.unwrap_err();
         match err {
             ToolError::Io(_) => {}
-            _ => unreachable!("Expected Io error"),
+            _ => panic!("Expected Io error"),
         }
-        Ok(())
-    c fn test_filesystem_read_empty_file() -> Result<(), Box<dyn std::error::Error>> {
-        let t{
-        let temp_dir = TempDir::new()?;
+    }
+
+    #[tokio::test]
+    async fn test_filesystem_read_empty_file() {
+        let temp_dir = TempDir::new().unwrap();
         let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
 
         let file_path = temp_dir.path().join("empty.txt");
-        std::fs::write(&file_path, "")?;
+        std::fs::write(&file_path, "").unwrap();
 
         let req = ToolRequest {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "read_file",
-                "path": file_path.to_str()?
+                "path": file_path.to_str().unwrap()
             }),
         };
-        let res = tool.execute(&req).await?;
+        let res = tool.execute(&req).await.unwrap();
         assert!(res.success);
         assert_eq!(res.output, "");
-        Ok(())
-    :test]
-    async fn test_filesystem_delete_nonexistent_file() -> Result<(), Box<dyn std::error::Error>> {
-        let temp_dir = TempDir::new()?;
+    }
+
+    #[tokio::test]
+    async fn test_filesystem_delete_nonexistent_file() {
+        let temp_dir = TempDir::new().unwrap();
         let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
 
         let req = ToolRequest {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "delete_file",
-                "path": temp_dir.path().join("nonexistent.txt").to_str()?
+                "path": temp_dir.path().join("nonexistent.txt").to_str().unwrap()
             }),
         };
         let err = tool.execute(&req).await.unwrap_err();
         match err {
             ToolError::Io(_) => {}
-            _ => unreachable!("Expected Io error"),
+            _ => panic!("Expected Io error"),
         }
-        Ok(())
     }
 }

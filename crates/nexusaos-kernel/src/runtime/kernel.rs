@@ -337,9 +337,9 @@ impl Kernel {
             "1.0".to_string(),
             "kernel".to_string(),
         );
-        manifest.transition_to(crate::manifest::ManifestState::Validated).unwrap();
-        manifest.transition_to(crate::manifest::ManifestState::Signed).unwrap();
-        manifest.transition_to(crate::manifest::ManifestState::Active).unwrap();
+        manifest.transition_to(crate::manifest::ManifestState::Validated)?;
+        manifest.transition_to(crate::manifest::ManifestState::Signed)?;
+        manifest.transition_to(crate::manifest::ManifestState::Active)?;
         self.manifest_store.store(manifest).await?;
 
         // Initialize state in projection

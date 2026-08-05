@@ -325,10 +325,10 @@ mod tests {
     }
 
     #[test]
-    fn test_serde_roundtrip() -> Result<(), Box<dyn std::error::Error>> {
+    fn test_serde_roundtrip() {
         let decision = PolicyDecision::RequireConfirmation("test".to_string());
-        let json = serde_json::to_string(&decision)?;
-        let back: PolicyDecision = serde_json::from_str(&json)?;
+        let json = serde_json::to_string(&decision).expect("serialize");
+        let back: PolicyDecision = serde_json::from_str(&json).expect("deserialize");
         assert_eq!(decision, back);
     }
 
@@ -384,13 +384,13 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_decision_unknown() -> Result<(), Box<dyn std::error::Error>> {
+    fn test_parse_decision_unknown() {
         let engine = PolicyEngine::new(vec![], TrustTier::Autonomous);
         let decision = engine.parse_decision("maybe", "bad-rule");
         assert!(decision.is_denied());
         let msg = match decision {
             PolicyDecision::Deny(msg) => msg,
-            _ => unreachable!("expected deny"),
+            _ => panic!("expected deny"),
         };
         assert!(msg.contains("maybe"));
         assert!(msg.contains("bad-rule"));
@@ -459,6 +459,7 @@ mod tests {
         let back: PolicyRule = serde_json::from_str(&json)?;
         assert_eq!(rule.name, back.name);
         assert_eq!(rule.trust_tier, back.trust_tier);
+        Ok(())
     }
 
     #[test]
@@ -486,6 +487,7 @@ mod tests {
             let back: PolicyDecision = serde_json::from_str(&json)?;
             assert_eq!(d, back);
         }
+        Ok(())
     }
 
     #[test]
@@ -504,11 +506,11 @@ mod tests {
     }
 
     #[test]
-    fn test_require_confirmation_decision_message() -> Result<(), Box<dyn std::error::Error>> {
+    fn test_require_confirmation_decision_message() {
         let decision = PolicyDecision::RequireConfirmation("need-approval".into());
         let msg = match decision {
             PolicyDecision::RequireConfirmation(msg) => msg,
-            _ => unreachable!("expected require confirmation"),
+            _ => panic!("expected require confirmation"),
         };
         assert!(msg.contains("need-approval"));
     }

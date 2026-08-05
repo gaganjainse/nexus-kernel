@@ -271,6 +271,7 @@ mod tests {
             ?;
         assert_eq!(budget.max_tokens, 8192);
         assert!(!budget.was_clamped);
+        Ok(())
     }
 
     #[test]
@@ -280,6 +281,7 @@ mod tests {
             .estimate_budget(TaskComplexity::Architecture, &normal_pressure(), 65536)
             ?;
         assert_eq!(budget.max_tokens, 65536);
+        Ok(())
     }
 
     #[test]
@@ -421,6 +423,7 @@ mod tests {
         let budget = mgr.estimate_budget(TaskComplexity::Simple, &pressure, 65536)?;
         assert!(!budget.was_clamped);
         assert!(budget.clamp_reason.is_none());
+        Ok(())
     }
 
     #[test]

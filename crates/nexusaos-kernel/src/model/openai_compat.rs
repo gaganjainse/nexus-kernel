@@ -317,6 +317,7 @@ mod tests {
         assert_eq!(provider.name(), "test-openai");
         assert_eq!(provider.role(), ModelRole::Coder);
         assert_eq!(provider.base_url, "http://localhost:11434");
+        Ok(())
     }
 
     #[test]
@@ -350,6 +351,7 @@ mod tests {
         let provider = OpenAiCompatProvider::new(&config)?;
         assert_eq!(provider.name(), "test");
         assert_eq!(provider.role(), ModelRole::Planner);
+        Ok(())
     }
 
     #[test]
@@ -366,6 +368,7 @@ mod tests {
         };
         let provider = OpenAiCompatProvider::new(&config)?;
         assert_eq!(provider.base_url, "http://localhost:11434");
+        Ok(())
     }
 
     #[test]
@@ -382,6 +385,7 @@ mod tests {
         };
         let provider = OpenAiCompatProvider::new(&config)?;
         assert_eq!(provider.base_url, "http://localhost:11434");
+        Ok(())
     }
 
     #[test]
@@ -398,6 +402,7 @@ mod tests {
         };
         let provider = OpenAiCompatProvider::new(&config)?;
         assert_eq!(provider.role(), ModelRole::Planner);
+        Ok(())
     }
 
     #[test]
@@ -414,6 +419,7 @@ mod tests {
         };
         let provider = OpenAiCompatProvider::new(&config)?;
         assert_eq!(provider.role(), ModelRole::Coder);
+        Ok(())
     }
 
     #[test]
@@ -430,6 +436,7 @@ mod tests {
         };
         let provider = OpenAiCompatProvider::new(&config)?;
         assert_eq!(provider.max_context(), 8192);
+        Ok(())
     }
 
     #[test]
@@ -446,6 +453,7 @@ mod tests {
         };
         let provider = OpenAiCompatProvider::new(&config)?;
         assert!(provider.supports_vision());
+        Ok(())
     }
 
     #[test]
@@ -462,6 +470,7 @@ mod tests {
         };
         let provider = OpenAiCompatProvider::new(&config)?;
         assert!(!provider.supports_vision());
+        Ok(())
     }
 
     #[test]
@@ -478,6 +487,7 @@ mod tests {
         };
         let provider = OpenAiCompatProvider::new(&config)?;
         assert_eq!(provider.name(), "my-provider");
+        Ok(())
     }
 
     #[test]
@@ -494,6 +504,7 @@ mod tests {
         };
         let provider = OpenAiCompatProvider::new(&config)?;
         assert_eq!(provider.model_id, "llama3-70b");
+        Ok(())
     }
 
     #[test]
@@ -511,6 +522,7 @@ mod tests {
         let provider = OpenAiCompatProvider::new(&config)?;
         // Verify the provider was constructed successfully with a client
         assert_eq!(provider.name(), "test");
+        Ok(())
     }
 
     #[test]
@@ -534,6 +546,7 @@ mod tests {
             };
             let provider = OpenAiCompatProvider::new(&config)?;
             assert_eq!(provider.role(), expected);
+        Ok(())
         }
     }
 }

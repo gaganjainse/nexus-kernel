@@ -202,6 +202,7 @@ mod tests {
         assert_eq!(provider.role(), ModelRole::Coder);
         assert_eq!(provider.max_context(), 200_000);
         assert!(provider.supports_vision());
+        Ok(())
     }
 
     #[test]
@@ -220,6 +221,7 @@ mod tests {
             ClaudeProvider::new("key".into(), "claude-haiku".into(), ModelRole::Reviewer)?;
         assert_eq!(reviewer.role(), ModelRole::Reviewer);
         assert!(reviewer.supports_vision());
+        Ok(())
     }
 
     #[test]
@@ -227,6 +229,7 @@ mod tests {
         let provider =
             ClaudeProvider::new("key".into(), "any-model".into(), ModelRole::Coder)?;
         assert_eq!(provider.max_context(), 200_000);
+        Ok(())
     }
 
     #[test]
@@ -236,6 +239,7 @@ mod tests {
         // health_check checks if api_key is non-empty
         // We can't easily test the async method synchronously, but we can test the field
         assert!(!provider.api_key.is_empty());
+        Ok(())
     }
 
     #[test]
@@ -247,6 +251,7 @@ mod tests {
         )
         ?;
         assert_eq!(provider.name(), "anthropic-claude-claude-3-5-sonnet-20240620");
+        Ok(())
     }
 
     #[test]
@@ -255,6 +260,7 @@ mod tests {
             ClaudeProvider::new(String::new(), "model".into(), ModelRole::Coder)?;
         assert!(provider.api_key.is_empty());
         assert!(provider.supports_vision());
+        Ok(())
     }
 
     #[test]
@@ -266,6 +272,7 @@ mod tests {
                 "Claude should always support vision for role {:?}",
                 role
             );
+        Ok(())
         }
     }
 
@@ -273,5 +280,6 @@ mod tests {
     fn test_claude_provider_client_built() -> Result<(), Box<dyn std::error::Error>> {
         let _provider =
             ClaudeProvider::new("key".into(), "model".into(), ModelRole::Coder)?;
+        Ok(())
     }
 }

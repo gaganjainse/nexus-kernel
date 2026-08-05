@@ -274,6 +274,7 @@ mod tests {
         // Superseded -> Retired
         manifest.transition_to(ManifestState::Retired)?;
         assert_eq!(manifest.state, ManifestState::Retired);
+        Ok(())
     }
 
     #[test]
@@ -302,6 +303,7 @@ mod tests {
         manifest.transition_to(ManifestState::Signed)?;
         manifest.transition_to(ManifestState::Active)?;
         assert!(ManifestState::Active.is_immutable());
+        Ok(())
     }
 
     #[test]
@@ -315,6 +317,7 @@ mod tests {
         manifest.transition_to(ManifestState::Validated)?;
         manifest.sign()?;
         assert!(manifest.verify_signature());
+        Ok(())
     }
 
     #[test]
@@ -349,6 +352,7 @@ mod tests {
 
         let retrieved = store.get(&id).await?;
         assert_eq!(retrieved.version, "1.0.0");
+        Ok(())
     }
 
     #[tokio::test]
@@ -367,6 +371,7 @@ mod tests {
 
         let active = store.active_manifests().await;
         assert_eq!(active.len(), 1);
+        Ok(())
     }
 
     #[test]

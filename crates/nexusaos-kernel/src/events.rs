@@ -360,6 +360,7 @@ mod tests {
             let serialized = serde_json::to_string(&payload)?;
             let deserialized: EventPayload = serde_json::from_str(&serialized)?;
             assert_eq!(payload, deserialized);
+        Ok(())
         }
     }
 
@@ -399,7 +400,7 @@ mod tests {
     }
 
     #[test]
-    fn test_event_kind_variants() -> Result<(), Box<dyn std::error::Error>> {
+    fn test_event_kind_variants() {
         // Ensure all EventKind variants are constructible and debuggable
         let kinds = vec![
             EventKind::TaskCreated,
@@ -443,7 +444,6 @@ mod tests {
             let debug = format!("{:?}", kind);
             assert!(!debug.is_empty());
         }
-        Ok(())
     }
 
     #[test]
@@ -460,6 +460,7 @@ mod tests {
                 assert_eq!(reason, Some("not allowed".to_string()))
             }
             _ => unreachable!("Wrong variant"),
+        Ok(())
         }
     }
 
@@ -474,6 +475,7 @@ mod tests {
                 assert!(details.is_none());
             }
             _ => unreachable!("Wrong variant"),
+        Ok(())
         }
     }
 
@@ -490,6 +492,7 @@ mod tests {
         let json = serde_json::to_string(&kind)?;
         let back: EventKind = serde_json::from_str(&json)?;
         assert_eq!(kind, back);
+        Ok(())
     }
 
     #[test]

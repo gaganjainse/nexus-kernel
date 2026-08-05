@@ -145,7 +145,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_replay() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_replay() {
         let store = MockEventStore::new();
         let task_id = TaskId::new();
         let request = TaskRequest::new(crate::task::TaskInput::Text("test".into()));
@@ -153,7 +153,7 @@ mod tests {
         let event1 = Event::new(
             task_id,
             EventKind::TaskCreated,
-            EventPayload::TaskCreated { request: serde_json::to_value(&request)? },
+            EventPayload::TaskCreated { request: serde_json::to_value(&request).unwrap() },
             "kernel".into(),
         );
         let event2 = Event::new(
@@ -163,25 +163,25 @@ mod tests {
             "kernel".into(),
         );
 
-        store.append(event1).await?;
-        store.append(event2).await?;
+        store.append(event1).await.unwrap();
+        store.append(event2).await.unwrap();
 
-        let projection = ReplayEngine::replay(&store).await?;
-        let task = projection.tasks.get(&task_id)?;
+        let projection = ReplayEngine::replay(&store).await.unwrap();
+        let task = projection.tasks.get(&task_id).unwrap();
 
         assert_eq!(task.current_state, TaskState::Classified);
         assert_eq!(task.state_history.len(), 2);
     }
 
     #[tokio::test]
-    async fn test_replay_empty_store() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_replay_empty_store() {
         let store = MockEventStore::new();
-        let projection = ReplayEngine::replay(&store).await?;
+        let projection = ReplayEngine::replay(&store).await.unwrap();
         assert_eq!(projection.tasks.len(), 0);
     }
 
     #[tokio::test]
-    async fn test_task_history() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_task_history() {
         let store = MockEventStore::new();
         let task_id = TaskId::new();
 
@@ -191,23 +191,23 @@ mod tests {
             EventPayload::TaskCreated { request: serde_json::json!({}) },
             "kernel".into(),
         );
-        store.append(event).await?;
+        store.append(event).await.unwrap();
 
-        let history = ReplayEngine::task_history(&store, &task_id).await?;
+        let history = ReplayEngine::task_history(&store, &task_id).await.unwrap();
         assert_eq!(history.len(), 1);
         assert_eq!(history[0].kind, EventKind::TaskCreated);
     }
 
     #[tokio::test]
-    async fn test_task_history_empty() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_task_history_empty() {
         let store = MockEventStore::new();
         let task_id = TaskId::new();
-        let history = ReplayEngine::task_history(&store, &task_id).await?;
+        let history = ReplayEngine::task_history(&store, &task_id).await.unwrap();
         assert!(history.is_empty());
     }
 
     #[tokio::test]
-    async fn test_replay_multiple_tasks() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_replay_multiple_tasks() {
         use crate::task::{TaskInput, TaskRequest};
 
         let store = MockEventStore::new();
@@ -220,13 +220,13 @@ mod tests {
         let e1 = Event::new(
             t1,
             EventKind::TaskCreated,
-            EventPayload::TaskCreated { request: serde_json::to_value(&req1)? },
+            EventPayload::TaskCreated { request: serde_json::to_value(&req1).unwrap() },
             "k".into(),
         );
         let e2 = Event::new(
             t2,
             EventKind::TaskCreated,
-            EventPayload::TaskCreated { request: serde_json::to_value(&req2)? },
+            EventPayload::TaskCreated { request: serde_json::to_value(&req2).unwrap() },
             "k".into(),
         );
         let e3 = Event::new(
@@ -236,18 +236,18 @@ mod tests {
             "k".into(),
         );
 
-        store.append(e1).await?;
-        store.append(e2).await?;
-        store.append(e3).await?;
+        store.append(e1).await.unwrap();
+        store.append(e2).await.unwrap();
+        store.append(e3).await.unwrap();
 
-        let projection = ReplayEngine::replay(&store).await?;
+        let projection = ReplayEngine::replay(&store).await.unwrap();
         assert_eq!(projection.tasks.len(), 2);
-        assert_eq!(projection.tasks.get(&t1)?.current_state, TaskState::Classified);
-        assert_eq!(projection.tasks.get(&t2)?.current_state, TaskState::Received);
+        assert_eq!(projection.tasks.get(&t1).unwrap().current_state, TaskState::Classified);
+        assert_eq!(projection.tasks.get(&t2).unwrap().current_state, TaskState::Received);
     }
 
     #[tokio::test]
-    async fn test_replay_ignores_system_events() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_replay_ignores_system_events() {
         let store = MockEventStore::new();
 
         // System event (no task_id) should be ignored
@@ -256,14 +256,14 @@ mod tests {
             EventPayload::SystemEvent { message: "started".into() },
             "k".into(),
         );
-        store.append(sys_event).await?;
+        store.append(sys_event).await.unwrap();
 
-        let projection = ReplayEngine::replay(&store).await?;
+        let projection = ReplayEngine::replay(&store).await.unwrap();
         assert_eq!(projection.tasks.len(), 0);
     }
 
     #[tokio::test]
-    async fn test_replay_unknown_state_skipped() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_replay_unknown_state_skipped() {
         use crate::task::{TaskInput, TaskRequest};
 
         let store = MockEventStore::new();
@@ -273,7 +273,7 @@ mod tests {
         let e1 = Event::new(
             task_id,
             EventKind::TaskCreated,
-            EventPayload::TaskCreated { request: serde_json::to_value(&req)? },
+            EventPayload::TaskCreated { request: serde_json::to_value(&req).unwrap() },
             "k".into(),
         );
         let e2 = Event::new(
@@ -283,17 +283,17 @@ mod tests {
             "k".into(),
         );
 
-        store.append(e1).await?;
-        store.append(e2).await?;
+        store.append(e1).await.unwrap();
+        store.append(e2).await.unwrap();
 
-        let projection = ReplayEngine::replay(&store).await?;
-        let task = projection.tasks.get(&task_id)?;
+        let projection = ReplayEngine::replay(&store).await.unwrap();
+        let task = projection.tasks.get(&task_id).unwrap();
         // Unknown state is skipped, so state remains Received
         assert_eq!(task.current_state, TaskState::Received);
     }
 
     #[tokio::test]
-    async fn test_replay_state_history_preserved() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_replay_state_history_preserved() {
         use crate::task::{TaskInput, TaskRequest};
 
         let store = MockEventStore::new();
@@ -303,7 +303,7 @@ mod tests {
         let mut e1 = Event::new(
             task_id,
             EventKind::TaskCreated,
-            EventPayload::TaskCreated { request: serde_json::to_value(&req)? },
+            EventPayload::TaskCreated { request: serde_json::to_value(&req).unwrap() },
             "k".into(),
         );
         e1.sequence = crate::events::SequenceNumber(1);
@@ -322,12 +322,12 @@ mod tests {
         );
         e3.sequence = crate::events::SequenceNumber(3);
 
-        store.append(e1).await?;
-        store.append(e2).await?;
-        store.append(e3).await?;
+        store.append(e1).await.unwrap();
+        store.append(e2).await.unwrap();
+        store.append(e3).await.unwrap();
 
-        let projection = ReplayEngine::replay(&store).await?;
-        let task = projection.tasks.get(&task_id)?;
+        let projection = ReplayEngine::replay(&store).await.unwrap();
+        let task = projection.tasks.get(&task_id).unwrap();
         assert_eq!(task.current_state, TaskState::Planned);
         assert_eq!(task.state_history.len(), 3);
     }

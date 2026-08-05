@@ -215,17 +215,17 @@ mod tests {
     };
 
     #[tokio::test]
-    async fn test_open() -> Result<(), Box<dyn std::error::Error>> {
-        let temp_dir = TempDir::new()?;
-        let store = SqliteEventStore::open(temp_dir.path().to_path_buf()).await?;
-        let events = store.read_all().await?;
+    async fn test_open() {
+        let temp_dir = TempDir::new().unwrap();
+        let store = SqliteEventStore::open(temp_dir.path().to_path_buf()).await.unwrap();
+        let events = store.read_all().await.unwrap();
         assert!(events.is_empty());
     }
 
     #[tokio::test]
-    async fn test_append() -> Result<(), Box<dyn std::error::Error>> {
-        let temp_dir = TempDir::new()?;
-        let store = SqliteEventStore::open(temp_dir.path().to_path_buf()).await?;
+    async fn test_append() {
+        let temp_dir = TempDir::new().unwrap();
+        let store = SqliteEventStore::open(temp_dir.path().to_path_buf()).await.unwrap();
         let task_id = TaskId::new();
         let mut event = Event::new(
             task_id,
@@ -234,16 +234,16 @@ mod tests {
             "test".to_string(),
         );
         event.sequence = SequenceNumber(1);
-        store.append(event.clone()).await?;
-        let events = store.read_all().await?;
+        store.append(event.clone()).await.unwrap();
+        let events = store.read_all().await.unwrap();
         assert_eq!(events.len(), 1);
         assert_eq!(events[0].id, event.id);
     }
 
     #[tokio::test]
-    async fn test_read_for_task() -> Result<(), Box<dyn std::error::Error>> {
-        let temp_dir = TempDir::new()?;
-        let store = SqliteEventStore::open(temp_dir.path().to_path_buf()).await?;
+    async fn test_read_for_task() {
+        let temp_dir = TempDir::new().unwrap();
+        let store = SqliteEventStore::open(temp_dir.path().to_path_buf()).await.unwrap();
 
         let task_id = TaskId::new();
         let other_task_id = TaskId::new();
@@ -255,7 +255,7 @@ mod tests {
             "test".to_string(),
         );
         event1.sequence = SequenceNumber(1);
-        store.append(event1).await?;
+        store.append(event1).await.unwrap();
 
         let mut event2 = Event::new(
             other_task_id,
@@ -264,21 +264,21 @@ mod tests {
             "test".to_string(),
         );
         event2.sequence = SequenceNumber(2);
-        store.append(event2).await?;
+        store.append(event2).await.unwrap();
 
-        let task_events = store.read_for_task(&task_id).await?;
+        let task_events = store.read_for_task(&task_id).await.unwrap();
         assert_eq!(task_events.len(), 1);
         assert_eq!(task_events[0].task_id, Some(task_id));
 
-        let other_events = store.read_for_task(&other_task_id).await?;
+        let other_events = store.read_for_task(&other_task_id).await.unwrap();
         assert_eq!(other_events.len(), 1);
         assert_eq!(other_events[0].task_id, Some(other_task_id));
     }
 
     #[tokio::test]
-    async fn test_read_since() -> Result<(), Box<dyn std::error::Error>> {
-        let temp_dir = TempDir::new()?;
-        let store = SqliteEventStore::open(temp_dir.path().to_path_buf()).await?;
+    async fn test_read_since() {
+        let temp_dir = TempDir::new().unwrap();
+        let store = SqliteEventStore::open(temp_dir.path().to_path_buf()).await.unwrap();
 
         let mut e1 = Event::new(
             TaskId::new(),
@@ -287,7 +287,7 @@ mod tests {
             "test".to_string(),
         );
         e1.sequence = SequenceNumber(1);
-        store.append(e1).await?;
+        store.append(e1).await.unwrap();
 
         let mut e2 = Event::new(
             TaskId::new(),
@@ -296,7 +296,7 @@ mod tests {
             "test".to_string(),
         );
         e2.sequence = SequenceNumber(2);
-        store.append(e2).await?;
+        store.append(e2).await.unwrap();
 
         let mut e3 = Event::new(
             TaskId::new(),
@@ -305,24 +305,24 @@ mod tests {
             "test".to_string(),
         );
         e3.sequence = SequenceNumber(3);
-        store.append(e3).await?;
+        store.append(e3).await.unwrap();
 
-        let since_2 = store.read_since(2).await?;
+        let since_2 = store.read_since(2).await.unwrap();
         assert_eq!(since_2.len(), 2);
 
-        let since_3 = store.read_since(3).await?;
+        let since_3 = store.read_since(3).await.unwrap();
         assert_eq!(since_3.len(), 1);
 
-        let since_4 = store.read_since(4).await?;
+        let since_4 = store.read_since(4).await.unwrap();
         assert!(since_4.is_empty());
     }
 
     #[tokio::test]
-    async fn test_count() -> Result<(), Box<dyn std::error::Error>> {
-        let temp_dir = TempDir::new()?;
-        let store = SqliteEventStore::open(temp_dir.path().to_path_buf()).await?;
+    async fn test_count() {
+        let temp_dir = TempDir::new().unwrap();
+        let store = SqliteEventStore::open(temp_dir.path().to_path_buf()).await.unwrap();
 
-        assert_eq!(store.count().await?, 0);
+        assert_eq!(store.count().await.unwrap(), 0);
 
         let task_id = TaskId::new();
         let mut event = Event::new(
@@ -332,9 +332,9 @@ mod tests {
             "test".to_string(),
         );
         event.sequence = SequenceNumber(1);
-        store.append(event).await?;
+        store.append(event).await.unwrap();
 
-        assert_eq!(store.count().await?, 1);
+        assert_eq!(store.count().await.unwrap(), 1);
 
         let mut event2 = Event::new(
             TaskId::new(),
@@ -343,8 +343,8 @@ mod tests {
             "test".to_string(),
         );
         event2.sequence = SequenceNumber(2);
-        store.append(event2).await?;
+        store.append(event2).await.unwrap();
 
-        assert_eq!(store.count().await?, 2);
+        assert_eq!(store.count().await.unwrap(), 2);
     }
 }
