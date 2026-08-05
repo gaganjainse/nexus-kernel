@@ -85,8 +85,8 @@ mod tests {
             let json = serde_json::to_string(&role)?;
             let back: ChatRole = serde_json::from_str(&json)?;
             assert_eq!(role, back);
-        Ok(())
         }
+        Ok(())
     }
 
     #[test]
@@ -113,7 +113,7 @@ mod tests {
             images: Some(vec!["base64data".into()]),
         };
         assert!(msg.images.is_some());
-        assert_eq!(msg.images?.len(), 1);
+        assert_eq!(msg.images.ok_or("expected images")?.len(), 1);
         Ok(())
     }
 

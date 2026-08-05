@@ -412,7 +412,7 @@ mod tests {
         let budget = mgr.estimate_budget(TaskComplexity::Architecture, &pressure, 32768)?;
         assert!(budget.was_clamped);
         assert!(budget.clamp_reason.is_some());
-        assert!(budget.clamp_reason?.contains("32768"));
+        assert!(budget.clamp_reason.ok_or("expected clamp reason")?.contains("32768"));
         Ok(())
     }
 
@@ -433,7 +433,7 @@ mod tests {
         let budget = mgr.estimate_budget(TaskComplexity::Feature, &pressure, 65536)?;
         assert!(budget.was_clamped);
         assert!(budget.clamp_reason.is_some());
-        let reason = budget.clamp_reason?;
+        let reason = budget.clamp_reason.ok_or("expected clamp reason")?;
         assert!(reason.contains("RAM pressure"));
         assert!(reason.contains("1000"));
         assert!(reason.contains("2048"));

@@ -197,15 +197,12 @@ impl WorkerPool {
         request: &ToolRequest,
         lease: Option<&CapabilityLease>,
     ) -> Result<ToolResult, ToolError> {
-        let worker_idx = self.find_idle_worker().await;
-        if worker_idx.is_none() {
+        let Some(worker_idx) = self.find_idle_worker().await else {
             return Err(ToolError::ExecutionFailed {
                 name: "worker-pool".to_string(),
                 reason: "No idle workers available".to_string(),
             });
-        }
-
-        let worker_idx = worker_idx.unwrap();
+        };
         let worker_id = self.workers[worker_idx].worker_id.clone();
 
         // Validate capability lease before execution

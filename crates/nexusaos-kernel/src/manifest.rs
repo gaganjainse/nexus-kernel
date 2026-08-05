@@ -350,7 +350,7 @@ mod tests {
         let id = manifest.id.clone();
         store.store(manifest).await?;
 
-        let retrieved = store.get(&id).await?;
+        let retrieved = store.get(&id).await.ok_or("manifest not found")?;
         assert_eq!(retrieved.version, "1.0.0");
         Ok(())
     }

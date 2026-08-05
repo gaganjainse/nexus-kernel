@@ -360,8 +360,8 @@ mod tests {
             let serialized = serde_json::to_string(&payload)?;
             let deserialized: EventPayload = serde_json::from_str(&serialized)?;
             assert_eq!(payload, deserialized);
-        Ok(())
         }
+        Ok(())
     }
 
     #[test]
@@ -460,8 +460,8 @@ mod tests {
                 assert_eq!(reason, Some("not allowed".to_string()))
             }
             _ => unreachable!("Wrong variant"),
-        Ok(())
         }
+        Ok(())
     }
 
     #[test]
@@ -475,8 +475,8 @@ mod tests {
                 assert!(details.is_none());
             }
             _ => unreachable!("Wrong variant"),
-        Ok(())
         }
+        Ok(())
     }
 
     #[test]

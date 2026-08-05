@@ -546,7 +546,7 @@ mod tests {
             };
             let provider = OpenAiCompatProvider::new(&config)?;
             assert_eq!(provider.role(), expected);
-        Ok(())
         }
+        Ok(())
     }
 }

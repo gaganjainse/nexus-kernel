@@ -272,8 +272,8 @@ mod tests {
                 "Claude should always support vision for role {:?}",
                 role
             );
-        Ok(())
         }
+        Ok(())
     }
 
     #[test]
