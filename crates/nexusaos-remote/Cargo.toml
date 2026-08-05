@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-russh = "0.43"
+russh = "0.62"
 russh-keys = "0.43"
 tokio = { version = "1.0", features = ["full"] }
 futures = "0.3"
