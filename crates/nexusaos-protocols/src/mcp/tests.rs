@@ -3,7 +3,7 @@
 use nexusaos_kernel::capability::{Capability, CapabilitySet, Scope};
 use serde_json::json;
 
-use crate::check_mcp_capabilities;
+use crate::mcp::check_mcp_capabilities;
 
 #[cfg(test)]
 mod mcp_capability_tests {

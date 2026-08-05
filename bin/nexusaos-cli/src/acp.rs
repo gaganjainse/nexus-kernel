@@ -31,12 +31,12 @@ pub fn run(config_path: &str) -> Result<(), NexusError> {
         let policy_arc = Arc::new(policy);
 
         let session_manager =
-            Arc::new(nexusaos_acp::session::AcpSessionManager::new(100, 3600, policy_arc));
-        let acp_config = nexusaos_acp::server::AcpServerConfig {
+            Arc::new(nexusaos_protocols::acp::session::AcpSessionManager::new(100, 3600, policy_arc));
+        let acp_config = nexusaos_protocols::acp::server::AcpServerConfig {
             socket_path: "/tmp/nexusaos-acp.sock".to_string(),
             max_connections: 16,
         };
-        let acp_server = nexusaos_acp::server::AcpServer::new(acp_config, session_manager);
+        let acp_server = nexusaos_protocols::acp::server::AcpServer::new(acp_config, session_manager);
 
         info!("ACP server starting on /tmp/nexusaos-acp.sock");
         acp_server.run().await?;

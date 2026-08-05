@@ -3,10 +3,11 @@ name = "nexusaos"
 version = "0.1.0"
 edition = "2021"
 description = "NexusAOS CLI Application Binary"
-license = "MIT"
 
 [[bin]]
 name = "nexusaos"
+version = "0.1.0"
+edition = "2021"
 path = "src/main.rs"
 
 [dependencies]
@@ -14,8 +15,7 @@ nexusaos-kernel.workspace = true
 nexusaos-vault.workspace = true
 nexusaos-tui.workspace = true
 nexusaos-terminal.workspace = true
-nexusaos-mcp.workspace = true
-nexusaos-acp.workspace = true
+nexusaos-protocols.workspace = true
 tokio.workspace = true
 clap.workspace = true
 tracing.workspace = true

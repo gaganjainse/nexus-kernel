@@ -1,3 +1,9 @@
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["gaganjainse"]
+
 [workspace]
 resolver = "3"
 members = [
@@ -13,8 +19,7 @@ members = [
     "crates/nexusaos-vault",
     "crates/nexusaos-tui",
     "crates/nexusaos-terminal",
-    "crates/nexusaos-mcp",
-    "crates/nexusaos-acp",
+    "crates/nexusaos-protocols",
     "bin/nexusaos-cli",
     "bin/nexusaos-worker",
 ]
@@ -46,6 +51,7 @@ sha2 = "0.10"
 rusqlite = { version = "0.32", features = ["bundled", "backup"] }
 notify = "6.1"
 url = "2"
+libc = "0.2"
 
 # Internal workspace crates
 nexusaos-waveobj = { path = "crates/nexusaos-waveobj" }
@@ -60,8 +66,7 @@ nexusaos-kernel = { path = "crates/nexusaos-kernel" }
 nexusaos-vault = { path = "crates/nexusaos-vault" }
 nexusaos-tui = { path = "crates/nexusaos-tui" }
 nexusaos-terminal = { path = "crates/nexusaos-terminal" }
-nexusaos-mcp = { path = "crates/nexusaos-mcp" }
-nexusaos-acp = { path = "crates/nexusaos-acp" }
+nexusaos-protocols = { path = "crates/nexusaos-protocols" }
 
 [profile.release]
 lto = true

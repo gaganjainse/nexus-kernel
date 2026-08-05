@@ -47,11 +47,14 @@ pub trait EventStore: Send + Sync {
 /// Events are written as one JSON object per line to `events.jsonl`.
 /// An in-memory index maps EventId -> byte offset for fast lookup.
 /// SequenceNumber is monotonically increasing, assigned at append time.
+/// Each event's `prev_hash` is set to the checksum of the previous event,
+/// forming a hash chain that detects tampering.
 pub struct JsonlEventStore {
     path: PathBuf,
     index: RwLock<HashMap<EventId, u64>>,
     next_sequence: AtomicU64,
     writer: Mutex<File>,
+    last_checksum: Mutex<String>,
 }
 
 impl JsonlEventStore {
@@ -60,6 +63,7 @@ impl JsonlEventStore {
         let file_path = path.join("events.jsonl");
         let mut index = HashMap::new();
         let mut next_sequence = 1;
+        let mut last_checksum = String::new();
 
         let file = OpenOptions::new().create(true).append(true).open(&file_path).await?;
 
@@ -75,6 +79,7 @@ impl JsonlEventStore {
                 if event.sequence.0 >= next_sequence {
                     next_sequence = event.sequence.0 + 1;
                 }
+                last_checksum = event.checksum.clone();
             }
             offset += line.len() as u64;
             line.clear();
@@ -85,15 +90,21 @@ impl JsonlEventStore {
             index: RwLock::new(index),
             next_sequence: AtomicU64::new(next_sequence),
             writer: Mutex::new(file),
+            last_checksum: Mutex::new(last_checksum),
         })
     }
 
-    /// Append an event. Assigns sequence number, writes JSON line, fsyncs.
-    pub async fn append(&self, event: &mut Event) -> Result<(), StorageError> {
+    /// Append an event. Assigns sequence number, sets prev_hash from the
+    /// previous event's checksum, writes JSON line, fsyncs.
+    pub async fn append(&self, mut event: Event) -> Result<(), StorageError> {
         let seq = self.next_sequence.fetch_add(1, Ordering::SeqCst);
         event.sequence = SequenceNumber(seq);
 
-        let mut json = serde_json::to_string(event)?;
+        let prev_hash = self.last_checksum.lock().await.clone();
+        event.prev_hash = prev_hash;
+        event.checksum = event.compute_checksum();
+
+        let mut json = serde_json::to_string(&event)?;
         json.push('\n');
 
         let mut idx = self.index.write().await;
@@ -112,6 +123,8 @@ impl JsonlEventStore {
 
         idx.insert(event.id, offset);
 
+        *self.last_checksum.lock().await = event.checksum.clone();
+
         Ok(())
     }
 
@@ -120,7 +133,7 @@ impl JsonlEventStore {
         Ok(self.next_sequence.load(Ordering::SeqCst).saturating_sub(1))
     }
 
-    /// Read all events in sequence order.
+    /// Read all events in sequence order, verifying the hash chain.
     pub async fn read_all(&self) -> Result<Vec<Event>, StorageError> {
         let file_path = self.path.join("events.jsonl");
         let file = File::open(&file_path).await?;
@@ -130,6 +143,14 @@ impl JsonlEventStore {
 
         while reader.read_line(&mut line).await? > 0 {
             if let Ok(event) = serde_json::from_str::<Event>(&line) {
+                if !events.is_empty() {
+                    let prev: &Event = &events[events.len() - 1];
+                    if event.prev_hash != prev.checksum {
+                        return Err(StorageError::HashChainMismatch {
+                            sequence: event.sequence.0,
+                        });
+                    }
+                }
                 events.push(event);
             }
             line.clear();
@@ -138,13 +159,13 @@ impl JsonlEventStore {
         Ok(events)
     }
 
-    /// Read events for a specific task.
+    /// Read events for a specific task, verifying the hash chain.
     pub async fn read_for_task(&self, task_id: &TaskId) -> Result<Vec<Event>, StorageError> {
         let events = self.read_all().await?;
         Ok(events.into_iter().filter(|e| e.task_id == Some(*task_id)).collect())
     }
 
-    /// Read events since a given sequence number.
+    /// Read events since a given sequence number, verifying the hash chain.
     pub async fn read_since(&self, sequence: u64) -> Result<Vec<Event>, StorageError> {
         let events = self.read_all().await?;
         Ok(events.into_iter().filter(|e| e.sequence.0 >= sequence).collect())
@@ -158,8 +179,8 @@ impl JsonlEventStore {
 
 #[async_trait::async_trait]
 impl crate::storage::EventStore for JsonlEventStore {
-    async fn append(&self, mut event: Event) -> Result<(), crate::error::NexusError> {
-        Self::append(self, &mut event).await.map_err(crate::error::NexusError::Storage)
+    async fn append(&self, event: Event) -> Result<(), crate::error::NexusError> {
+        Self::append(self, event).await.map_err(crate::error::NexusError::Storage)
     }
 
     async fn get_all_events(&self) -> Result<Vec<Event>, crate::error::NexusError> {
@@ -197,21 +218,21 @@ mod tests {
         let store = JsonlEventStore::open(temp_dir.path().to_path_buf()).await?;
 
         let task_id = TaskId::new();
-        let mut event1 = Event::new(
+        let event1 = Event::new(
             task_id,
             EventKind::TaskCreated,
             EventPayload::SystemEvent { message: "test".to_string() },
             "test".to_string(),
         );
 
-        store.append(&mut event1).await?;
+        store.append(event1.clone()).await?;
 
         assert_eq!(store.count().await, 1);
-        assert_eq!(event1.sequence.0, 1);
 
         let events = store.read_all().await?;
         assert_eq!(events.len(), 1);
         assert_eq!(events[0].id, event1.id);
+        assert_eq!(events[0].sequence.0, 1);
 
         let task_events = store.read_for_task(&task_id).await?;
         assert_eq!(task_events.len(), 1);
@@ -237,16 +258,16 @@ mod tests {
         let store = JsonlEventStore::open(temp_dir.path().to_path_buf()).await?;
 
         let task_id = TaskId::new();
-        let mut event = Event::new(
+        let event = Event::new(
             task_id,
             EventKind::TaskCreated,
             EventPayload::TaskCreated { request: serde_json::json!({}) },
             "test".to_string(),
         );
 
-        store.append(&mut event).await?;
+        store.append(event.clone()).await?;
         // Try to append the same event again
-        let Err(err) = store.append(&mut event).await else {
+        let Err(err) = store.append(event).await else {
             return Err("expected appending a duplicate event to fail".into());
         };
         match err {
@@ -262,13 +283,13 @@ mod tests {
         let store = JsonlEventStore::open(temp_dir.path().to_path_buf()).await?;
 
         let task_id = TaskId::new();
-        let mut event = Event::new(
+        let event = Event::new(
             task_id,
             EventKind::TaskCreated,
             EventPayload::TaskCreated { request: serde_json::json!({}) },
             "test".to_string(),
         );
-        store.append(&mut event).await?;
+        store.append(event).await?;
 
         let other_id = TaskId::new();
         let events = store.read_for_task(&other_id).await?;
@@ -288,7 +309,7 @@ mod tests {
             "test".to_string(),
         );
         e1.sequence = crate::events::SequenceNumber(1);
-        store.append(&mut e1).await?;
+        store.append(e1.clone()).await?;
 
         let mut e2 = Event::new(
             TaskId::new(),
@@ -297,7 +318,7 @@ mod tests {
             "test".to_string(),
         );
         e2.sequence = crate::events::SequenceNumber(2);
-        store.append(&mut e2).await?;
+        store.append(e2.clone()).await?;
 
         let mut e3 = Event::new(
             TaskId::new(),
@@ -306,7 +327,7 @@ mod tests {
             "test".to_string(),
         );
         e3.sequence = crate::events::SequenceNumber(3);
-        store.append(&mut e3).await?;
+        store.append(e3.clone()).await?;
 
         let since_2 = store.read_since(2).await?;
         assert_eq!(since_2.len(), 2); // seq 2 and 3
@@ -325,13 +346,13 @@ mod tests {
         let store = JsonlEventStore::open(temp_dir.path().to_path_buf()).await?;
 
         for i in 0..10 {
-            let mut event = Event::new(
+            let event = Event::new(
                 TaskId::new(),
                 EventKind::TaskCreated,
                 EventPayload::TaskCreated { request: serde_json::json!({"i": i}) },
                 "test".to_string(),
             );
-            store.append(&mut event).await?;
+            store.append(event).await?;
         }
 
         assert_eq!(store.count().await, 10);
@@ -347,13 +368,13 @@ mod tests {
 
         {
             let store = JsonlEventStore::open(path.clone()).await?;
-            let mut event = Event::new(
+            let event = Event::new(
                 TaskId::new(),
                 EventKind::TaskCreated,
                 EventPayload::TaskCreated { request: serde_json::json!({}) },
                 "test".to_string(),
             );
-            store.append(&mut event).await?;
+            store.append(event).await?;
             assert_eq!(store.count().await, 1);
         }
 

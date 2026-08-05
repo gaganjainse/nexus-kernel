@@ -12,7 +12,7 @@ use tokio::{
 };
 use tracing::info;
 
-use crate::{
+use crate::mcp::{
     client::{McpRequest, McpResponse},
     McpResult, McpServerConfig,
 };
@@ -105,7 +105,7 @@ async fn handle_connection(
                 let resp = McpResponse {
                     jsonrpc: "2.0".to_string(),
                     result: None,
-                    error: Some(crate::client::McpError {
+                    error: Some(crate::mcp::client::McpError {
                         code: -32700,
                         message: format!("Parse error: {}", e),
                     }),
@@ -137,9 +137,9 @@ async fn handle_request(
     match req.method.as_str() {
         "tools/list" => {
             let tools = broker.available_tools();
-            let tool_infos: Vec<crate::client::McpToolInfo> = tools
+            let tool_infos: Vec<crate::mcp::client::McpToolInfo> = tools
                 .iter()
-                .map(|name| crate::client::McpToolInfo {
+                .map(|name| crate::mcp::client::McpToolInfo {
                     name: name.clone(),
                     description: None,
                     input_schema: serde_json::json!({"type": "object"}),
@@ -148,7 +148,7 @@ async fn handle_request(
             McpResponse {
                 jsonrpc: "2.0".to_string(),
                 result: Some(
-                    serde_json::to_value(crate::client::McpToolList { tools: tool_infos })
+                    serde_json::to_value(crate::mcp::client::McpToolList { tools: tool_infos })
                         .unwrap_or_default(),
                 ),
                 error: None,
@@ -167,13 +167,13 @@ async fn handle_request(
                 PolicyDecision::Deny(reason) => McpResponse {
                     jsonrpc: "2.0".to_string(),
                     result: None,
-                    error: Some(crate::client::McpError { code: -32000, message: reason }),
+                    error: Some(crate::mcp::client::McpError { code: -32000, message: reason }),
                     id: req.id.clone(),
                 },
                 PolicyDecision::RequireConfirmation(reason) => McpResponse {
                     jsonrpc: "2.0".to_string(),
                     result: None,
-                    error: Some(crate::client::McpError { code: -32001, message: reason }),
+                    error: Some(crate::mcp::client::McpError { code: -32001, message: reason }),
                     id: req.id.clone(),
                 },
                 PolicyDecision::Allow => {
@@ -181,7 +181,7 @@ async fn handle_request(
                         McpResponse {
                             jsonrpc: "2.0".to_string(),
                             result: None,
-                            error: Some(crate::client::McpError {
+                            error: Some(crate::mcp::client::McpError {
                                 code: -32002,
                                 message: "Capability check failed".into(),
                             }),
@@ -210,7 +210,7 @@ async fn handle_request(
                                 McpResponse {
                                     jsonrpc: "2.0".to_string(),
                                     result: None,
-                                    error: Some(crate::client::McpError {
+                                    error: Some(crate::mcp::client::McpError {
                                         code: -32003,
                                         message: reason,
                                     }),
@@ -224,7 +224,7 @@ async fn handle_request(
                             ) => McpResponse {
                                 jsonrpc: "2.0".to_string(),
                                 result: None,
-                                error: Some(crate::client::McpError {
+                                error: Some(crate::mcp::client::McpError {
                                     code: -32004,
                                     message: reason,
                                 }),
@@ -233,7 +233,7 @@ async fn handle_request(
                             Err(e) => McpResponse {
                                 jsonrpc: "2.0".to_string(),
                                 result: None,
-                                error: Some(crate::client::McpError {
+                                error: Some(crate::mcp::client::McpError {
                                     code: -32005,
                                     message: e.to_string(),
                                 }),
@@ -253,7 +253,7 @@ async fn handle_request(
         _ => McpResponse {
             jsonrpc: "2.0".to_string(),
             result: None,
-            error: Some(crate::client::McpError {
+            error: Some(crate::mcp::client::McpError {
                 code: -32601,
                 message: format!("Method not found: {}", req.method),
             }),

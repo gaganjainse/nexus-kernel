@@ -147,11 +147,12 @@ pub struct Event {
     pub payload: EventPayload,
     pub metadata: EventMetadata,
     pub timestamp: DateTime<Utc>,
+    pub prev_hash: String,
     pub checksum: String,
 }
 
 impl Event {
-    fn compute_checksum(&self) -> String {
+    pub(crate) fn compute_checksum(&self) -> String {
         let mut hasher = Sha256::new();
         hasher.update(self.id.0.to_string().as_bytes());
         if let Some(task_id) = self.task_id {
@@ -165,6 +166,7 @@ impl Event {
             hasher.update(correlation_id.as_bytes());
         }
         hasher.update(self.timestamp.to_rfc3339().as_bytes());
+        hasher.update(self.prev_hash.as_bytes());
         format!("{:x}", hasher.finalize())
     }
 
@@ -178,6 +180,7 @@ impl Event {
             payload,
             metadata: EventMetadata { source, correlation_id: None },
             timestamp: Utc::now(),
+            prev_hash: String::new(),
             checksum: String::new(),
         };
         event.checksum = event.compute_checksum();
@@ -194,6 +197,7 @@ impl Event {
             payload,
             metadata: EventMetadata { source, correlation_id: None },
             timestamp: Utc::now(),
+            prev_hash: String::new(),
             checksum: String::new(),
         };
         event.checksum = event.compute_checksum();

@@ -70,12 +70,12 @@ pub fn run(config_path: &str) -> Result<(), NexusError> {
         }
         let capabilities = Arc::new(capabilities);
 
-        let mcp_config = nexusaos_mcp::McpServerConfig {
+        let mcp_config = nexusaos_protocols::mcp::McpServerConfig {
             socket_path: "/tmp/nexusaos-mcp.sock".to_string(),
             max_connections: 16,
         };
         let mcp_server =
-            nexusaos_mcp::server::McpServer::new(mcp_config, broker, policy_arc, capabilities);
+            nexusaos_protocols::mcp::server::McpServer::new(mcp_config, broker, policy_arc, capabilities);
 
         info!("MCP server starting on /tmp/nexusaos-mcp.sock");
         mcp_server.run().await?;

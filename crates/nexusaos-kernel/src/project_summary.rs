@@ -168,6 +168,7 @@ mod tests {
                 correlation_id: None,
             },
             timestamp: Utc::now(),
+            prev_hash: String::new(),
             checksum: String::new(),
         }];
         summary.update(&events);
@@ -206,6 +207,7 @@ mod tests {
                 correlation_id: None,
             },
             timestamp: Utc::now(),
+            prev_hash: String::new(),
             checksum: String::new(),
         }];
         let summary = store.update_summary("proj-1", &events).await;

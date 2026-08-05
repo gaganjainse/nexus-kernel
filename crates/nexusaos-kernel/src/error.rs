@@ -81,6 +81,9 @@ pub enum StorageError {
 
     #[error("Storage path not writable: {path}")]
     NotWritable { path: String },
+
+    #[error("Hash chain mismatch at sequence {sequence}: previous event checksum does not match")]
+    HashChainMismatch { sequence: u64 },
 }
 
 /// Errors related to policy enforcement.

@@ -8,8 +8,8 @@ use nexusaos_kernel::{
 };
 use tokio::sync::RwLock;
 
-use crate::session::{AcpSessionManager, AcpSessionState};
-use crate::AcpAgent;
+use crate::acp::session::{AcpSessionManager, AcpSessionState};
+use crate::acp::AcpAgent;
 
 fn make_policy() -> Arc<PolicyEngine> {
     let rules = vec![PolicyRule {

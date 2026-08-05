@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 use tracing::info;
 
-use crate::{AcpAgent, AcpResult};
+use crate::acp::{AcpAgent, AcpResult};
 
 /// The state of an ACP session.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

@@ -3,7 +3,7 @@
 ![Rust](https://img.shields.io/badge/Rust-2024-important?style=for-the-badge&logo=rust)
 ![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
 ![Version](https://img.shields.io/badge/Version-v2.0.0-green?style=for-the-badge&logo=git-semver)
-![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Alpha-red?style=for-the-badge)
 ![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blue?style=for-the-badge&logo=github)
 ![Tests](https://img.shields.io/badge/Tests-1000%2B-success?style=for-the-badge)
 
@@ -14,7 +14,7 @@ for Ubuntu Linux.**
 [🤝 Contributing](CONTRIBUTING.md)  
 [🔒 Security](SECURITY.md)  
 [📝 Changelog](CHANGELOG.md)  
-[💬 Discussions](https://github.com/nexusaos/NexusAOS/discussions)
+[💬 Discussions](https://github.com/gaganjainse/nexus-kernel/discussions)
 
 ---
 
@@ -45,7 +45,7 @@ To provide a **governance-first AI platform** where:
 | 🔍 **Lints** | 0 warnings |
 | 🚀 **CI/CD** | GitHub Actions |
 | 📄 **License** | MIT |
-| 🏷️ **Status** | Production Ready |
+| 🏷️ **Status** | Alpha |
 
 ### 🌟 What Makes NexusAOS Different
 
@@ -121,8 +121,8 @@ graph TB
 
 ```bash
 # Clone
-git clone https://github.com/nexusaos/NexusAOS.git
-cd NexusAOS
+git clone https://github.com/gaganjainse/nexus-kernel.git
+cd nexus-kernel
 
 # Build
 cargo build --release
@@ -404,13 +404,13 @@ graph TD
 
 ```bash
 # Clone the repository
-git clone https://github.com/nexusaos/NexusAOS.git
-cd NexusAOS
+git clone https://github.com/gaganjainse/nexus-kernel.git
+cd nexus-kernel
 
-# Build the project
+# Build
 cargo build --release
 
-# Run initialization
+# Initialize
 ./target/release/nexusaos init
 
 # Check system health
@@ -595,5 +595,5 @@ This project is licensed under the [MIT License](LICENSE).
 
 ### Built with ❤️ by the NexusAOS Team
 
-[GitHub](https://github.com/nexusaos/NexusAOS) • [Issues](https://github.com/nexusaos/NexusAOS/issues)
-• [Discussions](https://github.com/nexusaos/NexusAOS/discussions)
+[GitHub](https://github.com/gaganjainse/nexus-kernel) • [Issues](https://github.com/gaganjainse/nexus-kernel/issues)
+• [Discussions](https://github.com/gaganjainse/nexus-kernel/discussions)

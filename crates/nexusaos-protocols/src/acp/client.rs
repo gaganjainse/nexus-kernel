@@ -9,7 +9,7 @@ use tokio::{
 };
 use tracing::info;
 
-use crate::{AcpAgent, AcpAgentInfo, AcpResult, CapabilitySet};
+use crate::acp::{AcpAgent, AcpAgentInfo, AcpResult, CapabilitySet};
 
 /// ACP protocol version.
 pub const ACP_VERSION: &str = "2024-10-01";

@@ -3,7 +3,6 @@ name = "nexusaos-terminal"
 version = "0.1.0"
 edition = "2021"
 description = "PTY process manager and terminal emulator bridge for NexusAOS"
-license = "MIT"
 
 [dependencies]
 nexusaos-kernel.workspace = true

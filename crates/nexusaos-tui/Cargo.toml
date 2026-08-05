@@ -3,7 +3,6 @@ name = "nexusaos-tui"
 version = "0.1.0"
 edition = "2021"
 description = "Interactive TUI, token streamer, and diff visualizer for NexusAOS"
-license = "MIT"
 
 [dependencies]
 uuid.workspace = true

@@ -1,5 +1,7 @@
+use std::os::fd::AsRawFd;
 use std::sync::Arc;
 
+use libc::{getsockopt, SO_PEERCRED};
 use nexusaos_kernel::error::NexusError;
 use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
@@ -7,11 +9,47 @@ use tokio::{
 };
 use tracing::info;
 
-use crate::{
+use crate::acp::{
     client::{AcpRequest, AcpResponse},
     session::AcpSessionManager,
     AcpResult,
 };
+
+/// Peer credentials extracted from SO_PEERCRED on a Unix socket.
+#[derive(Debug, Clone)]
+pub struct PeerCredentials {
+    pub pid: u32,
+    pub uid: u32,
+    pub gid: u32,
+}
+
+/// Validate peer credentials on a Unix socket connection using SO_PEERCRED.
+/// Returns the peer's PID, UID, and GID if the socket is a valid Unix domain socket.
+fn validate_peer_credentials(stream: &UnixStream) -> Result<PeerCredentials, NexusError> {
+    let fd = stream.as_raw_fd();
+    let mut creds: libc::ucred = unsafe { std::mem::zeroed() };
+    let mut len = std::mem::size_of::<libc::ucred>() as libc::socklen_t;
+
+    let result = unsafe {
+        getsockopt(
+            fd,
+            libc::SOL_SOCKET,
+            SO_PEERCRED,
+            &mut creds as *mut _ as *mut _,
+            &mut len,
+        )
+    };
+
+    if result != 0 {
+        return Err(NexusError::Io(std::io::Error::last_os_error()));
+    }
+
+    Ok(PeerCredentials {
+        pid: creds.pid as u32,
+        uid: creds.uid as u32,
+        gid: creds.gid as u32,
+    })
+}
 
 /// ACP server configuration.
 #[derive(Debug, Clone)]
@@ -59,6 +97,9 @@ impl AcpServer {
 }
 
 async fn handle_connection(stream: UnixStream, manager: Arc<AcpSessionManager>) -> AcpResult<()> {
+    let creds = validate_peer_credentials(&stream)?;
+    info!(pid = creds.pid, uid = creds.uid, "ACP peer validated via SO_PEERCRED");
+
     let (reader, mut writer) = tokio::io::split(stream);
     let mut reader = BufReader::new(reader);
     let mut line = String::new();
@@ -81,7 +122,7 @@ async fn handle_connection(stream: UnixStream, manager: Arc<AcpSessionManager>) 
                 let resp = AcpResponse {
                     jsonrpc: "2.0".to_string(),
                     result: None,
-                    error: Some(crate::client::AcpError {
+                    error: Some(crate::acp::client::AcpError {
                         code: -32700,
                         message: format!("Parse error: {}", e),
                     }),
@@ -115,12 +156,12 @@ async fn handle_request(req: &AcpRequest, manager: &AcpSessionManager) -> AcpRes
                 .unwrap_or("unknown");
 
             let decision =
-                crate::validate_acp_request(manager.policy(), agent_id, "authenticate").await;
+                crate::acp::validate_acp_request(manager.policy(), agent_id, "authenticate").await;
             if !matches!(decision, nexusaos_kernel::policy::PolicyDecision::Allow) {
                 return AcpResponse {
                     jsonrpc: "2.0".to_string(),
                     result: None,
-                    error: Some(crate::client::AcpError {
+                    error: Some(crate::acp::client::AcpError {
                         code: -32000,
                         message: format!("Policy denied: {:?}", decision),
                     }),
@@ -128,7 +169,7 @@ async fn handle_request(req: &AcpRequest, manager: &AcpSessionManager) -> AcpRes
                 };
             }
 
-            let agent = crate::AcpAgent {
+            let agent = crate::acp::AcpAgent {
                 id: agent_id.to_string(),
                 name: agent_id.to_string(),
                 capabilities: Arc::new(tokio::sync::RwLock::new(
@@ -154,7 +195,7 @@ async fn handle_request(req: &AcpRequest, manager: &AcpSessionManager) -> AcpRes
                 Err(e) => AcpResponse {
                     jsonrpc: "2.0".to_string(),
                     result: None,
-                    error: Some(crate::client::AcpError { code: -32001, message: e.to_string() }),
+                    error: Some(crate::acp::client::AcpError { code: -32001, message: e.to_string() }),
                     id: req.id.clone(),
                 },
             }
@@ -168,12 +209,12 @@ async fn handle_request(req: &AcpRequest, manager: &AcpSessionManager) -> AcpRes
                 .unwrap_or("unknown");
 
             let decision =
-                crate::validate_acp_request(manager.policy(), agent_id, "capability_grant").await;
+                crate::acp::validate_acp_request(manager.policy(), agent_id, "capability_grant").await;
             if !matches!(decision, nexusaos_kernel::policy::PolicyDecision::Allow) {
                 return AcpResponse {
                     jsonrpc: "2.0".to_string(),
                     result: None,
-                    error: Some(crate::client::AcpError {
+                    error: Some(crate::acp::client::AcpError {
                         code: -32000,
                         message: format!("Policy denied: {:?}", decision),
                     }),
@@ -195,7 +236,7 @@ async fn handle_request(req: &AcpRequest, manager: &AcpSessionManager) -> AcpRes
                     return AcpResponse {
                         jsonrpc: "2.0".to_string(),
                         result: None,
-                        error: Some(crate::client::AcpError {
+                        error: Some(crate::acp::client::AcpError {
                             code: -32002,
                             message: format!("Invalid scope: {}", e),
                         }),
@@ -213,7 +254,7 @@ async fn handle_request(req: &AcpRequest, manager: &AcpSessionManager) -> AcpRes
             let ttl_seconds =
                 req.params.as_ref().and_then(|p| p.get("ttl_seconds")).and_then(|v| v.as_u64());
 
-            let agent = crate::AcpAgent {
+            let agent = crate::acp::AcpAgent {
                 id: agent_id.to_string(),
                 name: agent_id.to_string(),
                 capabilities: Arc::new(tokio::sync::RwLock::new(
@@ -242,7 +283,7 @@ async fn handle_request(req: &AcpRequest, manager: &AcpSessionManager) -> AcpRes
                         Err(e) => AcpResponse {
                             jsonrpc: "2.0".to_string(),
                             result: None,
-                            error: Some(crate::client::AcpError {
+                            error: Some(crate::acp::client::AcpError {
                                 code: -32003,
                                 message: e.to_string(),
                             }),
@@ -253,7 +294,7 @@ async fn handle_request(req: &AcpRequest, manager: &AcpSessionManager) -> AcpRes
                 Err(e) => AcpResponse {
                     jsonrpc: "2.0".to_string(),
                     result: None,
-                    error: Some(crate::client::AcpError { code: -32001, message: e.to_string() }),
+                    error: Some(crate::acp::client::AcpError { code: -32001, message: e.to_string() }),
                     id: req.id.clone(),
                 },
             }
@@ -267,7 +308,7 @@ async fn handle_request(req: &AcpRequest, manager: &AcpSessionManager) -> AcpRes
         _ => AcpResponse {
             jsonrpc: "2.0".to_string(),
             result: None,
-            error: Some(crate::client::AcpError {
+            error: Some(crate::acp::client::AcpError {
                 code: -32601,
                 message: format!("Method not found: {}", req.method),
             }),

@@ -1,8 +1,8 @@
 [package]
-name = "nexusaos-acp"
+name = "nexusaos-protocols"
 version = "0.1.0"
 edition = "2021"
-description = "Agent Communication Protocol integration for NexusAOS"
+description = "MCP and ACP protocol adapters for NexusAOS"
 
 [dependencies]
 tokio = { workspace = true, features = ["net", "io-util", "sync", "time"] }
@@ -15,9 +15,12 @@ nexusaos-kernel = { workspace = true }
 nexusaos-rpc = { workspace = true }
 chrono = { workspace = true }
 uuid = { workspace = true }
+libc = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3"
+nexusaos-wps = { workspace = true }
+nexusaos-waveobj = { workspace = true }
 
 [lints]
 workspace = true

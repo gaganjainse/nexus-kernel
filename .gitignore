@@ -37,6 +37,9 @@ __pycache__/
 .venv/
 venv/
 
+# ===== Scratch files =====
+*.scratch.rs
+
 # ===== Logs =====
 *.log
 logs/
