@@ -103,7 +103,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_git_tool() {
+    async fn test_git_tool() -> Result<(), Box<dyn std::error::Error>> {
         let tool = GitTool::new(env::current_dir()?);
 
         let req =
@@ -116,7 +116,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_git_diff() {
+    async fn test_git_diff() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         // Initialize a git repo
         let _ = Command::new("git").arg("init").current_dir(temp_dir.path()).output().await;
@@ -130,7 +130,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_git_diff_staged() {
+    async fn test_git_diff_staged() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let _ = Command::new("git").arg("init").current_dir(temp_dir.path()).output().await;
         let _ = Command::new("git")
@@ -165,7 +165,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_git_log() {
+    async fn test_git_log() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let _ = Command::new("git").arg("init").current_dir(temp_dir.path()).output().await;
         let _ = Command::new("git")
@@ -205,7 +205,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_git_add() {
+    async fn test_git_add() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let _ = Command::new("git").arg("init").current_dir(temp_dir.path()).output().await;
         let _ = Command::new("git")
@@ -233,7 +233,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_git_commit() {
+    async fn test_git_commit() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let _ = Command::new("git").arg("init").current_dir(temp_dir.path()).output().await;
         let _ = Command::new("git")
@@ -268,7 +268,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_git_unknown_action() {
+    async fn test_git_unknown_action() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let tool = GitTool::new(temp_dir.path().to_path_buf());
 
@@ -282,7 +282,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_git_missing_message_for_commit() {
+    async fn test_git_missing_message_for_commit() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let tool = GitTool::new(temp_dir.path().to_path_buf());
 
@@ -298,7 +298,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_git_in_non_repo_directory() {
+    async fn test_git_in_non_repo_directory() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let tool = GitTool::new(temp_dir.path().to_path_buf());
 
@@ -310,7 +310,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_git_log_default_count() {
+    async fn test_git_log_default_count() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let _ = Command::new("git").arg("init").current_dir(temp_dir.path()).output().await;
         let _ = Command::new("git")

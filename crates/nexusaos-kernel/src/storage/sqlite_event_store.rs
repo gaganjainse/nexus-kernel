@@ -215,7 +215,7 @@ mod tests {
     };
 
     #[tokio::test]
-    async fn test_open() {
+    async fn test_open() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store = SqliteEventStore::open(temp_dir.path().to_path_buf()).await?;
         let events = store.read_all().await?;
@@ -223,7 +223,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_append() {
+    async fn test_append() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store = SqliteEventStore::open(temp_dir.path().to_path_buf()).await?;
         let task_id = TaskId::new();
@@ -241,7 +241,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_read_for_task() {
+    async fn test_read_for_task() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store = SqliteEventStore::open(temp_dir.path().to_path_buf()).await?;
 
@@ -276,7 +276,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_read_since() {
+    async fn test_read_since() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store = SqliteEventStore::open(temp_dir.path().to_path_buf()).await?;
 
@@ -318,7 +318,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_count() {
+    async fn test_count() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store = SqliteEventStore::open(temp_dir.path().to_path_buf()).await?;
 

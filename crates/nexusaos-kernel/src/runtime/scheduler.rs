@@ -137,7 +137,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_enqueue_dequeue() {
+    async fn test_enqueue_dequeue() -> Result<(), Box<dyn std::error::Error>> {
         let scheduler = Scheduler::new(10);
         let task_id = TaskId::new();
         let _ = scheduler.enqueue(task_id, Priority::Normal).await?;
@@ -149,7 +149,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_overflow() {
+    async fn test_overflow() -> Result<(), Box<dyn std::error::Error>> {
         let scheduler = Scheduler::new(1);
         let _ = scheduler.enqueue(TaskId::new(), Priority::Normal).await?;
         let result = scheduler.enqueue(TaskId::new(), Priority::Normal).await;
@@ -157,7 +157,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_cancel() {
+    async fn test_cancel() -> Result<(), Box<dyn std::error::Error>> {
         let scheduler = Scheduler::new(10);
         let task_id = TaskId::new();
         let _ = scheduler.enqueue(task_id, Priority::Normal).await?;
@@ -167,7 +167,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_priority_ordering() {
+    async fn test_priority_ordering() -> Result<(), Box<dyn std::error::Error>> {
         let scheduler = Scheduler::new(10);
         let task1 = TaskId::new();
         let task2 = TaskId::new();
@@ -196,14 +196,14 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_queue_depth_after_enqueue() {
+    async fn test_queue_depth_after_enqueue() -> Result<(), Box<dyn std::error::Error>> {
         let scheduler = Scheduler::new(10);
         let _ = scheduler.enqueue(TaskId::new(), Priority::Normal).await?;
         assert_eq!(scheduler.queue_depth(), 1);
     }
 
     #[tokio::test]
-    async fn test_queue_depth_after_dequeue() {
+    async fn test_queue_depth_after_dequeue() -> Result<(), Box<dyn std::error::Error>> {
         let scheduler = Scheduler::new(10);
         let _ = scheduler.enqueue(TaskId::new(), Priority::Normal).await?;
         assert_eq!(scheduler.queue_depth(), 1);
@@ -220,7 +220,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_cancel_then_dequeue_none() {
+    async fn test_cancel_then_dequeue_none() -> Result<(), Box<dyn std::error::Error>> {
         let scheduler = Scheduler::new(10);
         let task_id = TaskId::new();
         let _ = scheduler.enqueue(task_id, Priority::Normal).await?;
@@ -230,7 +230,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_drain() {
+    async fn test_drain() -> Result<(), Box<dyn std::error::Error>> {
         let scheduler = Scheduler::new(10);
         let t1 = TaskId::new();
         let t2 = TaskId::new();
@@ -252,7 +252,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_enqueue_dequeue_critical_priority() {
+    async fn test_enqueue_dequeue_critical_priority() -> Result<(), Box<dyn std::error::Error>> {
         let scheduler = Scheduler::new(10);
         let low_id = TaskId::new();
         let crit_id = TaskId::new();
@@ -289,7 +289,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_fifo_within_same_priority() {
+    async fn test_fifo_within_same_priority() -> Result<(), Box<dyn std::error::Error>> {
         let scheduler = Scheduler::new(10);
         let t1 = TaskId::new();
         let t2 = TaskId::new();
@@ -304,7 +304,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_enqueue_dequeue_mixed_priorities() {
+    async fn test_enqueue_dequeue_mixed_priorities() -> Result<(), Box<dyn std::error::Error>> {
         let scheduler = Scheduler::new(10);
         for _ in 0..5 {
             let _ = scheduler.enqueue(TaskId::new(), Priority::Low).await?;
@@ -326,7 +326,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_cancel_middle_of_queue() {
+    async fn test_cancel_middle_of_queue() -> Result<(), Box<dyn std::error::Error>> {
         let scheduler = Scheduler::new(10);
         let t1 = TaskId::new();
         let t2 = TaskId::new();

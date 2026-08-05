@@ -145,7 +145,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_replay() {
+    async fn test_replay() -> Result<(), Box<dyn std::error::Error>> {
         let store = MockEventStore::new();
         let task_id = TaskId::new();
         let request = TaskRequest::new(crate::task::TaskInput::Text("test".into()));
@@ -174,14 +174,14 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_replay_empty_store() {
+    async fn test_replay_empty_store() -> Result<(), Box<dyn std::error::Error>> {
         let store = MockEventStore::new();
         let projection = ReplayEngine::replay(&store).await?;
         assert_eq!(projection.tasks.len(), 0);
     }
 
     #[tokio::test]
-    async fn test_task_history() {
+    async fn test_task_history() -> Result<(), Box<dyn std::error::Error>> {
         let store = MockEventStore::new();
         let task_id = TaskId::new();
 
@@ -199,7 +199,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_task_history_empty() {
+    async fn test_task_history_empty() -> Result<(), Box<dyn std::error::Error>> {
         let store = MockEventStore::new();
         let task_id = TaskId::new();
         let history = ReplayEngine::task_history(&store, &task_id).await?;
@@ -207,7 +207,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_replay_multiple_tasks() {
+    async fn test_replay_multiple_tasks() -> Result<(), Box<dyn std::error::Error>> {
         use crate::task::{TaskInput, TaskRequest};
 
         let store = MockEventStore::new();
@@ -247,7 +247,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_replay_ignores_system_events() {
+    async fn test_replay_ignores_system_events() -> Result<(), Box<dyn std::error::Error>> {
         let store = MockEventStore::new();
 
         // System event (no task_id) should be ignored
@@ -263,7 +263,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_replay_unknown_state_skipped() {
+    async fn test_replay_unknown_state_skipped() -> Result<(), Box<dyn std::error::Error>> {
         use crate::task::{TaskInput, TaskRequest};
 
         let store = MockEventStore::new();
@@ -293,7 +293,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_replay_state_history_preserved() {
+    async fn test_replay_state_history_preserved() -> Result<(), Box<dyn std::error::Error>> {
         use crate::task::{TaskInput, TaskRequest};
 
         let store = MockEventStore::new();

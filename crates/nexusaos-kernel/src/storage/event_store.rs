@@ -192,7 +192,7 @@ mod tests {
     use crate::events::{EventKind, EventPayload};
 
     #[tokio::test]
-    async fn test_event_store_append_and_read() {
+    async fn test_event_store_append_and_read() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store = JsonlEventStore::open(temp_dir.path().to_path_buf()).await?;
 
@@ -221,7 +221,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_event_store_open_new_directory() {
+    async fn test_event_store_open_new_directory() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let new_path = temp_dir.path().join("new_store");
         tokio::fs::create_dir_all(&new_path).await?;
@@ -230,7 +230,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_event_store_duplicate_rejected() {
+    async fn test_event_store_duplicate_rejected() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store = JsonlEventStore::open(temp_dir.path().to_path_buf()).await?;
 
@@ -253,7 +253,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_event_store_read_for_task_no_match() {
+    async fn test_event_store_read_for_task_no_match() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store = JsonlEventStore::open(temp_dir.path().to_path_buf()).await?;
 
@@ -272,7 +272,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_event_store_read_since() {
+    async fn test_event_store_read_since() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store = JsonlEventStore::open(temp_dir.path().to_path_buf()).await?;
 
@@ -314,7 +314,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_event_store_multiple_events() {
+    async fn test_event_store_multiple_events() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store = JsonlEventStore::open(temp_dir.path().to_path_buf()).await?;
 
@@ -334,7 +334,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_event_store_reopen_preserves_index() {
+    async fn test_event_store_reopen_preserves_index() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let path = temp_dir.path().to_path_buf();
 
@@ -358,7 +358,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_event_store_get_all_events_trait() {
+    async fn test_event_store_get_all_events_trait() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store: Arc<dyn crate::storage::EventStore> =
             Arc::new(JsonlEventStore::open(temp_dir.path().to_path_buf()).await?);
@@ -377,7 +377,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_event_store_get_task_events_trait() {
+    async fn test_event_store_get_task_events_trait() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let store: Arc<dyn crate::storage::EventStore> =
             Arc::new(JsonlEventStore::open(temp_dir.path().to_path_buf()).await?);
@@ -396,7 +396,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_event_store_invalid_json_line_skipped() {
+    async fn test_event_store_invalid_json_line_skipped() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let path = temp_dir.path().to_path_buf();
 

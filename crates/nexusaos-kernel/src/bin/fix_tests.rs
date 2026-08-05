@@ -1,11 +1,11 @@
 use std::{
     env,
     fs,
-    path::PathBuf,
+    path::{Path, PathBuf},
     process,
 };
 
-use syn::{parse_file, ItemFn, Signature, Expr, Item};
+use syn::{parse_file, Item, ItemFn, Signature, Stmt, Expr};
 use quote::ToTokens;
 
 fn main() {
@@ -14,8 +14,6 @@ fn main() {
         eprintln!("Usage: {} <file1> [file2] ...", args[0]);
         process::exit(1);
     }
-
-    let mut any_failed = false;
 
     for filepath in &args[1..] {
         let path = PathBuf::from(filepath);
@@ -26,15 +24,8 @@ fn main() {
 
         match fix_file(&path) {
             Ok(_) => println!("Fixed: {}", filepath),
-            Err(e) => {
-                eprintln!("Error fixing {}: {}", filepath, e);
-                any_failed = true;
-            }
+            Err(e) => eprintln!("Error fixing {}: {}", filepath, e),
         }
-    }
-
-    if any_failed {
-        process::exit(1);
     }
 }
 
@@ -46,10 +37,16 @@ fn fix_file(path: &PathBuf) -> Result<(), String> {
     for item in &mut file.items {
         if let Item::Fn(item_fn) = item {
             if is_test_function(item_fn) {
+                println!("  Found test: {}", item_fn.sig.ident);
+                println!("    returns_result: {}", returns_result(&item_fn.sig));
+                println!("    has_unwrap: {}", has_unwrap_or_expect_or_panic(&item_fn.block));
+                println!("    ends_with_ok: {}", ends_with_ok(&item_fn.block));
+                
                 let needs_result = has_unwrap_or_expect_or_panic(&item_fn.block)
                     && !returns_result(&item_fn.sig);
 
                 if needs_result {
+                    println!("    -> Converting to Result return type");
                     item_fn.sig.output = syn::ReturnType::Type(
                         syn::token::RArrow::default(),
                         Box::new(syn::parse2(quote::quote! {
@@ -59,12 +56,14 @@ fn fix_file(path: &PathBuf) -> Result<(), String> {
                     modified = true;
                 }
 
-                if has_unwrap_or_expect_or_panic(&item_fn.block) {
+                if has_unwrap_or_expect_or_panic(&item_fn.block) && returns_result(&item_fn.sig) {
+                    println!("    -> Fixing function body");
                     fix_function_body(&mut item_fn.block);
                     modified = true;
                 }
 
                 if returns_result(&item_fn.sig) && !ends_with_ok(&item_fn.block) {
+                    println!("    -> Adding Ok(())");
                     add_ok_return(&mut item_fn.block);
                     modified = true;
                 }
@@ -85,7 +84,6 @@ fn is_test_function(item: &ItemFn) -> bool {
     if !name.starts_with("test_") {
         return false;
     }
-
     item.attrs.iter().any(|attr| {
         attr.path().is_ident("test") || 
         (attr.path().is_ident("tokio") && attr.to_token_stream().to_string().contains("test"))
@@ -131,19 +129,15 @@ fn fix_function_body(block: &mut syn::Block) {
         }
         
         if tokens.contains(".expect(") {
-            let _new_tokens = tokens.replace(".expect(", "?");
-            // But we need to handle the closing paren...
-            // Actually, let's use a more robust approach
             let stmt_str = stmt.to_token_stream().to_string();
             let new_stmt_str = stmt_str.replace(".expect(", "?");
-            // Remove the extra closing paren if needed
             let new_stmt_str = new_stmt_str.replace("?\"", "?\"");
             *stmt = syn::parse2(new_stmt_str.parse().unwrap()).unwrap();
         }
         
         if tokens.contains("panic!(") {
             let stmt_str = stmt.to_token_stream().to_string();
-            let new_stmt_str = stmt_str.replace("panic!(", "unreachable!(");
+            let new_stmt_str = stmt_str.replace("panic!", "unreachable!(");
             *stmt = syn::parse2(new_stmt_str.parse().unwrap()).unwrap();
         }
     }

@@ -192,7 +192,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_filesystem_tool() {
+    async fn test_filesystem_tool() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let allowed_paths = vec![temp_dir.path().to_path_buf()];
         let denied_patterns = vec![".env".to_string()];
@@ -232,7 +232,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_filesystem_list_dir() {
+    async fn test_filesystem_list_dir() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
 
@@ -254,7 +254,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_filesystem_delete_file() {
+    async fn test_filesystem_delete_file() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
 
@@ -274,7 +274,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_filesystem_unknown_action() {
+    async fn test_filesystem_unknown_action() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
 
@@ -293,7 +293,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_filesystem_missing_path_argument() {
+    async fn test_filesystem_missing_path_argument() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
 
@@ -314,7 +314,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_filesystem_missing_content_for_write() {
+    async fn test_filesystem_missing_content_for_write() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
 
@@ -336,7 +336,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_filesystem_path_denied_for_write() {
+    async fn test_filesystem_path_denied_for_write() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         // Empty allowed paths means nothing is allowed
         let tool = FilesystemTool::new(vec![], vec![]);
@@ -357,7 +357,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_filesystem_empty_allowed_paths() {
+    async fn test_filesystem_empty_allowed_paths() -> Result<(), Box<dyn std::error::Error>> {
         let tool = FilesystemTool::new(vec![], vec![]);
         let req = ToolRequest {
             tool_name: "filesystem".to_string(),
@@ -374,7 +374,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_filesystem_denied_pattern_in_path() {
+    async fn test_filesystem_denied_pattern_in_path() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         // Create a .env file inside allowed path
         let env_path = temp_dir.path().join(".env");
@@ -398,7 +398,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_filesystem_read_nonexistent_file() {
+    async fn test_filesystem_read_nonexistent_file() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
 
@@ -417,7 +417,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_filesystem_read_empty_file() {
+    async fn test_filesystem_read_empty_file() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
 
@@ -437,7 +437,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_filesystem_delete_nonexistent_file() {
+    async fn test_filesystem_delete_nonexistent_file() -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let tool = FilesystemTool::new(vec![temp_dir.path().to_path_buf()], vec![]);
 
