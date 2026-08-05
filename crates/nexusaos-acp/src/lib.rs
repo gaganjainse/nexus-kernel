@@ -1,6 +1,8 @@
 pub mod client;
 pub mod server;
 pub mod session;
+#[cfg(test)]
+mod tests;
 
 use std::sync::Arc;
 

@@ -1,6 +1,8 @@
 pub mod adapter;
 pub mod client;
 pub mod server;
+#[cfg(test)]
+mod tests;
 
 use nexusaos_kernel::{
     capability::CapabilitySet,
