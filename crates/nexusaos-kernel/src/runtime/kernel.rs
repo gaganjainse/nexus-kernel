@@ -8,6 +8,7 @@ type DedupCache = HashMap<TaskInput, (TaskId, chrono::DateTime<chrono::Utc>)>;
 
 use crate::{
     artifact::ArtifactStore,
+    capability::CapabilitySet,
     context::ContextManager,
     error::{NexusError, TaskError},
     events::{Event, EventKind, EventPayload},
@@ -109,6 +110,7 @@ pub struct KernelConfig {
     pub policy: Arc<RwLock<PolicyEngine>>,
     pub provider_registry: Arc<ProviderRegistry>,
     pub tool_broker: Arc<ToolBroker>,
+    pub capabilities: Arc<CapabilitySet>,
     pub max_tool_output_size: usize,
     pub snapshot_store: Option<Arc<SnapshotStore>>,
     pub resource_budget: ResourceBudget,
@@ -127,6 +129,8 @@ pub struct Kernel {
     policy: Arc<RwLock<PolicyEngine>>,
     provider_registry: Arc<ProviderRegistry>,
     tool_broker: Arc<ToolBroker>,
+    #[allow(dead_code)]
+    capabilities: Arc<CapabilitySet>,
     max_tool_output_size: usize,
     snapshot_store: Option<Arc<SnapshotStore>>,
     performance_monitor: Arc<PerformanceMonitor>,
@@ -156,6 +160,7 @@ impl Kernel {
             policy,
             provider_registry,
             tool_broker,
+            capabilities,
             max_tool_output_size,
             snapshot_store,
             resource_budget,
@@ -180,6 +185,7 @@ impl Kernel {
             policy,
             provider_registry,
             tool_broker,
+            capabilities,
             max_tool_output_size,
             snapshot_store,
             performance_monitor: Arc::new(PerformanceMonitor::new()),
@@ -506,7 +512,7 @@ impl Kernel {
                     task_id: *task_id,
                     role_label: "Planner",
                     user_content: &input_text,
-                    system_prompt: "You are a planner.",
+                    system_prompt: "You are a planner. Break down user requests into structured, actionable steps. Do not write files or execute commands yourself. When a step requires file operations, code execution, or tool usage, explicitly delegate by emitting 'TOOL: <tool_name> {\"arguments\": ...}' directives in your output. Available tools: filesystem, git, terminal.",
                     context_budget: planner_context_budget,
                 },
                 planner,
@@ -532,9 +538,31 @@ impl Kernel {
         }
 
         let plan = plan_resp.content.to_lowercase();
-        let requires_coder = ["write code", "implement ", "edit ", "fix bug", "refactor"]
-            .iter()
-            .any(|kw| plan.contains(kw))
+        let requires_coder = [
+            "write code",
+            "implement ",
+            "edit ",
+            "fix bug",
+            "refactor",
+            "read file",
+            "write file",
+            "create file",
+            "delete ",
+            "list ",
+            "search ",
+            "find ",
+            "run command",
+            "execute ",
+            "bash ",
+            "shell ",
+            "terminal",
+            "tool ",
+            "filesystem",
+            "git ",
+            "TOOL:",
+        ]
+        .iter()
+        .any(|kw| plan.contains(kw))
             || task.assigned_role == Some(crate::state::ModelRole::Coder);
 
         let mut final_output = plan_resp.content;
@@ -562,11 +590,11 @@ impl Kernel {
                 .call_model_with_fallback(
                     &ModelCallContext {
                         task_id: *task_id,
-                        role_label: "Coder",
-                        user_content: &final_output,
-                        system_prompt: "You are a coder.",
-                        context_budget: coder_context_budget,
-                    },
+                    role_label: "Coder",
+                    user_content: &final_output,
+                    system_prompt: "You are a coder. Write, edit, and fix code as requested. When you need to read, write, or modify files, execute shell commands, or use any external capability, emit 'TOOL: <tool_name> {\"arguments\": ...}' directives. Available tools: filesystem, git, terminal. After receiving a tool result, synthesize the output into a final response.",
+                    context_budget: coder_context_budget,
+                },
                     coder,
                     None,
                 )
@@ -601,7 +629,7 @@ impl Kernel {
                             task_id: *task_id,
                             role_label: "Reviewer",
                             user_content: &final_output,
-                            system_prompt: "You are a reviewer.",
+                            system_prompt: "You are a reviewer. Review the code and output for correctness, security, and style. Do not modify files directly. If issues require fixes, delegate to the Coder by emitting 'TOOL: <tool_name> {\"arguments\": ...}' directives. Available tools: filesystem, git, terminal.",
                             context_budget: reviewer_context_budget,
                         },
                         reviewer,
@@ -622,6 +650,7 @@ impl Kernel {
         }
 
         let mut requires_confirmation = false;
+        let mut last_tool_result: Option<(String, String)> = None;
 
         if let Some(tool_call_str) =
             final_output.strip_prefix("TOOL:").map(|s| s.trim()).filter(|s| !s.is_empty())
@@ -734,6 +763,8 @@ impl Kernel {
                         "kernel".to_string(),
                     ))
                     .await?;
+
+                    last_tool_result = Some((tool_call.tool_name.clone(), res.output.clone()));
                 }
                 Ok(crate::tools::broker::BrokerResult::Denied(reason)) => {
                     self.emit_tool_result(
@@ -774,6 +805,101 @@ impl Kernel {
                         .await;
                 }
             }
+        }
+
+        // Tool feedback loop: after a tool executes successfully, feed the result
+        // back to the model so it can synthesize a final answer instead of
+        // returning the raw TOOL: directive as the task output.
+        if let Some((mut tool_name, mut tool_output)) = last_tool_result {
+            let mut current_output = final_output.clone();
+            let mut tool_call_count = 0;
+            let max_tool_calls = 3;
+
+            loop {
+                let synthesis_role = if requires_coder {
+                    crate::state::ModelRole::Coder
+                } else {
+                    crate::state::ModelRole::Planner
+                };
+
+                let provider = match self.provider_registry.get(&synthesis_role) {
+                    Some(p) => p,
+                    None => break,
+                };
+
+                let pressure = self.system_pressure().await;
+                let synthesis_budget = self.context_manager.context_for_task(
+                    &task.request.input,
+                    &pressure,
+                    provider.max_context(),
+                    &self.resource_budget,
+                )
+                .unwrap_or(4096);
+
+                let synthesis_prompt = format!(
+                    "Tool '{}' returned:\n{}\n\nProvide a final answer incorporating this result. Do not emit more TOOL: directives.",
+                    tool_name, tool_output
+                );
+
+                let synthesis_resp = match self
+                    .call_model_with_fallback(
+                        &ModelCallContext {
+                            task_id: *task_id,
+                            role_label: if requires_coder { "Coder" } else { "Planner" },
+                            user_content: &synthesis_prompt,
+                            system_prompt: "Synthesize tool results into a final answer.",
+                            context_budget: synthesis_budget,
+                        },
+                        provider,
+                        None,
+                    )
+                    .await
+                {
+                    Ok(resp) => resp,
+                    Err(_) => break,
+                };
+
+                current_output = synthesis_resp.content;
+
+                if let Some(next_tool_str) = current_output
+                    .strip_prefix("TOOL:")
+                    .map(|s| s.trim())
+                    .filter(|s| !s.is_empty())
+                {
+                    if tool_call_count >= max_tool_calls - 1 {
+                        break;
+                    }
+
+                    let next_tool_call = match parse_tool_call(next_tool_str) {
+                        Ok(tc) => tc,
+                        Err(_) => break,
+                    };
+
+                    let next_tool_req = crate::tools::executor::ToolRequest {
+                        tool_name: next_tool_call.tool_name.clone(),
+                        arguments: next_tool_call.arguments.clone(),
+                    };
+
+                    let next_broker_result = self.tool_broker.execute(&next_tool_req).await;
+                    match next_broker_result {
+                        Ok(crate::tools::broker::BrokerResult::Completed(next_res)) => {
+                            if next_res.success {
+                                let next_name = next_tool_call.tool_name.clone();
+                                let next_output = next_res.output.clone();
+                                tool_name = next_name;
+                                tool_output = next_output;
+                                tool_call_count += 1;
+                                continue;
+                            }
+                        }
+                        _ => break,
+                    }
+                }
+
+                break;
+            }
+
+            final_output = current_output;
         }
 
         if requires_confirmation {
@@ -1320,6 +1446,7 @@ mod tests {
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
         let kernel = Kernel::new(KernelConfig {
+            capabilities: Arc::new(CapabilitySet::new()),
             event_store: store,
             policy: Arc::new(RwLock::new(policy)),
             provider_registry: registry,
@@ -1349,6 +1476,7 @@ mod tests {
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
         let kernel = Kernel::new(KernelConfig {
+            capabilities: Arc::new(CapabilitySet::new()),
             event_store: store,
             policy: Arc::new(RwLock::new(policy)),
             provider_registry: registry,
@@ -1384,6 +1512,7 @@ mod tests {
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
         let kernel = Kernel::new(KernelConfig {
+            capabilities: Arc::new(CapabilitySet::new()),
             event_store: store,
             policy: Arc::new(RwLock::new(policy)),
             provider_registry: registry,
@@ -1420,6 +1549,7 @@ mod tests {
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
         let kernel = Kernel::new(KernelConfig {
+            capabilities: Arc::new(CapabilitySet::new()),
             event_store: store,
             policy: Arc::new(RwLock::new(policy)),
             provider_registry: registry,
@@ -1471,6 +1601,7 @@ mod tests {
 
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
         let kernel = Kernel::new(KernelConfig {
+            capabilities: Arc::new(CapabilitySet::new()),
             event_store: store.clone(),
             policy: Arc::new(RwLock::new(policy)),
             provider_registry: Arc::new(registry),
@@ -1515,6 +1646,7 @@ mod tests {
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
         let kernel = Kernel::new(KernelConfig {
+            capabilities: Arc::new(CapabilitySet::new()),
             event_store: store,
             policy: Arc::new(RwLock::new(policy)),
             provider_registry: registry,
@@ -1556,6 +1688,7 @@ mod tests {
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
         let kernel = Kernel::new(KernelConfig {
+            capabilities: Arc::new(CapabilitySet::new()),
             event_store: store,
             policy: Arc::new(RwLock::new(policy)),
             provider_registry: registry,
@@ -1599,6 +1732,7 @@ mod tests {
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
         let kernel = Kernel::new(KernelConfig {
+            capabilities: Arc::new(CapabilitySet::new()),
             event_store: store,
             policy: Arc::new(RwLock::new(policy)),
             provider_registry: registry,
@@ -1637,6 +1771,7 @@ mod tests {
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
         let kernel = Kernel::new(KernelConfig {
+            capabilities: Arc::new(CapabilitySet::new()),
             event_store: store,
             policy: Arc::new(RwLock::new(policy)),
             provider_registry: registry,
@@ -1673,6 +1808,7 @@ mod tests {
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
         let kernel = Kernel::new(KernelConfig {
+            capabilities: Arc::new(CapabilitySet::new()),
             event_store: store,
             policy: Arc::new(RwLock::new(policy)),
             provider_registry: registry,
@@ -1714,6 +1850,7 @@ mod tests {
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
         let kernel = Kernel::new(KernelConfig {
+            capabilities: Arc::new(CapabilitySet::new()),
             event_store: store.clone(),
             policy: Arc::new(RwLock::new(policy)),
             provider_registry: registry,
@@ -1761,6 +1898,7 @@ mod tests {
 
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
         let kernel = Kernel::new(KernelConfig {
+            capabilities: Arc::new(CapabilitySet::new()),
             event_store: store.clone(),
             policy: Arc::new(RwLock::new(policy)),
             provider_registry: Arc::new(registry),
@@ -1811,6 +1949,7 @@ mod tests {
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
         let kernel = Kernel::new(KernelConfig {
+            capabilities: Arc::new(CapabilitySet::new()),
             event_store: store,
             policy: Arc::new(RwLock::new(policy)),
             provider_registry: registry,
@@ -1844,6 +1983,7 @@ mod tests {
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
         let kernel = Kernel::new(KernelConfig {
+            capabilities: Arc::new(CapabilitySet::new()),
             event_store: store,
             policy: Arc::new(RwLock::new(policy)),
             provider_registry: registry,
@@ -1895,6 +2035,7 @@ mod tests {
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
         let kernel = Kernel::new(KernelConfig {
+            capabilities: Arc::new(CapabilitySet::new()),
             event_store: store,
             policy: Arc::new(RwLock::new(policy)),
             provider_registry: registry,
@@ -1935,6 +2076,7 @@ mod tests {
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
         let kernel = Kernel::new(KernelConfig {
+            capabilities: Arc::new(CapabilitySet::new()),
             event_store: store,
             policy: Arc::new(RwLock::new(policy)),
             provider_registry: registry,
@@ -1974,6 +2116,7 @@ mod tests {
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
         let kernel = Kernel::new(KernelConfig {
+            capabilities: Arc::new(CapabilitySet::new()),
             event_store: store.clone(),
             policy: Arc::new(RwLock::new(policy)),
             provider_registry: registry,
@@ -2014,6 +2157,7 @@ mod tests {
         let registry = Arc::new(ProviderRegistry::new());
         let broker = Arc::new(ToolBroker::new(Arc::new(policy.clone())));
         let kernel = Kernel::new(KernelConfig {
+            capabilities: Arc::new(CapabilitySet::new()),
             event_store: store.clone(),
             policy: Arc::new(RwLock::new(policy)),
             provider_registry: registry,
@@ -2068,6 +2212,7 @@ mod tests {
         let snapshot_store =
             Arc::new(crate::storage::SnapshotStore::new(snapshot_dir.path().to_path_buf()));
         let kernel = Kernel::new(KernelConfig {
+            capabilities: Arc::new(CapabilitySet::new()),
             event_store: store.clone(),
             policy: Arc::new(RwLock::new(policy)),
             provider_registry: registry,

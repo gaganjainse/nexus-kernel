@@ -2,6 +2,9 @@
 
 use clap::{Parser, Subcommand};
 
+mod acp;
+mod mcp;
+
 /// NexusAOS — Governance-first AI operating environment
 #[derive(Parser, Debug)]
 #[command(name = "nexusaos", version, about, long_about = None)]
@@ -70,6 +73,12 @@ enum Commands {
 
     /// Test native VT100 parser & PTY shell bridge
     Pty,
+
+    /// Start the MCP protocol server (for external AI clients)
+    Mcp,
+
+    /// Start the ACP protocol server (for agent session management)
+    Acp,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -122,6 +131,8 @@ fn main() -> anyhow::Result<()> {
             emulator.feed(b"Echo from PTY\nLine 2\n");
             println!("VT100 Parser processed {} lines successfully.", emulator.lines().len());
         }
+        Some(Commands::Mcp) => mcp::run(&cli.config)?,
+        Some(Commands::Acp) => acp::run(&cli.config)?,
     }
 
     Ok(())

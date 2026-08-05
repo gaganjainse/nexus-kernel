@@ -60,6 +60,8 @@ nexusaos-kernel = { path = "crates/nexusaos-kernel" }
 nexusaos-vault = { path = "crates/nexusaos-vault" }
 nexusaos-tui = { path = "crates/nexusaos-tui" }
 nexusaos-terminal = { path = "crates/nexusaos-terminal" }
+nexusaos-mcp = { path = "crates/nexusaos-mcp" }
+nexusaos-acp = { path = "crates/nexusaos-acp" }
 
 [profile.release]
 lto = true

@@ -7,6 +7,7 @@ use tracing::info;
 
 use crate::{
     artifact::ArtifactStore,
+    capability::{Capability, CapabilitySet, Scope},
     config::AppConfig,
     context::ContextManager,
     error::NexusError,
@@ -66,7 +67,7 @@ pub fn execute(
         let registry = Arc::new(registry);
 
         // 4. Initialize Tool Broker
-        let mut broker = ToolBroker::new(policy_arc);
+        let mut broker = ToolBroker::new(policy_arc.clone());
         let allowed_paths = vec![data_dir.clone()];
         broker.register(Arc::new(FilesystemTool::new(
             allowed_paths,
@@ -81,12 +82,27 @@ pub fn execute(
         )));
         let broker = Arc::new(broker);
 
+        let mut capabilities = CapabilitySet::new();
+        for tool_name in broker.available_tools() {
+            capabilities.grant(
+                Capability {
+                    name: format!("tool.{}", tool_name),
+                    scope: Scope::Global,
+                    description: format!("Grant {} tool access", tool_name),
+                },
+                "cli".to_string(),
+                None,
+            );
+        }
+        let capabilities = Arc::new(capabilities);
+
         // 5. Initialize Kernel
         let kernel = Kernel::new(KernelConfig {
             event_store: store,
             policy: Arc::new(RwLock::new(policy)),
             provider_registry: registry,
             tool_broker: broker,
+            capabilities,
             max_tool_output_size: config.resource_limits.max_tool_output_size,
             snapshot_store: None,
             resource_budget: ResourceBudget::default(),
