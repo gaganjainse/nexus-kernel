@@ -1,6 +1,7 @@
 [package]
 name = "nexusaos-wconfig"
 version = "0.1.0"
+license = "MIT"
 edition = "2021"
 description = "Configuration system: strongly-typed settings and live file watching"
 

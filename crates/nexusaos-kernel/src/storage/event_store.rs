@@ -146,9 +146,7 @@ impl JsonlEventStore {
                 if !events.is_empty() {
                     let prev: &Event = &events[events.len() - 1];
                     if event.prev_hash != prev.checksum {
-                        return Err(StorageError::HashChainMismatch {
-                            sequence: event.sequence.0,
-                        });
+                        return Err(StorageError::HashChainMismatch { sequence: event.sequence.0 });
                     }
                 }
                 events.push(event);

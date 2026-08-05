@@ -1,6 +1,7 @@
 [package]
 name = "nexusaos-waveobj"
 version = "0.1.0"
+license = "MIT"
 edition = "2021"
 description = "Wave Terminal object store: ORef graph, SQLite persistence, and typed metadata"
 

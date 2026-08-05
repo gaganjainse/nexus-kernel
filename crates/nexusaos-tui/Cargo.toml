@@ -1,6 +1,7 @@
 [package]
 name = "nexusaos-tui"
 version = "0.1.0"
+license = "MIT"
 edition = "2021"
 description = "Interactive TUI, token streamer, and diff visualizer for NexusAOS"
 

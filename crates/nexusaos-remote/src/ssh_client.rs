@@ -1,18 +1,16 @@
-use async_trait::async_trait;
 use russh::client::Handler;
+use ssh_key::PublicKey;
 
 #[derive(Clone, Debug)]
 pub struct ClientHandler {}
 
-#[async_trait]
 impl Handler for ClientHandler {
     type Error = russh::Error;
 
     async fn check_server_key(
         &mut self,
-        _server_public_key: &russh_keys::key::PublicKey,
+        _server_public_key: &PublicKey,
     ) -> Result<bool, Self::Error> {
-        // Blindly trust for now
         Ok(true)
     }
 }

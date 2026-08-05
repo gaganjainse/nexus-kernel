@@ -51,7 +51,7 @@ mod acp_session_tests {
         let agent = make_agent("test-agent");
         let session = manager.create_session(agent).await?;
         let session_id = session.session_id.clone();
-manager.terminate_session(&session_id).await?;
+        manager.terminate_session(&session_id).await?;
 
         let updated = manager.get_session(&session_id).await.ok_or("session not found")?;
         assert_eq!(updated.state, AcpSessionState::Terminated);
@@ -75,7 +75,7 @@ manager.terminate_session(&session_id).await?;
     }
 
     #[tokio::test]
-async fn test_active_sessions_filtering() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_active_sessions_filtering() -> Result<(), Box<dyn std::error::Error>> {
         let manager = AcpSessionManager::new(2, 3600, make_policy());
         manager.create_session(make_agent("agent-1")).await?;
         manager.create_session(make_agent("agent-2")).await?;
@@ -97,7 +97,8 @@ async fn test_active_sessions_filtering() -> Result<(), Box<dyn std::error::Erro
 
         manager.terminate_session(&session1.session_id).await?;
 
-        let session2_after = manager.get_session(&session2.session_id).await.ok_or("session not found")?;
+        let session2_after =
+            manager.get_session(&session2.session_id).await.ok_or("session not found")?;
         assert_eq!(session2_after.state, AcpSessionState::Active);
         assert!(session2_after.is_active());
         Ok(())
@@ -136,7 +137,8 @@ mod acp_capability_tests {
     }
 
     #[tokio::test]
-    async fn test_grant_capability_on_terminated_session_denied() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_grant_capability_on_terminated_session_denied(
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let manager = AcpSessionManager::new(10, 3600, make_policy());
         let agent = make_agent("test-agent");
         let session = manager.create_session(agent).await?;

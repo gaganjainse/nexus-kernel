@@ -1,6 +1,7 @@
 [package]
 name = "nexusaos-wps"
 version = "0.1.0"
+license = "MIT"
 edition = "2021"
 description = "Wave Pub/Sub event broker: scope-aware pub/sub with history persistence"
 

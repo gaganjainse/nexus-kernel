@@ -1,6 +1,7 @@
 [package]
 name = "nexusaos-blockctl"
 version = "0.1.0"
+license = "MIT"
 edition = "2021"
 description = "Block controller: PTY terminal lifecycle, shell execution, and I/O routing"
 

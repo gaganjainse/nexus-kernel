@@ -1335,7 +1335,10 @@ impl Kernel {
                 *task_id,
                 EventKind::Error,
                 EventPayload::ErrorEvent {
-                    message: format!("Task {} recovered from incomplete state on startup (replay offset: {})", task_id, replay_offset),
+                    message: format!(
+                        "Task {} recovered from incomplete state on startup (replay offset: {})",
+                        task_id, replay_offset
+                    ),
                     details: None,
                 },
                 "kernel".to_string(),
