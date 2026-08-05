@@ -1,7 +1,10 @@
 litellm_settings:
   drop_params: true  # Drops Anthropic parameters to prevent breaking NVIDIA NIM
 
-NVIDIA_NIM_API_KEY=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
+# Set your NVIDIA NIM API key as an environment variable:
+#   export NVIDIA_NIM_API_KEY="your-api-key-here"
+# Or create a .env file in the project root.
+# Do NOT commit your actual API key to version control.
 
 model_list:
   - model_name: nvidia/nemotron-3-ultra-550b-a55b

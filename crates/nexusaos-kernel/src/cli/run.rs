@@ -110,6 +110,7 @@ pub fn execute(
             context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
+            confirm_task_ttl_secs: 30,
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })

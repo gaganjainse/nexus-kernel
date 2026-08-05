@@ -400,6 +400,8 @@ graph TD
 - 16 GB RAM minimum
 - NVIDIA GPU recommended for GUI
 
+**Optional:** `litellm_config.yaml` — If you want to route model requests through NVIDIA NIM (or another LiteLLM-compatible proxy), copy `litellm_config.yaml` to the project root and set `NVIDIA_NIM_API_KEY` as an environment variable. See the file for supported models. Without this file, the AI crate uses direct OpenAI/Anthropic endpoints.
+
 ### Installation
 
 ```bash

@@ -221,4 +221,46 @@ impl App {
     pub fn pop_input_char(&mut self) {
         self.input_buffer.pop();
     }
+
+    /// Check if the 30B coder model can be loaded given current VRAM.
+    /// The Qwen-30B model requires approximately 6GB VRAM for inference.
+    pub fn can_load_30b_coder(&self) -> bool {
+        let vram_needed_mb: u64 = 6144;
+        self.vram_total_mb.saturating_sub(self.vram_used_mb) >= vram_needed_mb
+    }
+
+    /// Estimate model load time in seconds based on model size and available VRAM.
+    /// Returns a human-readable string like "~12s" or "~2m".
+    pub fn estimated_load_time(&self, model_name: &str) -> String {
+        let size_gb = if model_name.contains("30b") || model_name.contains("qwen3-30b") {
+            16.0
+        } else if model_name.contains("12b") || model_name.contains("gemma-4-12b") {
+            4.0
+        } else {
+            8.0
+        };
+        let vram_available_mb = self.vram_total_mb.saturating_sub(self.vram_used_mb);
+        let vram_available_gb = vram_available_mb as f64 / 1024.0;
+        if vram_available_gb < size_gb {
+            return "N/A (insufficient VRAM)".to_string();
+        }
+        let load_time_secs = (size_gb * 10.0) as u64;
+        if load_time_secs < 60 {
+            format!("~{}s", load_time_secs)
+        } else {
+            format!("~{}m", load_time_secs / 60)
+        }
+    }
+
+    /// Return a RAM pressure indicator string.
+    pub fn ram_pressure(&self) -> &'static str {
+        let usage_pct = self.ram_used_mb as f64 / self.ram_total_mb as f64;
+        if usage_pct > 0.85 {
+            "🔴 High"
+        } else if usage_pct > 0.65 {
+            "🟡 Medium"
+        } else {
+            "🟢 Low"
+        }
+    }
 }

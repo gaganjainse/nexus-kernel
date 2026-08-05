@@ -118,6 +118,7 @@ pub struct KernelConfig {
     pub context_manager: Arc<ContextManager>,
     pub scheduler: Arc<Scheduler>,
     pub dedup_window_secs: u64,
+    pub confirm_task_ttl_secs: u64,
     pub manifest_store: Arc<ManifestStore>,
     pub artifact_store: Arc<ArtifactStore>,
 }
@@ -142,6 +143,7 @@ pub struct Kernel {
     artifact_store: Arc<ArtifactStore>,
     dedup_window_secs: u64,
     dedup_cache: Arc<RwLock<DedupCache>>,
+    confirm_task_ttl_secs: u64,
 }
 
 struct ModelCallContext<'a> {
@@ -170,6 +172,7 @@ impl Kernel {
             dedup_window_secs,
             manifest_store,
             artifact_store,
+            confirm_task_ttl_secs,
         } = config;
 
         // Rebuild the task projection from the persisted event log so that
@@ -197,6 +200,7 @@ impl Kernel {
             artifact_store,
             dedup_window_secs,
             dedup_cache: Arc::new(RwLock::new(HashMap::new())),
+            confirm_task_ttl_secs,
         };
 
         for role in kernel.provider_registry.available_roles() {
@@ -1266,10 +1270,50 @@ impl Kernel {
         self.execute_task(task_id).await
     }
 
+    /// Check for AwaitingConfirmation tasks that have exceeded the TTL
+    /// and transition them to Failed.
+    pub async fn check_confirm_task_ttl(&self) -> Result<Vec<TaskId>, NexusError> {
+        let mut expired = Vec::new();
+        let now = Utc::now();
+        {
+            let proj = self.projection.read().await;
+            for (id, record) in &proj.tasks {
+                if record.current_state == TaskState::AwaitingConfirmation {
+                    if let Some((_, created_at)) = record.state_history.first() {
+                        let age = now.signed_duration_since(*created_at);
+                        if age.num_seconds() >= self.confirm_task_ttl_secs as i64 {
+                            expired.push(*id);
+                        }
+                    }
+                }
+            }
+        }
+        for task_id in &expired {
+            self.transition_task(task_id, TaskState::Failed).await?;
+        }
+        Ok(expired)
+    }
+
     /// Recover incomplete tasks from the event store on startup.
     /// Scans for tasks that are in non-terminal states and attempts to
     /// restore them or mark them as failed.
+    /// If a snapshot exists, resumes replay from `last_sequence + 1`.
     pub async fn recover_incomplete_tasks(&self) -> Result<Vec<TaskId>, NexusError> {
+        // Try to load the latest snapshot to determine replay offset
+        let replay_offset = if let Some(store) = &self.snapshot_store {
+            if let Some(snapshot) = store.load_latest().await? {
+                if snapshot.last_sequence > 0 {
+                    snapshot.last_sequence + 1
+                } else {
+                    1
+                }
+            } else {
+                1
+            }
+        } else {
+            1
+        };
+
         // Use the projection rebuilt from the event log at startup to read each
         // task's *current* state. A task is incomplete only when its latest
         // known state is non-terminal; scanning raw StateChanged events would
@@ -1291,7 +1335,7 @@ impl Kernel {
                 *task_id,
                 EventKind::Error,
                 EventPayload::ErrorEvent {
-                    message: format!("Task {} recovered from incomplete state on startup", task_id),
+                    message: format!("Task {} recovered from incomplete state on startup (replay offset: {})", task_id, replay_offset),
                     details: None,
                 },
                 "kernel".to_string(),
@@ -1458,6 +1502,7 @@ mod tests {
             context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
+            confirm_task_ttl_secs: 30,
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
@@ -1488,6 +1533,7 @@ mod tests {
             context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
+            confirm_task_ttl_secs: 30,
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
@@ -1524,6 +1570,7 @@ mod tests {
             context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
+            confirm_task_ttl_secs: 30,
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
@@ -1561,6 +1608,7 @@ mod tests {
             context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
+            confirm_task_ttl_secs: 30,
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
@@ -1613,6 +1661,7 @@ mod tests {
             context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
+            confirm_task_ttl_secs: 30,
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
@@ -1658,6 +1707,7 @@ mod tests {
             context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
+            confirm_task_ttl_secs: 30,
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
@@ -1700,6 +1750,7 @@ mod tests {
             context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
+            confirm_task_ttl_secs: 30,
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
@@ -1744,6 +1795,7 @@ mod tests {
             context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
+            confirm_task_ttl_secs: 30,
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
@@ -1783,6 +1835,7 @@ mod tests {
             context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
+            confirm_task_ttl_secs: 30,
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
@@ -1820,6 +1873,7 @@ mod tests {
             context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
+            confirm_task_ttl_secs: 30,
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
@@ -1862,6 +1916,7 @@ mod tests {
             context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
+            confirm_task_ttl_secs: 30,
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
@@ -1910,6 +1965,7 @@ mod tests {
             context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
+            confirm_task_ttl_secs: 30,
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
@@ -1961,6 +2017,7 @@ mod tests {
             context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
+            confirm_task_ttl_secs: 30,
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
@@ -1995,6 +2052,7 @@ mod tests {
             context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
+            confirm_task_ttl_secs: 30,
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
@@ -2047,6 +2105,7 @@ mod tests {
             context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
+            confirm_task_ttl_secs: 30,
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
@@ -2088,6 +2147,7 @@ mod tests {
             context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
+            confirm_task_ttl_secs: 30,
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
@@ -2128,6 +2188,7 @@ mod tests {
             context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
+            confirm_task_ttl_secs: 30,
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
@@ -2169,6 +2230,7 @@ mod tests {
             context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
+            confirm_task_ttl_secs: 30,
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })
@@ -2224,6 +2286,7 @@ mod tests {
             context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
+            confirm_task_ttl_secs: 30,
             manifest_store: Arc::new(ManifestStore::new()),
             artifact_store: Arc::new(ArtifactStore::default()),
         })

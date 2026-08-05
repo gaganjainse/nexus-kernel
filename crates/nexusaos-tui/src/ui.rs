@@ -61,9 +61,15 @@ pub fn render_ui(frame: &mut Frame, app: &App) {
     frame.render_widget(input_widget, main_chunks[3]);
 
     // 5. JetBrains Bottom Status Strip with Clickable Buttons
+    let model_load_time = app.estimated_load_time(&app.active_model);
+    let vram_gate = if app.active_model.contains("30b") && !app.can_load_30b_coder() {
+        " ⚠️ 30B coder blocked (insufficient VRAM)"
+    } else {
+        ""
+    };
     let status_text = format!(
-        " 🌿 {}  |  [📁 Project (Alt+1)]  |  [🖥️ Terminal (Alt+F12)]  |  [⚡ Vault]  |  RAM: {}/{} MB  |  {}",
-        app.git_branch, app.ram_used_mb, app.ram_total_mb, app.status_message
+        " 🌿 {}  |  [📁 Project (Alt+1)]  |  [🖥️ Terminal (Alt+F12)]  |  [⚡ Vault]  |  RAM: {}/{} MB {}  |  Model: {} (load: {}){}",
+        app.git_branch, app.ram_used_mb, app.ram_total_mb, app.ram_pressure(), app.active_model, model_load_time, vram_gate
     );
     let status_bar = Paragraph::new(status_text)
         .style(Style::default().bg(Color::Rgb(34, 34, 34)).fg(Color::Rgb(88, 193, 66)));
