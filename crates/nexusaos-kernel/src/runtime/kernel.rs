@@ -828,13 +828,15 @@ impl Kernel {
                 };
 
                 let pressure = self.system_pressure().await;
-                let synthesis_budget = self.context_manager.context_for_task(
-                    &task.request.input,
-                    &pressure,
-                    provider.max_context(),
-                    &self.resource_budget,
-                )
-                .unwrap_or(4096);
+                let synthesis_budget = self
+                    .context_manager
+                    .context_for_task(
+                        &task.request.input,
+                        &pressure,
+                        provider.max_context(),
+                        &self.resource_budget,
+                    )
+                    .unwrap_or(4096);
 
                 let synthesis_prompt = format!(
                     "Tool '{}' returned:\n{}\n\nProvide a final answer incorporating this result. Do not emit more TOOL: directives.",
@@ -861,10 +863,8 @@ impl Kernel {
 
                 current_output = synthesis_resp.content;
 
-                if let Some(next_tool_str) = current_output
-                    .strip_prefix("TOOL:")
-                    .map(|s| s.trim())
-                    .filter(|s| !s.is_empty())
+                if let Some(next_tool_str) =
+                    current_output.strip_prefix("TOOL:").map(|s| s.trim()).filter(|s| !s.is_empty())
                 {
                     if tool_call_count >= max_tool_calls - 1 {
                         break;

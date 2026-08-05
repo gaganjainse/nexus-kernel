@@ -2,13 +2,12 @@
 
 use std::sync::Arc;
 
-use tracing::info;
-
 use nexusaos_kernel::{
     config::AppConfig,
     error::NexusError,
     policy::{PolicyEngine, PolicyRule, TrustTier},
 };
+use tracing::info;
 
 /// Run the ACP server.
 pub fn run(config_path: &str) -> Result<(), NexusError> {
@@ -31,11 +30,8 @@ pub fn run(config_path: &str) -> Result<(), NexusError> {
         let policy = PolicyEngine::new(rules, TrustTier::Basic);
         let policy_arc = Arc::new(policy);
 
-        let session_manager = Arc::new(nexusaos_acp::session::AcpSessionManager::new(
-            100,
-            3600,
-            policy_arc,
-        ));
+        let session_manager =
+            Arc::new(nexusaos_acp::session::AcpSessionManager::new(100, 3600, policy_arc));
         let acp_config = nexusaos_acp::server::AcpServerConfig {
             socket_path: "/tmp/nexusaos-acp.sock".to_string(),
             max_connections: 16,

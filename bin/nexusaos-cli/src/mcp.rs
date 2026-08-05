@@ -2,8 +2,6 @@
 
 use std::sync::Arc;
 
-use tracing::info;
-
 use nexusaos_kernel::{
     capability::{Capability, CapabilitySet, Scope},
     config::AppConfig,
@@ -12,6 +10,7 @@ use nexusaos_kernel::{
     policy::{PolicyEngine, PolicyRule, TrustTier},
     tools::{broker::ToolBroker, filesystem::FilesystemTool, git::GitTool, terminal::TerminalTool},
 };
+use tracing::info;
 
 /// Run the MCP server.
 pub fn run(config_path: &str) -> Result<(), NexusError> {
