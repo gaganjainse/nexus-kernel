@@ -147,7 +147,7 @@ mod tests {
         let projection = TaskProjection::rebuild(&[event1, event2]);
 
         assert_eq!(projection.task_count(), 1);
-        let task = projection.get_task(&task_id)?;
+        let task = projection.get_task(&task_id).expect("task should exist in projection");
         assert_eq!(task.current_state, TaskState::Classified);
 
         let classified_tasks = projection.tasks_in_state(&TaskState::Classified);
@@ -182,7 +182,7 @@ mod tests {
 
         proj.apply(&event);
         assert_eq!(proj.task_count(), 1);
-        let task = proj.get_task(&task_id)?;
+        let task = proj.get_task(&task_id).expect("task should exist in projection");
         assert_eq!(task.current_state, TaskState::Received);
         assert_eq!(task.assigned_role, None);
         Ok(())
@@ -211,7 +211,7 @@ mod tests {
         e2.sequence = crate::events::SequenceNumber(2);
         proj.apply(&e2);
 
-        let task = proj.get_task(&task_id)?;
+        let task = proj.get_task(&task_id).expect("task should exist in projection");
         assert_eq!(task.current_state, TaskState::Executing);
         Ok(())
     }
@@ -243,7 +243,7 @@ mod tests {
         e2.sequence = crate::events::SequenceNumber(2);
         proj.apply(&e2);
 
-        let task = proj.get_task(&task_id)?;
+        let task = proj.get_task(&task_id).expect("task should exist in projection");
         assert_eq!(task.assigned_role, Some(crate::state::ModelRole::Coder));
         Ok(())
     }
@@ -284,7 +284,7 @@ mod tests {
         e2.sequence = crate::events::SequenceNumber(2);
         proj.apply(&e2);
 
-        let task = proj.get_task(&task_id)?;
+        let task = proj.get_task(&task_id).expect("task should exist in projection");
         assert_eq!(task.current_state, TaskState::Received); // unchanged
         Ok(())
     }
@@ -352,8 +352,14 @@ mod tests {
 
         let proj = TaskProjection::rebuild(&[e1, e2, e3]);
         assert_eq!(proj.task_count(), 2);
-        assert_eq!(proj.get_task(&t1)?.current_state, TaskState::Completed);
-        assert_eq!(proj.get_task(&t2)?.current_state, TaskState::Received);
+        assert_eq!(
+            proj.get_task(&t1).expect("task should exist in projection").current_state,
+            TaskState::Completed
+        );
+        assert_eq!(
+            proj.get_task(&t2).expect("task should exist in projection").current_state,
+            TaskState::Received
+        );
         Ok(())
     }
 
@@ -398,7 +404,7 @@ mod tests {
         e2.sequence = crate::events::SequenceNumber(2);
         proj.apply(&e2);
 
-        let task = proj.get_task(&task_id)?;
+        let task = proj.get_task(&task_id).expect("task should exist in projection");
         assert_eq!(task.state_history.len(), 2);
         assert_eq!(task.state_history[1].0, TaskState::Classified);
         assert_eq!(task.state_history[1].1, ts2);

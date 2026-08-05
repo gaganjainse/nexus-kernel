@@ -167,7 +167,7 @@ mod tests {
         store.append(event2).await?;
 
         let projection = ReplayEngine::replay(&store).await?;
-        let task = projection.tasks.get(&task_id)?;
+        let task = projection.tasks.get(&task_id).expect("task should exist in projection");
 
         assert_eq!(task.current_state, TaskState::Classified);
         assert_eq!(task.state_history.len(), 2);
@@ -246,8 +246,14 @@ mod tests {
 
         let projection = ReplayEngine::replay(&store).await?;
         assert_eq!(projection.tasks.len(), 2);
-        assert_eq!(projection.tasks.get(&t1)?.current_state, TaskState::Classified);
-        assert_eq!(projection.tasks.get(&t2)?.current_state, TaskState::Received);
+        assert_eq!(
+            projection.tasks.get(&t1).expect("task should exist in projection").current_state,
+            TaskState::Classified
+        );
+        assert_eq!(
+            projection.tasks.get(&t2).expect("task should exist in projection").current_state,
+            TaskState::Received
+        );
         Ok(())
     }
 
@@ -293,7 +299,7 @@ mod tests {
         store.append(e2).await?;
 
         let projection = ReplayEngine::replay(&store).await?;
-        let task = projection.tasks.get(&task_id)?;
+        let task = projection.tasks.get(&task_id).expect("task should exist in projection");
         // Unknown state is skipped, so state remains Received
         assert_eq!(task.current_state, TaskState::Received);
         Ok(())
@@ -334,7 +340,7 @@ mod tests {
         store.append(e3).await?;
 
         let projection = ReplayEngine::replay(&store).await?;
-        let task = projection.tasks.get(&task_id)?;
+        let task = projection.tasks.get(&task_id).expect("task should exist in projection");
         assert_eq!(task.current_state, TaskState::Planned);
         assert_eq!(task.state_history.len(), 3);
         Ok(())

@@ -143,7 +143,7 @@ mod tests {
         let _ = scheduler.enqueue(task_id, Priority::Normal).await?;
         assert_eq!(scheduler.queue_depth(), 1);
 
-        let entry = scheduler.dequeue().await?;
+        let entry = scheduler.dequeue().await.expect("queue should not be empty");
         assert_eq!(entry.task_id, task_id);
         assert_eq!(scheduler.queue_depth(), 0);
         Ok(())
@@ -180,9 +180,9 @@ mod tests {
         let _ = scheduler.enqueue(task2, Priority::High).await?;
         let _ = scheduler.enqueue(task3, Priority::Normal).await?;
 
-        assert_eq!(scheduler.dequeue().await?.task_id, task2);
-        assert_eq!(scheduler.dequeue().await?.task_id, task3);
-        assert_eq!(scheduler.dequeue().await?.task_id, task1);
+        assert_eq!(scheduler.dequeue().await.expect("queue should not be empty").task_id, task2);
+        assert_eq!(scheduler.dequeue().await.expect("queue should not be empty").task_id, task3);
+        assert_eq!(scheduler.dequeue().await.expect("queue should not be empty").task_id, task1);
         Ok(())
     }
 
@@ -212,7 +212,7 @@ mod tests {
         let scheduler = Scheduler::new(10);
         let _ = scheduler.enqueue(TaskId::new(), Priority::Normal).await?;
         assert_eq!(scheduler.queue_depth(), 1);
-        let _ = scheduler.dequeue().await?;
+        let _ = scheduler.dequeue().await.expect("queue should not be empty");
         assert_eq!(scheduler.queue_depth(), 0);
         Ok(())
     }
@@ -266,7 +266,7 @@ mod tests {
         let crit_id = TaskId::new();
         let _ = scheduler.enqueue(low_id, Priority::Low).await?;
         let _ = scheduler.enqueue(crit_id, Priority::Critical).await?;
-        assert_eq!(scheduler.dequeue().await?.task_id, crit_id);
+        assert_eq!(scheduler.dequeue().await.expect("queue should not be empty").task_id, crit_id);
         Ok(())
     }
 
@@ -308,8 +308,8 @@ mod tests {
         let _ = scheduler.enqueue(t2, Priority::Normal).await?;
 
         // Earlier enqueued should come first
-        assert_eq!(scheduler.dequeue().await?.task_id, t1);
-        assert_eq!(scheduler.dequeue().await?.task_id, t2);
+        assert_eq!(scheduler.dequeue().await.expect("queue should not be empty").task_id, t1);
+        assert_eq!(scheduler.dequeue().await.expect("queue should not be empty").task_id, t2);
         Ok(())
     }
 
@@ -325,13 +325,19 @@ mod tests {
         }
 
         // Critical first, then High, then Low
-        let first = scheduler.dequeue().await?;
+        let first = scheduler.dequeue().await.expect("queue should not be empty");
         assert_eq!(first.priority, Priority::Critical);
         for _ in 0..3 {
-            assert_eq!(scheduler.dequeue().await?.priority, Priority::High);
+            assert_eq!(
+                scheduler.dequeue().await.expect("queue should not be empty").priority,
+                Priority::High
+            );
         }
         for _ in 0..5 {
-            assert_eq!(scheduler.dequeue().await?.priority, Priority::Low);
+            assert_eq!(
+                scheduler.dequeue().await.expect("queue should not be empty").priority,
+                Priority::Low
+            );
         }
         Ok(())
     }
@@ -350,9 +356,9 @@ mod tests {
         assert!(scheduler.cancel(&t2).await);
         assert_eq!(scheduler.queue_depth(), 2);
 
-        let first = scheduler.dequeue().await?;
+        let first = scheduler.dequeue().await.expect("queue should not be empty");
         assert_eq!(first.task_id, t1);
-        let second = scheduler.dequeue().await?;
+        let second = scheduler.dequeue().await.expect("queue should not be empty");
         assert_eq!(second.task_id, t3);
         Ok(())
     }

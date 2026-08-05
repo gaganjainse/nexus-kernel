@@ -203,7 +203,7 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "write_file",
-                "path": temp_dir.path().join("test.txt").to_str()?,
+                "path": temp_dir.path().join("test.txt").to_str().expect("valid UTF-8 path"),
                 "content": "hello world"
             }),
         };
@@ -214,7 +214,7 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "read_file",
-                "path": temp_dir.path().join("test.txt").to_str()?
+                "path": temp_dir.path().join("test.txt").to_str().expect("valid UTF-8 path")
             }),
         };
         let read_res = tool.execute(&read_req).await?;
@@ -225,7 +225,7 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "read_file",
-                "path": temp_dir.path().join(".env").to_str()?
+                "path": temp_dir.path().join(".env").to_str().expect("valid UTF-8 path")
             }),
         };
         assert!(tool.execute(&deny_req).await.is_err());
@@ -245,7 +245,7 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "list_dir",
-                "path": temp_dir.path().to_str()?
+                "path": temp_dir.path().to_str().expect("valid UTF-8 path")
             }),
         };
         let res = tool.execute(&req).await?;
@@ -267,7 +267,7 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "delete_file",
-                "path": file_path.to_str()?
+                "path": file_path.to_str().expect("valid UTF-8 path")
             }),
         };
         let res = tool.execute(&req).await?;
@@ -327,7 +327,7 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "write_file",
-                "path": temp_dir.path().join("test.txt").to_str()?
+                "path": temp_dir.path().join("test.txt").to_str().expect("valid UTF-8 path")
                 // missing content
             }),
         };
@@ -351,7 +351,7 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "write_file",
-                "path": temp_dir.path().join("test.txt").to_str()?,
+                "path": temp_dir.path().join("test.txt").to_str().expect("valid UTF-8 path"),
                 "content": "data"
             }),
         };
@@ -395,7 +395,7 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "read_file",
-                "path": env_path.to_str()?
+                "path": env_path.to_str().expect("valid UTF-8 path")
             }),
         };
         let err = tool.execute(&req).await.unwrap_err();
@@ -415,7 +415,7 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "read_file",
-                "path": temp_dir.path().join("nonexistent.txt").to_str()?
+                "path": temp_dir.path().join("nonexistent.txt").to_str().expect("valid UTF-8 path")
             }),
         };
         let err = tool.execute(&req).await.unwrap_err();
@@ -438,7 +438,7 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "read_file",
-                "path": file_path.to_str()?
+                "path": file_path.to_str().expect("valid UTF-8 path")
             }),
         };
         let res = tool.execute(&req).await?;
@@ -456,7 +456,7 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "delete_file",
-                "path": temp_dir.path().join("nonexistent.txt").to_str()?
+                "path": temp_dir.path().join("nonexistent.txt").to_str().expect("valid UTF-8 path")
             }),
         };
         let err = tool.execute(&req).await.unwrap_err();
