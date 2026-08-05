@@ -251,9 +251,8 @@ mod tests {
     #[test]
     fn test_tile_grid_active_block() -> Result<(), Box<dyn std::error::Error>> {
         let grid = TileGrid::new();
-        let active = grid.active_block();
-        assert!(active.is_some());
-        assert_eq!(active?.id, 1);
+        let active = grid.active_block().ok_or("expected active block")?;
+        assert_eq!(active.id, 1);
         Ok(())
     }
 
@@ -296,11 +295,11 @@ mod tests {
     #[test]
     fn test_tile_grid_toggle_maximize() -> Result<(), Box<dyn std::error::Error>> {
         let mut grid = TileGrid::new();
-        assert!(!grid.active_block()?.is_maximized);
+        assert!(!grid.active_block().ok_or("expected active block")?.is_maximized);
         grid.toggle_maximize();
-        assert!(grid.active_block()?.is_maximized);
+        assert!(grid.active_block().ok_or("expected active block")?.is_maximized);
         grid.toggle_maximize();
-        assert!(!grid.active_block()?.is_maximized);
+        assert!(!grid.active_block().ok_or("expected active block")?.is_maximized);
         Ok(())
     }
 
@@ -330,7 +329,7 @@ mod tests {
         if let Some(block) = grid.active_block_mut() {
             block.is_maximized = true;
         }
-        assert!(grid.active_block()?.is_maximized);
+        assert!(grid.active_block().ok_or("expected active block")?.is_maximized);
         Ok(())
     }
 }

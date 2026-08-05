@@ -381,7 +381,7 @@ mod tests {
         assert_eq!(client.oid, client_deser.oid);
         assert_eq!(client.version, client_deser.version);
         assert_eq!(client.meta.0.get("key"), Some(&serde_json::json!("val")));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -407,14 +407,14 @@ mod tests {
         assert_eq!(orefs[0].oid, block_id1);
         assert_eq!(orefs[1].otype, "block");
         assert_eq!(orefs[1].oid, block_id2);
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_otype_to_table() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(otype_to_table("client"), "db_client");
         assert_eq!(otype_to_table("block"), "db_block");
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -426,13 +426,13 @@ mod tests {
         assert_eq!(otype_to_table("layoutstate"), "db_layoutstate");
         assert_eq!(otype_to_table("block"), "db_block");
         assert_eq!(otype_to_table("job"), "db_job");
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_otype_to_table_empty_string() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(otype_to_table(""), "db_");
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -440,7 +440,7 @@ mod tests {
         let p = Point::default();
         assert_eq!(p.x, 0);
         assert_eq!(p.y, 0);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -448,7 +448,7 @@ mod tests {
         assert_eq!(Point { x: 1, y: 2 }, Point { x: 1, y: 2 });
         assert_ne!(Point { x: 1, y: 2 }, Point { x: 1, y: 3 });
         assert_ne!(Point { x: 0, y: 0 }, Point { x: 1, y: 0 });
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -456,7 +456,7 @@ mod tests {
         let p = Point { x: 42, y: -10 };
         let cloned = p.clone();
         assert_eq!(p, cloned);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -465,7 +465,7 @@ mod tests {
         let json = serde_json::to_string(&p)?;
         let deserialized: Point = serde_json::from_str(&json)?;
         assert_eq!(p, deserialized);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -474,7 +474,7 @@ mod tests {
         let json = serde_json::to_value(&p)?;
         assert_eq!(json["x"], 1);
         assert_eq!(json["y"], 2);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -482,21 +482,21 @@ mod tests {
         let s = WinSize::default();
         assert_eq!(s.width, 0);
         assert_eq!(s.height, 0);
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_winsize_partial_eq() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(WinSize { width: 100, height: 200 }, WinSize { width: 100, height: 200 });
         assert_ne!(WinSize { width: 100, height: 200 }, WinSize { width: 100, height: 300 });
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_winsize_clone() -> Result<(), Box<dyn std::error::Error>> {
         let s = WinSize { width: 1920, height: 1080 };
         assert_eq!(s.clone(), s);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -505,7 +505,7 @@ mod tests {
         let json = serde_json::to_string(&s)?;
         let deserialized: WinSize = serde_json::from_str(&json)?;
         assert_eq!(s, deserialized);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -513,21 +513,21 @@ mod tests {
         let t = TermSize::default();
         assert_eq!(t.rows, 0);
         assert_eq!(t.cols, 0);
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_termsize_partial_eq() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(TermSize { rows: 24, cols: 80 }, TermSize { rows: 24, cols: 80 });
         assert_ne!(TermSize { rows: 24, cols: 80 }, TermSize { rows: 25, cols: 80 });
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_termsize_clone() -> Result<(), Box<dyn std::error::Error>> {
         let t = TermSize { rows: 50, cols: 120 };
         assert_eq!(t.clone(), t);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -536,7 +536,7 @@ mod tests {
         let json = serde_json::to_string(&t)?;
         let deserialized: TermSize = serde_json::from_str(&json)?;
         assert_eq!(t, deserialized);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -548,7 +548,7 @@ mod tests {
         let json = serde_json::to_string(&opts)?;
         let deserialized: RuntimeOpts = serde_json::from_str(&json)?;
         assert_eq!(opts, deserialized);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -556,7 +556,7 @@ mod tests {
         let opts = RuntimeOpts { term_size: TermSize { rows: 24, cols: 80 }, env: None };
         let json = serde_json::to_value(&opts)?;
         assert!(json.get("env").is_none());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -567,7 +567,7 @@ mod tests {
         };
         let json = serde_json::to_value(&opts)?;
         assert!(json.get("env").is_some());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -577,7 +577,7 @@ mod tests {
         let opts3 = RuntimeOpts { term_size: TermSize { rows: 30, cols: 80 }, env: None };
         assert_eq!(opts1, opts2);
         assert_ne!(opts1, opts3);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -589,7 +589,7 @@ mod tests {
         let json = serde_json::to_string(&sticker)?;
         let deserialized: StickerType = serde_json::from_str(&json)?;
         assert_eq!(sticker, deserialized);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -600,7 +600,7 @@ mod tests {
         };
         let json = serde_json::to_value(&sticker)?;
         assert_eq!(json["stickertype"], "cmd");
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -614,7 +614,7 @@ mod tests {
             style: serde_json::json!({"color": "red"}),
         };
         assert_eq!(s1, s2);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -623,7 +623,7 @@ mod tests {
         let json = serde_json::to_string(&entry)?;
         let deserialized: LeafOrderEntry = serde_json::from_str(&json)?;
         assert_eq!(entry, deserialized);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -636,7 +636,7 @@ mod tests {
         let json = serde_json::to_string(&action)?;
         let deserialized: LayoutActionData = serde_json::from_str(&json)?;
         assert_eq!(action, deserialized);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -647,49 +647,49 @@ mod tests {
         assert!(json.get("block_id").is_none());
         assert!(json.get("node_size").is_none());
         assert_eq!(json["actiontype"], "resize");
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_client_otype() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(Client::otype(), "client");
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_window_otype() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(Window::otype(), "window");
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_workspace_otype() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(Workspace::otype(), "workspace");
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_tab_otype() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(Tab::otype(), "tab");
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_layoutstate_otype() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(LayoutState::otype(), "layout");
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_block_otype() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(Block::otype(), "block");
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_job_otype() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(Job::otype(), "job");
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -706,7 +706,7 @@ mod tests {
             install_id: None,
         };
         assert_eq!(client.oid(), &oid);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -724,7 +724,7 @@ mod tests {
         assert_eq!(client.version(), 5);
         client.set_version(10);
         assert_eq!(client.version(), 10);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -741,7 +741,7 @@ mod tests {
         };
         client.meta_mut().set("key", "val");
         assert_eq!(client.meta().get_string("key"), Some("val".to_string()));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -760,7 +760,7 @@ mod tests {
         let oref = client.oref();
         assert_eq!(oref.otype, "client");
         assert_eq!(oref.oid, oid);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -780,7 +780,7 @@ mod tests {
         assert_eq!(window.version(), 1);
         window.set_version(42);
         assert_eq!(window.version(), 42);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -802,7 +802,7 @@ mod tests {
         let oref = window.oref();
         assert_eq!(oref.otype, "window");
         assert_eq!(oref.oid, oid);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -820,7 +820,7 @@ mod tests {
         let json = serde_json::to_string(&window)?;
         let deserialized: Window = serde_json::from_str(&json)?;
         assert_eq!(window, deserialized);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -837,7 +837,7 @@ mod tests {
         };
         let json = serde_json::to_value(&window)?;
         assert!(json.get("is_new").is_none());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -857,7 +857,7 @@ mod tests {
         assert_eq!(ws.version(), 3);
         ws.set_version(7);
         assert_eq!(ws.version(), 7);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -879,7 +879,7 @@ mod tests {
         let oref = ws.oref();
         assert_eq!(oref.otype, "workspace");
         assert_eq!(oref.oid, oid);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -899,10 +899,9 @@ mod tests {
         assert!(json.get("icon").is_none());
         assert!(json.get("color").is_none());
 
-        let deserialized: Workspace =
-            serde_json::from_str(&serde_json::to_string(&ws)?)?;
+        let deserialized: Workspace = serde_json::from_str(&serde_json::to_string(&ws)?)?;
         assert_eq!(ws, deserialized);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -920,7 +919,7 @@ mod tests {
         let json = serde_json::to_string(&ws)?;
         let deserialized: Workspace = serde_json::from_str(&json)?;
         assert_eq!(ws, deserialized);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -938,7 +937,7 @@ mod tests {
         assert_eq!(tab.version(), 2);
         tab.set_version(99);
         assert_eq!(tab.version(), 99);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -958,7 +957,7 @@ mod tests {
         let oref = tab.oref();
         assert_eq!(oref.otype, "tab");
         assert_eq!(oref.oid, oid);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -973,7 +972,7 @@ mod tests {
         };
         let orefs = tab.block_orefs();
         assert!(orefs.is_empty());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -988,7 +987,7 @@ mod tests {
         };
         let orefs = tab.block_orefs();
         assert!(orefs.is_empty());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -1012,7 +1011,7 @@ mod tests {
             assert_eq!(oref.otype, "block");
         }
         assert_eq!(orefs[0].oid, valid_id);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -1028,7 +1027,7 @@ mod tests {
         let json = serde_json::to_string(&tab)?;
         let deserialized: Tab = serde_json::from_str(&json)?;
         assert_eq!(tab, deserialized);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -1048,7 +1047,7 @@ mod tests {
         assert_eq!(ls.version(), 0);
         ls.set_version(3);
         assert_eq!(ls.version(), 3);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -1070,7 +1069,7 @@ mod tests {
         let oref = ls.oref();
         assert_eq!(oref.otype, "layout");
         assert_eq!(oref.oid, oid);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -1089,7 +1088,7 @@ mod tests {
         assert!(json.get("root_node").is_none());
         assert!(json.get("magnified_node_id").is_none());
         assert_eq!(json["version"], 0);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -1114,7 +1113,7 @@ mod tests {
         let json = serde_json::to_string(&ls)?;
         let deserialized: LayoutState = serde_json::from_str(&json)?;
         assert_eq!(ls, deserialized);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -1134,7 +1133,7 @@ mod tests {
         assert_eq!(block.version(), 0);
         block.set_version(5);
         assert_eq!(block.version(), 5);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -1156,7 +1155,7 @@ mod tests {
         let oref = block.oref();
         assert_eq!(oref.otype, "block");
         assert_eq!(oref.oid, oid);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -1177,7 +1176,7 @@ mod tests {
         assert!(json.get("stickers").is_none());
         assert!(json.get("sub_block_ids").is_none());
         assert!(json.get("job_id").is_none());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -1201,7 +1200,7 @@ mod tests {
         let json = serde_json::to_string(&block)?;
         let deserialized: Block = serde_json::from_str(&json)?;
         assert_eq!(block, deserialized);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -1219,7 +1218,7 @@ mod tests {
         let json = serde_json::to_value(&block)?;
         assert!(json.get("sub_block_ids").is_some());
         assert_eq!(json["sub_block_ids"].as_array().ok_or("unexpected None")?.len(), 1);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -1248,7 +1247,7 @@ mod tests {
         assert_eq!(job.version(), 0);
         job.set_version(1);
         assert_eq!(job.version(), 1);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -1279,7 +1278,7 @@ mod tests {
         let oref = job.oref();
         assert_eq!(oref.otype, "job");
         assert_eq!(oref.oid, oid);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -1306,7 +1305,7 @@ mod tests {
         let json = serde_json::to_string(&job)?;
         let deserialized: Job = serde_json::from_str(&json)?;
         assert_eq!(job, deserialized);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -1337,7 +1336,7 @@ mod tests {
         assert!(json.get("cmd_exit_code").is_none());
         assert!(json.get("cmd_exit_signal").is_none());
         assert!(json.get("cmd_exit_error").is_none());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -1364,7 +1363,7 @@ mod tests {
         let json = serde_json::to_value(&job)?;
         assert!(json.get("cmd_args").is_none());
         assert!(json.get("cmd_env").is_none());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -1391,7 +1390,7 @@ mod tests {
         let json = serde_json::to_value(&job)?;
         // stream_done has #[serde(default)] so it should be present even when false
         assert_eq!(json["stream_done"], false);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -1409,6 +1408,6 @@ mod tests {
         for ot in &otypes {
             assert!(VALID_OTYPES.contains(ot), "otype '{}' not in VALID_OTYPES", ot);
         }
-    Ok(())
+        Ok(())
     }
 }

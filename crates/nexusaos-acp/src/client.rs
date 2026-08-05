@@ -204,7 +204,7 @@ mod tests {
         let json = serde_json::to_string(&req)?;
         let back: AcpRequest = serde_json::from_str(&json)?;
         assert_eq!(back.method, "authenticate");
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -218,7 +218,7 @@ mod tests {
         let json = serde_json::to_string(&resp)?;
         let back: AcpResponse = serde_json::from_str(&json)?;
         assert!(back.result.is_some());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -226,6 +226,6 @@ mod tests {
         let client = AcpClient::new("/tmp/test.sock", "agent-1");
         assert_eq!(client.socket_path, "/tmp/test.sock");
         assert_eq!(client.agent_id, "agent-1");
-    Ok(())
+        Ok(())
     }
 }

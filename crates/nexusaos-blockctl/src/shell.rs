@@ -194,7 +194,7 @@ mod tests {
     fn test_detect_shell() -> Result<(), Box<dyn std::error::Error>> {
         let shell = detect_shell();
         assert!(!shell.is_empty());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -206,7 +206,7 @@ mod tests {
         assert_eq!(status.conn_name, "local");
         assert_eq!(status.block_id, "blk1");
         assert_eq!(status.exit_code, None);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -217,7 +217,7 @@ mod tests {
         assert_eq!(controller.conn_name(), "local");
         let status = controller.runtime_status();
         assert_eq!(status.status, "init");
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -230,7 +230,7 @@ mod tests {
             Err(ControllerError::NotRunning(id)) => assert_eq!(id, "blk1"),
             _ => unreachable!("expected NotRunning error"),
         }
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -240,7 +240,7 @@ mod tests {
         controller.stop(false).await?;
         let status = controller.runtime_status();
         assert_eq!(status.status, "done");
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -256,7 +256,7 @@ mod tests {
         controller2.stop(false).await?;
         let status2 = controller2.runtime_status();
         assert_eq!(status2.status, "done");
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -279,7 +279,7 @@ mod tests {
 
         let status = controller.runtime_status();
         assert_eq!(status.status, "done");
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -293,7 +293,7 @@ mod tests {
             Err(ControllerError::Shell(_)) => {}
             _ => unreachable!("expected Shell error"),
         }
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -307,6 +307,6 @@ mod tests {
             Err(ControllerError::NotRunning(_)) => {}
             _ => unreachable!("expected NotRunning error"),
         }
-    Ok(())
+        Ok(())
     }
 }

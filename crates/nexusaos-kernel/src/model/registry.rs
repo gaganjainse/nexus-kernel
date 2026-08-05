@@ -213,7 +213,7 @@ mod tests {
         }
 
         registry.register(Box::new(AnotherPlanner));
-        let planner = registry.get(&ModelRole::Planner).ok_or_else(|| "planner not found")?;
+        let planner = registry.get(&ModelRole::Planner).ok_or("planner not found")?;
         assert_eq!(planner.name(), "another-planner");
         assert_eq!(planner.max_context(), 200);
         assert!(planner.supports_vision());
@@ -289,7 +289,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_registry_health_check_all_with_failure() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_registry_health_check_all_with_failure() -> Result<(), Box<dyn std::error::Error>>
+    {
         struct FailingProvider;
         #[async_trait]
         impl ModelProvider for FailingProvider {

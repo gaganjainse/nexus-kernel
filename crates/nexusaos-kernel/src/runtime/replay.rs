@@ -101,7 +101,7 @@ impl ReplayEngine {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Mutex;
+    use std::sync::{Mutex, MutexGuard};
 
     use async_trait::async_trait;
 
@@ -115,32 +115,31 @@ mod tests {
         fn new() -> Self {
             Self { events: Mutex::new(Vec::new()) }
         }
+
+        /// Lock the event buffer, recovering the guard if a previous holder panicked.
+        /// The buffer stays consistent across panics, so poisoning is not fatal here.
+        fn events(&self) -> MutexGuard<'_, Vec<Event>> {
+            self.events.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+        }
     }
 
     #[async_trait]
     impl EventStore for MockEventStore {
         async fn append(&self, event: Event) -> Result<(), NexusError> {
-            self.events.lock().unwrap().push(event);
+            self.events().push(event);
             Ok(())
         }
         async fn get_all_events(&self) -> Result<Vec<Event>, NexusError> {
-            Ok(self.events.lock().unwrap().clone())
+            Ok(self.events().clone())
         }
         async fn get_task_events(&self, task_id: &TaskId) -> Result<Vec<Event>, NexusError> {
-            Ok(self
-                .events
-                .lock()
-                .unwrap()
-                .iter()
-                .filter(|e| e.task_id == Some(*task_id))
-                .cloned()
-                .collect())
+            Ok(self.events().iter().filter(|e| e.task_id == Some(*task_id)).cloned().collect())
         }
         async fn read_since(&self, _sequence: u64) -> Result<Vec<Event>, NexusError> {
-            Ok(self.events.lock().unwrap().clone())
+            Ok(self.events().clone())
         }
         async fn current_sequence(&self) -> Result<u64, NexusError> {
-            Ok(self.events.lock().unwrap().len() as u64)
+            Ok(self.events().len() as u64)
         }
     }
 
@@ -167,7 +166,7 @@ mod tests {
         store.append(event2).await?;
 
         let projection = ReplayEngine::replay(&store).await?;
-        let task = projection.tasks.get(&task_id).expect("task should exist in projection");
+        let task = projection.tasks.get(&task_id).ok_or("task should exist in projection")?;
 
         assert_eq!(task.current_state, TaskState::Classified);
         assert_eq!(task.state_history.len(), 2);
@@ -247,11 +246,11 @@ mod tests {
         let projection = ReplayEngine::replay(&store).await?;
         assert_eq!(projection.tasks.len(), 2);
         assert_eq!(
-            projection.tasks.get(&t1).expect("task should exist in projection").current_state,
+            projection.tasks.get(&t1).ok_or("task should exist in projection")?.current_state,
             TaskState::Classified
         );
         assert_eq!(
-            projection.tasks.get(&t2).expect("task should exist in projection").current_state,
+            projection.tasks.get(&t2).ok_or("task should exist in projection")?.current_state,
             TaskState::Received
         );
         Ok(())
@@ -299,7 +298,7 @@ mod tests {
         store.append(e2).await?;
 
         let projection = ReplayEngine::replay(&store).await?;
-        let task = projection.tasks.get(&task_id).expect("task should exist in projection");
+        let task = projection.tasks.get(&task_id).ok_or("task should exist in projection")?;
         // Unknown state is skipped, so state remains Received
         assert_eq!(task.current_state, TaskState::Received);
         Ok(())
@@ -340,7 +339,7 @@ mod tests {
         store.append(e3).await?;
 
         let projection = ReplayEngine::replay(&store).await?;
-        let task = projection.tasks.get(&task_id).expect("task should exist in projection");
+        let task = projection.tasks.get(&task_id).ok_or("task should exist in projection")?;
         assert_eq!(task.current_state, TaskState::Planned);
         assert_eq!(task.state_history.len(), 3);
         Ok(())

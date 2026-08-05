@@ -1,12 +1,7 @@
-use std::{
-    env,
-    fs,
-    path::{Path, PathBuf},
-    process,
-};
+use std::{env, fs, path::PathBuf, process};
 
-use syn::{parse_file, Item, ItemFn, Signature, Stmt, Expr};
 use quote::ToTokens;
+use syn::{parse_file, Expr, Item, ItemFn, Signature};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -61,9 +56,9 @@ fn process_item(item: &Item, modified: &mut bool) -> usize {
                 println!("    returns_result: {}", returns_result(&item_fn.sig));
                 println!("    has_unwrap: {}", has_unwrap_or_expect_or_panic(&item_fn.block));
                 println!("    ends_with_ok: {}", ends_with_ok(&item_fn.block));
-                
-                let needs_result = has_unwrap_or_expect_or_panic(&item_fn.block)
-                    && !returns_result(&item_fn.sig);
+
+                let needs_result =
+                    has_unwrap_or_expect_or_panic(&item_fn.block) && !returns_result(&item_fn.sig);
 
                 if needs_result {
                     println!("    -> Converting to Result return type");
@@ -79,14 +74,18 @@ fn process_item(item: &Item, modified: &mut bool) -> usize {
                     println!("    -> Adding Ok(())");
                     *modified = true;
                 }
-                
+
                 return 1;
             }
             println!("  [FN] {}", item_fn.sig.ident);
             0
         }
         Item::Mod(item_mod) => {
-            println!("  [MOD] {} (items: {})", item_mod.ident, item_mod.content.as_ref().map(|c| c.1.len()).unwrap_or(0));
+            println!(
+                "  [MOD] {} (items: {})",
+                item_mod.ident,
+                item_mod.content.as_ref().map(|c| c.1.len()).unwrap_or(0)
+            );
             let mut count = 0;
             if let Some((_, ref items)) = item_mod.content {
                 for inner_item in items {
@@ -96,7 +95,10 @@ fn process_item(item: &Item, modified: &mut bool) -> usize {
             count
         }
         _ => {
-            println!("  [OTHER] {}", item.to_token_stream().to_string().split_whitespace().next().unwrap_or("?"));
+            println!(
+                "  [OTHER] {}",
+                item.to_token_stream().to_string().split_whitespace().next().unwrap_or("?")
+            );
             0
         }
     }
@@ -108,8 +110,9 @@ fn is_test_function(item: &ItemFn) -> bool {
         return false;
     }
     item.attrs.iter().any(|attr| {
-        attr.path().is_ident("test") || 
-        (attr.path().is_ident("tokio") && attr.to_token_stream().to_string().contains("test"))
+        attr.path().is_ident("test")
+            || (attr.path().is_ident("tokio")
+                && attr.to_token_stream().to_string().contains("test"))
     })
 }
 
@@ -132,11 +135,9 @@ fn ends_with_ok(block: &syn::Block) -> bool {
     if block.stmts.is_empty() {
         return false;
     }
-    if let syn::Stmt::Expr(expr, _) = &block.stmts[block.stmts.len() - 1] {
-        if let Expr::Path(expr_path) = expr {
-            if expr_path.path.is_ident("Ok") {
-                return true;
-            }
+    if let syn::Stmt::Expr(Expr::Path(expr_path), _) = &block.stmts[block.stmts.len() - 1] {
+        if expr_path.path.is_ident("Ok") {
+            return true;
         }
     }
     false

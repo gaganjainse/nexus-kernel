@@ -234,7 +234,7 @@ mod tests {
         let id = artifact.id.clone();
         store.store(artifact).await?;
 
-        let retrieved = store.get(&id).await.ok_or_else(|| "artifact not found")?;
+        let retrieved = store.get(&id).await.ok_or("artifact not found")?;
         assert_eq!(retrieved.content, "test output");
         Ok(())
     }

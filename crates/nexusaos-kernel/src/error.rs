@@ -274,11 +274,14 @@ mod tests {
     }
 
     #[test]
-    fn test_error_from_storage_serialization() {
-        let json_err = serde_json::from_str::<serde_json::Value>("bad json").unwrap_err();
+    fn test_error_from_storage_serialization() -> Result<(), Box<dyn std::error::Error>> {
+        let Err(json_err) = serde_json::from_str::<serde_json::Value>("bad json") else {
+            return Err("expected invalid JSON to fail parsing".into());
+        };
         let storage_err = StorageError::Serialization(json_err);
         let nexus_err: NexusError = storage_err.into();
         assert!(nexus_err.to_string().contains("Storage error"));
+        Ok(())
     }
 
     #[test]
@@ -481,10 +484,13 @@ mod tests {
     }
 
     #[test]
-    fn test_error_from_serde() {
-        let json_err = serde_json::from_str::<serde_json::Value>("bad json").unwrap_err();
+    fn test_error_from_serde() -> Result<(), Box<dyn std::error::Error>> {
+        let Err(json_err) = serde_json::from_str::<serde_json::Value>("bad json") else {
+            return Err("expected invalid JSON to fail parsing".into());
+        };
         let nexus_err: NexusError = json_err.into();
         assert!(nexus_err.to_string().contains("Serialization error"));
+        Ok(())
     }
 
     #[test]
@@ -495,13 +501,16 @@ mod tests {
     }
 
     #[test]
-    fn test_config_error_from_toml() {
-        let toml_err = toml::from_str::<AppConfig>("invalid").unwrap_err();
+    fn test_config_error_from_toml() -> Result<(), Box<dyn std::error::Error>> {
+        let Err(toml_err) = toml::from_str::<AppConfig>("invalid") else {
+            return Err("expected invalid TOML to fail parsing".into());
+        };
         let config_err: ConfigError = toml_err.into();
         assert!(
             config_err.to_string().contains("TOML parse error")
                 || config_err.to_string().contains("parse")
         );
+        Ok(())
     }
 
     #[test]
@@ -512,10 +521,13 @@ mod tests {
     }
 
     #[test]
-    fn test_storage_error_from_serde() {
-        let json_err = serde_json::from_str::<serde_json::Value>("bad").unwrap_err();
+    fn test_storage_error_from_serde() -> Result<(), Box<dyn std::error::Error>> {
+        let Err(json_err) = serde_json::from_str::<serde_json::Value>("bad") else {
+            return Err("expected invalid JSON to fail parsing".into());
+        };
         let storage_err: StorageError = json_err.into();
         assert!(storage_err.to_string().contains("Event serialization error"));
+        Ok(())
     }
 
     #[test]

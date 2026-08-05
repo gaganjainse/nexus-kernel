@@ -148,11 +148,12 @@ mod tests {
         assert_eq!(route, "test_route");
         assert_eq!(event.topic, EVENT_CONFIG);
         assert_eq!(event.data, test_json);
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_config_watcher_new_stores_path_and_broker() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_config_watcher_new_stores_path_and_broker(
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let config_path = temp_dir.path().join("config.json");
         let broker = Broker::new(10);
@@ -161,11 +162,12 @@ mod tests {
         // ConfigWatcher stores the path and broker; we verify start doesn't panic
         watcher.start();
         tokio::time::sleep(Duration::from_millis(50)).await;
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_config_watcher_does_not_panic_on_invalid_json() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_config_watcher_does_not_panic_on_invalid_json(
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let temp_dir = TempDir::new()?;
         let config_path = temp_dir.path().join("bad.json");
         std::fs::write(&config_path, "not valid json {{{")?;
@@ -182,7 +184,7 @@ mod tests {
         file.sync_all()?;
 
         tokio::time::sleep(Duration::from_millis(200)).await;
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -226,7 +228,7 @@ mod tests {
         }
         routes.sort();
         assert_eq!(routes, vec!["route1", "route2"]);
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -248,7 +250,7 @@ mod tests {
 
         tokio::time::sleep(Duration::from_millis(200)).await;
         // Should not panic even with no subscribers
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -284,6 +286,6 @@ mod tests {
 
         assert_eq!(route, "test_route");
         assert_eq!(event.data, test_json);
-    Ok(())
+        Ok(())
     }
 }

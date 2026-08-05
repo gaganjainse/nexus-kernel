@@ -256,7 +256,7 @@ mod tests {
         let (route, ev) = rx.recv().await?;
         assert_eq!(route, "route1");
         assert_eq!(ev.topic, "test.topic");
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -278,7 +278,7 @@ mod tests {
         let (route, ev) = rx.recv().await?;
         assert_eq!(route, "route1");
         assert_eq!(ev.data, json!(2));
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -296,7 +296,7 @@ mod tests {
         let (route, ev) = rx.recv().await?;
         assert_eq!(route, "route1");
         assert_eq!(ev.data, json!(1));
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -307,7 +307,7 @@ mod tests {
         assert_eq!(broker.subscriber_count("test"), 1);
         broker.unsubscribe("route1", "test");
         assert_eq!(broker.subscriber_count("test"), 0);
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -324,7 +324,7 @@ mod tests {
         broker.unsubscribe_all("route1");
         assert_eq!(broker.subscriber_count("test1"), 0);
         assert_eq!(broker.subscriber_count("test2"), 0);
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -347,7 +347,7 @@ mod tests {
         // read_history returns newest first
         assert_eq!(hist[0].data, json!(3));
         assert_eq!(hist[1].data, json!(2));
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -373,7 +373,7 @@ mod tests {
         let mut routes = vec![r1, r2];
         routes.sort();
         assert_eq!(routes, vec!["route1", "route2"]);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -392,14 +392,15 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_subscribe_duplicate_route_id_does_not_duplicate() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_subscribe_duplicate_route_id_does_not_duplicate(
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         broker
             .subscribe("route1", SubscriptionRequest { topic: "test".to_string(), scopes: vec![] });
         broker
             .subscribe("route1", SubscriptionRequest { topic: "test".to_string(), scopes: vec![] });
         assert_eq!(broker.subscriber_count("test"), 1);
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -425,7 +426,7 @@ mod tests {
         assert_eq!(r2, "route1");
         assert_eq!(ev1.data, json!(1));
         assert_eq!(ev2.data, json!(2));
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -443,7 +444,7 @@ mod tests {
         let (route, ev) = rx.recv().await?;
         assert_eq!(route, "route1");
         assert_eq!(ev.data, json!(1));
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -470,7 +471,7 @@ mod tests {
             routes.push(r);
         }
         assert!(routes.iter().all(|r| r == "route1"));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -734,7 +735,7 @@ mod tests {
         // rx should timeout because no route matched and no message was sent
         let result = tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv()).await;
         assert!(result.is_err());
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -751,7 +752,7 @@ mod tests {
 
         let result = tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv()).await;
         assert!(result.is_err());
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -769,11 +770,12 @@ mod tests {
         let (r2, _) = rx2.recv().await?;
         assert_eq!(r1, "route1");
         assert_eq!(r2, "route1");
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_scope_matching_event_scopes_not_in_subscription() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_scope_matching_event_scopes_not_in_subscription(
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         broker.subscribe(
             "route1",
@@ -788,7 +790,7 @@ mod tests {
 
         let result = tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv()).await;
         assert!(result.is_err());
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -812,11 +814,12 @@ mod tests {
             routes.push(r);
         }
         assert!(routes.iter().all(|r| r == "route1"));
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_double_star_wildcard_matches_with_scopes() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_double_star_wildcard_matches_with_scopes(
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         let mut rx = broker.receiver();
 
@@ -832,7 +835,7 @@ mod tests {
         ));
         let (r, _) = rx.recv().await?;
         assert_eq!(r, "route1");
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -862,7 +865,7 @@ mod tests {
             received,
             vec![("route1".into(), "topicA".into()), ("route2".into(), "topicB".into())]
         );
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -876,7 +879,7 @@ mod tests {
         assert_eq!(hist.len(), 2);
         assert_eq!(hist[0].data, json!(3));
         assert_eq!(hist[1].data, json!(1));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -933,11 +936,12 @@ mod tests {
         broker.publish(WaveEvent::new("test", vec!["scopeA".to_string()], json!(1)));
         let result = tokio::time::timeout(std::time::Duration::from_millis(100), rx.recv()).await;
         assert!(result.is_err());
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_unsubscribe_all_does_not_affect_other_routes() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_unsubscribe_all_does_not_affect_other_routes(
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         broker
             .subscribe("route1", SubscriptionRequest { topic: "test".to_string(), scopes: vec![] });
@@ -951,11 +955,12 @@ mod tests {
         broker.publish(WaveEvent::global("test", json!(1)));
         let (r, _) = rx.recv().await?;
         assert_eq!(r, "route2");
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_subscriber_count_with_star_subscriptions() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_subscriber_count_with_star_subscriptions(
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         broker.subscribe(
             "route1",
@@ -966,11 +971,12 @@ mod tests {
             SubscriptionRequest { topic: "test".to_string(), scopes: vec!["*".to_string()] },
         );
         assert_eq!(broker.subscriber_count("test"), 2);
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_subscriber_count_with_double_star_subscriptions() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_subscriber_count_with_double_star_subscriptions(
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         broker.subscribe(
             "route1",
@@ -981,7 +987,7 @@ mod tests {
             SubscriptionRequest { topic: "test".to_string(), scopes: vec!["**".to_string()] },
         );
         assert_eq!(broker.subscriber_count("test"), 2);
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -989,7 +995,7 @@ mod tests {
         let broker = Broker::new(10);
         broker.publish(WaveEvent::global("test", json!(1)));
         assert!(broker.read_history("test", 10).is_empty());
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -1003,16 +1009,17 @@ mod tests {
         let mut rx2 = broker.receiver();
         let result = tokio::time::timeout(std::time::Duration::from_millis(100), rx2.recv()).await;
         assert!(result.is_err());
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_publish_with_no_subscribers_no_broadcast() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_publish_with_no_subscribers_no_broadcast(
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let broker = Broker::new(10);
         // Should not panic
         broker.publish(WaveEvent::global("test", json!(1)));
         assert!(broker.read_history("test", 10).is_empty());
-    Ok(())
+        Ok(())
     }
 
     #[test]

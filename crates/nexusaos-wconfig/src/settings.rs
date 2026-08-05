@@ -138,7 +138,7 @@ mod tests {
         assert_eq!(default_settings.editor.minimap, Some(true));
         assert_eq!(default_settings.editor.word_wrap, Some(false));
         assert_eq!(default_settings.ai.model, Some("gpt-4".to_string()));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -158,8 +158,11 @@ mod tests {
         assert_eq!(settings.ai.model, Some("gpt-4o".to_string()));
         assert_eq!(settings.editor.word_wrap, Some(true));
         assert_eq!(settings.editor.minimap, None); // Not provided
-        assert_eq!(settings.extras.get("unknown:key").ok_or("unexpected None")?, &serde_json::json!("value"));
-    Ok(())
+        assert_eq!(
+            settings.extras.get("unknown:key").ok_or("unexpected None")?,
+            &serde_json::json!("value")
+        );
+        Ok(())
     }
 
     #[test]
@@ -177,7 +180,7 @@ mod tests {
         assert_eq!(base.term.font_size, Some(14.0)); // From default
         assert_eq!(base.ai.model, Some("claude-3-opus".to_string()));
         assert_eq!(base.editor.minimap, Some(true)); // From default
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -187,7 +190,7 @@ mod tests {
         assert_eq!(term.font_family, None);
         assert_eq!(term.theme, Some("dark".to_string()));
         assert_eq!(term.scrollback, Some(10000));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -196,7 +199,7 @@ mod tests {
         assert_eq!(ai.model, Some("gpt-4".to_string()));
         assert_eq!(ai.max_tokens, None);
         assert_eq!(ai.base_url, None);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -204,14 +207,14 @@ mod tests {
         let editor = EditorSettings::default();
         assert_eq!(editor.minimap, Some(true));
         assert_eq!(editor.word_wrap, Some(false));
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_global_settings_default_extras_empty() -> Result<(), Box<dyn std::error::Error>> {
         let global = GlobalSettings::default();
         assert!(global.extras.is_empty());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -228,11 +231,12 @@ mod tests {
         assert_eq!(base.font_family, Some("JetBrains Mono".to_string()));
         assert_eq!(base.theme, Some("dark".to_string())); // preserved from default
         assert_eq!(base.scrollback, Some(10000)); // preserved from default
-    Ok(())
+        Ok(())
     }
 
     #[test]
-    fn test_term_settings_merge_all_none_preserves_base() -> Result<(), Box<dyn std::error::Error>> {
+    fn test_term_settings_merge_all_none_preserves_base() -> Result<(), Box<dyn std::error::Error>>
+    {
         let mut base = TermSettings {
             font_size: Some(16.0),
             font_family: Some("Fira Code".to_string()),
@@ -246,7 +250,7 @@ mod tests {
         assert_eq!(base.font_family, Some("Fira Code".to_string()));
         assert_eq!(base.theme, Some("light".to_string()));
         assert_eq!(base.scrollback, Some(5000));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -261,17 +265,18 @@ mod tests {
         assert_eq!(base.model, Some("claude-3".to_string()));
         assert_eq!(base.max_tokens, Some(4096));
         assert_eq!(base.base_url, None);
-    Ok(())
+        Ok(())
     }
 
     #[test]
-    fn test_editor_settings_merge_preserves_some_values() -> Result<(), Box<dyn std::error::Error>> {
+    fn test_editor_settings_merge_preserves_some_values() -> Result<(), Box<dyn std::error::Error>>
+    {
         let mut base = EditorSettings::default();
         let override_settings = EditorSettings { minimap: Some(false), word_wrap: None };
         base.merge(override_settings);
         assert_eq!(base.minimap, Some(false));
         assert_eq!(base.word_wrap, Some(false)); // preserved from default
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -283,9 +288,12 @@ mod tests {
         let overrides: GlobalSettings = serde_json::from_str(overrides_json)?;
 
         base.merge(overrides);
-        assert_eq!(base.extras.get("custom:key").ok_or("unexpected None")?, &serde_json::json!("base_value"));
+        assert_eq!(
+            base.extras.get("custom:key").ok_or("unexpected None")?,
+            &serde_json::json!("base_value")
+        );
         assert_eq!(base.term.theme, Some("light".to_string()));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -297,9 +305,12 @@ mod tests {
         let overrides: GlobalSettings = serde_json::from_str(overrides_json)?;
 
         base.merge(overrides);
-        assert_eq!(base.extras.get("extra:key").ok_or("unexpected None")?, &serde_json::json!("new"));
+        assert_eq!(
+            base.extras.get("extra:key").ok_or("unexpected None")?,
+            &serde_json::json!("new")
+        );
         assert_eq!(base.extras.get("key").ok_or("unexpected None")?, &serde_json::json!("old"));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -316,7 +327,7 @@ mod tests {
         assert_eq!(decoded.font_family, term.font_family);
         assert_eq!(decoded.theme, term.theme);
         assert_eq!(decoded.scrollback, term.scrollback);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -331,7 +342,7 @@ mod tests {
         assert_eq!(decoded.model, ai.model);
         assert_eq!(decoded.max_tokens, ai.max_tokens);
         assert_eq!(decoded.base_url, ai.base_url);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -341,7 +352,7 @@ mod tests {
         let decoded: EditorSettings = serde_json::from_str(&json)?;
         assert_eq!(decoded.minimap, editor.minimap);
         assert_eq!(decoded.word_wrap, editor.word_wrap);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -363,7 +374,7 @@ mod tests {
         assert_eq!(decoded.term.theme, global.term.theme);
         assert_eq!(decoded.ai.model, global.ai.model);
         assert_eq!(decoded.editor.minimap, global.editor.minimap);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -380,7 +391,7 @@ mod tests {
         assert_eq!(decoded.font_family, None);
         assert_eq!(decoded.theme, None);
         assert_eq!(decoded.scrollback, None);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -390,7 +401,7 @@ mod tests {
         assert_eq!(base.term.font_size, cloned.term.font_size);
         assert_eq!(base.ai.model, cloned.ai.model);
         assert_eq!(base.editor.minimap, cloned.editor.minimap);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -398,7 +409,7 @@ mod tests {
         let global = GlobalSettings::default();
         let debug_str = format!("{:?}", global);
         assert!(debug_str.contains("GlobalSettings"));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -406,7 +417,7 @@ mod tests {
         let json_str = r#"{"term:fontsize": 20.0}"#;
         let term: TermSettings = serde_json::from_str(json_str)?;
         assert_eq!(term.font_size, Some(20.0));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -415,7 +426,7 @@ mod tests {
         let ai: AiSettings = serde_json::from_str(json_str)?;
         assert_eq!(ai.model, Some("claude-3".to_string()));
         assert_eq!(ai.max_tokens, Some(8192));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -424,7 +435,7 @@ mod tests {
         let editor: EditorSettings = serde_json::from_str(json_str)?;
         assert_eq!(editor.minimap, Some(false));
         assert_eq!(editor.word_wrap, Some(true));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -435,7 +446,7 @@ mod tests {
         assert_eq!(settings.term.theme, None);
         assert_eq!(settings.ai.model, None);
         assert_eq!(settings.editor.minimap, None);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -447,6 +458,6 @@ mod tests {
         assert_eq!(base.term.scrollback, Some(50000));
         assert_eq!(base.term.font_size, Some(14.0)); // unchanged
         assert_eq!(base.term.theme, Some("dark".to_string())); // unchanged
-    Ok(())
+        Ok(())
     }
 }

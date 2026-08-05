@@ -182,7 +182,7 @@ mod tests {
         let res = broker.execute(&req).await?;
         match res {
             BrokerResult::Completed(tr) => assert_eq!(tr.output, "ok"),
-            _ => unreachable!("Expected Completed"),
+            other => return Err(format!("expected Completed, got {other:?}").into()),
         }
         Ok(())
     }
@@ -206,7 +206,7 @@ mod tests {
             BrokerResult::Denied(reason) => {
                 assert!(reason.contains("deny") || reason.contains("Deny"))
             }
-            _ => unreachable!("Expected Denied"),
+            other => return Err(format!("expected Denied, got {other:?}").into()),
         }
         Ok(())
     }
@@ -228,7 +228,7 @@ mod tests {
         let res = broker.execute(&req).await?;
         match res {
             BrokerResult::RequiresConfirmation(reason) => assert!(!reason.is_empty()),
-            _ => unreachable!("Expected RequiresConfirmation"),
+            other => return Err(format!("expected RequiresConfirmation, got {other:?}").into()),
         }
         Ok(())
     }
@@ -247,10 +247,12 @@ mod tests {
         broker.register(Arc::new(DummyTool));
 
         let req = ToolRequest { tool_name: "nonexistent".to_string(), arguments: json!({}) };
-        let err = broker.execute(&req).await.unwrap_err();
+        let Err(err) = broker.execute(&req).await else {
+            return Err("expected the broker to fail".into());
+        };
         match err {
             ToolError::NotFound { name } => assert_eq!(name, "nonexistent"),
-            _ => unreachable!("Expected NotFound"),
+            other => return Err(format!("expected NotFound, got {other:?}").into()),
         }
         Ok(())
     }
@@ -302,7 +304,9 @@ mod tests {
         let res = broker.execute(&req).await?;
         match res {
             BrokerResult::Denied(_) => {}
-            _ => unreachable!("Expected Denied with deny_all policy"),
+            other => {
+                return Err(format!("expected Denied with deny_all policy, got {other:?}").into())
+            }
         }
         Ok(())
     }

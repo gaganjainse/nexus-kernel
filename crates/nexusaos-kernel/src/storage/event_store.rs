@@ -246,11 +246,12 @@ mod tests {
 
         store.append(&mut event).await?;
         // Try to append the same event again
-        let result = store.append(&mut event).await;
-        assert!(result.is_err());
-        match result.unwrap_err() {
+        let Err(err) = store.append(&mut event).await else {
+            return Err("expected appending a duplicate event to fail".into());
+        };
+        match err {
             StorageError::DuplicateEvent { .. } => {}
-            _ => unreachable!("Expected DuplicateEvent"),
+            other => return Err(format!("expected DuplicateEvent, got {other:?}").into()),
         }
         Ok(())
     }
@@ -405,7 +406,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_event_store_invalid_json_line_skipped() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_event_store_invalid_json_line_skipped() -> Result<(), Box<dyn std::error::Error>>
+    {
         let temp_dir = TempDir::new()?;
         let path = temp_dir.path().to_path_buf();
 

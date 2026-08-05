@@ -136,10 +136,12 @@ mod tests {
             arguments: json!({ "command": "rm -rf /" }),
         };
 
-        let err = tool.execute(&req_denied).await.unwrap_err();
+        let Err(err) = tool.execute(&req_denied).await else {
+            return Err("expected the terminal tool to fail".into());
+        };
         match err {
             ToolError::CommandDenied { command } => assert_eq!(command, "rm -rf /"),
-            _ => unreachable!("Expected CommandDenied"),
+            other => return Err(format!("expected CommandDenied, got {other:?}").into()),
         }
 
         let req_allowed = ToolRequest {
@@ -158,12 +160,14 @@ mod tests {
         let tool = TerminalTool::new(5, vec![]);
 
         let req = ToolRequest { tool_name: "terminal".to_string(), arguments: json!({}) };
-        let err = tool.execute(&req).await.unwrap_err();
+        let Err(err) = tool.execute(&req).await else {
+            return Err("expected the terminal tool to fail".into());
+        };
         match err {
             ToolError::ExecutionFailed { reason, .. } => {
                 assert!(reason.contains("Missing 'command' argument"))
             }
-            _ => unreachable!("Expected ExecutionFailed"),
+            other => return Err(format!("expected ExecutionFailed, got {other:?}").into()),
         }
         Ok(())
     }
@@ -176,26 +180,31 @@ mod tests {
             tool_name: "terminal".to_string(),
             arguments: json!({ "command": "sudo apt update" }),
         };
-        let err = tool.execute(&req).await.unwrap_err();
+        let Err(err) = tool.execute(&req).await else {
+            return Err("expected the terminal tool to fail".into());
+        };
         match err {
             ToolError::CommandDenied { command } => assert_eq!(command, "sudo apt update"),
-            _ => unreachable!("Expected CommandDenied"),
+            other => return Err(format!("expected CommandDenied, got {other:?}").into()),
         }
         Ok(())
     }
 
     #[tokio::test]
-    async fn test_terminal_command_denied_partial_match() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_terminal_command_denied_partial_match() -> Result<(), Box<dyn std::error::Error>>
+    {
         let tool = TerminalTool::new(5, vec!["rm -rf".to_string()]);
 
         let req = ToolRequest {
             tool_name: "terminal".to_string(),
             arguments: json!({ "command": "rm -rf /tmp/foo" }),
         };
-        let err = tool.execute(&req).await.unwrap_err();
+        let Err(err) = tool.execute(&req).await else {
+            return Err("expected the terminal tool to fail".into());
+        };
         match err {
             ToolError::CommandDenied { command } => assert_eq!(command, "rm -rf /tmp/foo"),
-            _ => unreachable!("Expected CommandDenied"),
+            other => return Err(format!("expected CommandDenied, got {other:?}").into()),
         }
         Ok(())
     }
@@ -221,10 +230,12 @@ mod tests {
             tool_name: "terminal".to_string(),
             arguments: json!({ "command": "sleep 10" }),
         };
-        let err = tool.execute(&req).await.unwrap_err();
+        let Err(err) = tool.execute(&req).await else {
+            return Err("expected the terminal tool to fail".into());
+        };
         match err {
             ToolError::Timeout { timeout_secs, .. } => assert_eq!(timeout_secs, 1),
-            _ => unreachable!("Expected Timeout, got: {:?}", err),
+            other => return Err(format!("expected Timeout, got {other:?}").into()),
         }
         Ok(())
     }
@@ -292,10 +303,12 @@ mod tests {
             tool_name: "terminal".to_string(),
             arguments: json!({ "command": "ls" }),
         };
-        let err = tool.execute(&req).await.unwrap_err();
+        let Err(err) = tool.execute(&req).await else {
+            return Err("expected the terminal tool to fail".into());
+        };
         match err {
             ToolError::CommandDenied { command } => assert_eq!(command, "ls"),
-            _ => unreachable!("Expected CommandDenied"),
+            other => return Err(format!("expected CommandDenied, got {other:?}").into()),
         }
         Ok(())
     }

@@ -19,7 +19,11 @@ pub fn sidebar_style(theme: &Theme) -> container::Style {
     container::Style {
         background: Some(Background::Color(palette.background.strongest.color)),
         text_color: Some(palette.background.strongest.text),
-        border: Border { color: palette.background.neutral.color, width: 0.0, radius: iced::border::Radius::from(0.0) },
+        border: Border {
+            color: palette.background.neutral.color,
+            width: 0.0,
+            radius: iced::border::Radius::from(0.0),
+        },
         shadow: Shadow::default(),
         ..Default::default()
     }
@@ -31,7 +35,11 @@ pub fn main_area_style(theme: &Theme) -> container::Style {
     container::Style {
         background: Some(Background::Color(palette.background.base.color)),
         text_color: Some(palette.background.base.text),
-        border: Border { color: palette.background.neutral.color, width: 0.0, radius: iced::border::Radius::from(0.0) },
+        border: Border {
+            color: palette.background.neutral.color,
+            width: 0.0,
+            radius: iced::border::Radius::from(0.0),
+        },
         shadow: Shadow::default(),
         ..Default::default()
     }
@@ -43,7 +51,11 @@ pub fn tab_bar_style(theme: &Theme) -> container::Style {
     container::Style {
         background: Some(Background::Color(palette.background.stronger.color)),
         text_color: Some(palette.background.stronger.text),
-        border: Border { color: palette.background.neutral.color, width: 0.0, radius: iced::border::Radius::from(0.0) },
+        border: Border {
+            color: palette.background.neutral.color,
+            width: 0.0,
+            radius: iced::border::Radius::from(0.0),
+        },
         shadow: Shadow::default(),
         ..Default::default()
     }
@@ -55,7 +67,11 @@ pub fn terminal_pane_style(theme: &Theme) -> container::Style {
     container::Style {
         background: Some(Background::Color(palette.background.stronger.color)),
         text_color: Some(palette.success.base.color),
-        border: Border { color: palette.background.neutral.color, width: 1.0, radius: iced::border::Radius::from(6.0) },
+        border: Border {
+            color: palette.background.neutral.color,
+            width: 1.0,
+            radius: iced::border::Radius::from(6.0),
+        },
         shadow: Shadow::default(),
         ..Default::default()
     }
@@ -67,7 +83,11 @@ pub fn status_bar_style(theme: &Theme) -> container::Style {
     container::Style {
         background: Some(Background::Color(palette.background.strongest.color)),
         text_color: Some(palette.background.strongest.text),
-        border: Border { color: palette.background.neutral.color, width: 0.0, radius: iced::border::Radius::from(0.0) },
+        border: Border {
+            color: palette.background.neutral.color,
+            width: 0.0,
+            radius: iced::border::Radius::from(0.0),
+        },
         shadow: Shadow::default(),
         ..Default::default()
     }

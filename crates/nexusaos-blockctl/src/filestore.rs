@@ -85,7 +85,7 @@ mod tests {
         let store = BlockFileStore::new();
         store.append("blk1", b"hello");
         assert_eq!(store.read_all("blk1").ok_or("unexpected None")?, b"hello");
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -94,7 +94,7 @@ mod tests {
         store.set_max_size("blk1", 5);
         store.append("blk1", b"hello world");
         assert_eq!(store.read_all("blk1").ok_or("unexpected None")?, b"world");
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -102,7 +102,7 @@ mod tests {
         let store = BlockFileStore::new();
         store.append("blk1", b"1234567890");
         assert_eq!(store.read_tail("blk1", 3).ok_or("unexpected None")?, b"890");
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -113,7 +113,7 @@ mod tests {
         assert_eq!(store.read_all("blk1").ok_or("unexpected None")?, b"");
         store.delete_zone("blk1");
         assert!(store.read_all("blk1").is_none());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -123,7 +123,7 @@ mod tests {
         store.append("blk2", b"bbb");
         assert_eq!(store.read_all("blk1").ok_or("unexpected None")?, b"aaa");
         assert_eq!(store.read_all("blk2").ok_or("unexpected None")?, b"bbb");
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -131,7 +131,7 @@ mod tests {
         let store = BlockFileStore::default();
         assert!(store.read_all("any").is_none());
         assert_eq!(store.zone_size("any"), 0);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -140,7 +140,7 @@ mod tests {
         store.append("blk1", b"");
         assert_eq!(store.read_all("blk1").ok_or("unexpected None")?, b"");
         assert_eq!(store.zone_size("blk1"), 0);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -151,7 +151,7 @@ mod tests {
         store.append("blk1", b"!");
         assert_eq!(store.read_all("blk1").ok_or("unexpected None")?, b"hello world!");
         assert_eq!(store.zone_size("blk1"), 12);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -162,21 +162,21 @@ mod tests {
         let size = store.zone_size("blk1");
         assert!(size <= 1024 * 1024);
         assert_eq!(size, 1024 * 1024);
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_read_all_nonexistent_zone() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         assert!(store.read_all("nonexistent").is_none());
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_read_tail_nonexistent_zone() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         assert!(store.read_tail("nonexistent", 10).is_none());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -184,7 +184,7 @@ mod tests {
         let store = BlockFileStore::new();
         store.append("blk1", b"abc");
         assert_eq!(store.read_tail("blk1", 100).ok_or("unexpected None")?, b"abc");
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -192,7 +192,7 @@ mod tests {
         let store = BlockFileStore::new();
         store.append("blk1", b"abc");
         assert_eq!(store.read_tail("blk1", 0).ok_or("unexpected None")?, b"");
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -200,7 +200,7 @@ mod tests {
         let store = BlockFileStore::new();
         store.truncate("nonexistent");
         assert!(store.read_all("nonexistent").is_none());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -208,14 +208,14 @@ mod tests {
         let store = BlockFileStore::new();
         store.delete_zone("nonexistent");
         assert!(store.read_all("nonexistent").is_none());
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_zone_size_nonexistent() -> Result<(), Box<dyn std::error::Error>> {
         let store = BlockFileStore::new();
         assert_eq!(store.zone_size("nonexistent"), 0);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -225,7 +225,7 @@ mod tests {
         assert_eq!(store.zone_size("blk1"), 5);
         store.truncate("blk1");
         assert_eq!(store.zone_size("blk1"), 0);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -235,7 +235,7 @@ mod tests {
         assert_eq!(store.zone_size("new_zone"), 0);
         store.append("new_zone", b"data");
         assert_eq!(store.read_all("new_zone").ok_or("unexpected None")?, b"data");
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -246,7 +246,7 @@ mod tests {
         store.set_max_size("blk1", 5);
         assert_eq!(store.read_all("blk1").ok_or("unexpected None")?, b"world");
         assert_eq!(store.zone_size("blk1"), 5);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -256,7 +256,7 @@ mod tests {
         store.set_max_size("blk1", 0);
         assert_eq!(store.read_all("blk1").ok_or("unexpected None")?, b"");
         assert_eq!(store.zone_size("blk1"), 0);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -265,7 +265,7 @@ mod tests {
         store.set_max_size("blk1", 100);
         store.append("blk1", b"hello");
         assert_eq!(store.read_all("blk1").ok_or("unexpected None")?, b"hello");
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -275,7 +275,7 @@ mod tests {
         store.truncate("blk1");
         store.append("blk1", b"new");
         assert_eq!(store.read_all("blk1").ok_or("unexpected None")?, b"new");
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -285,7 +285,7 @@ mod tests {
         store.append("blk1", b"def");
         store.append("blk1", b"ghi");
         assert_eq!(store.read_tail("blk1", 4).ok_or("unexpected None")?, b"fghi");
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -306,6 +306,6 @@ mod tests {
         }
 
         assert_eq!(store.zone_size("blk1"), 10);
-    Ok(())
+        Ok(())
     }
 }

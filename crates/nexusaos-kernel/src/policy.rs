@@ -325,11 +325,12 @@ mod tests {
     }
 
     #[test]
-    fn test_serde_roundtrip() {
+    fn test_serde_roundtrip() -> Result<(), Box<dyn std::error::Error>> {
         let decision = PolicyDecision::RequireConfirmation("test".to_string());
-        let json = serde_json::to_string(&decision).expect("serialize");
-        let back: PolicyDecision = serde_json::from_str(&json).expect("deserialize");
+        let json = serde_json::to_string(&decision)?;
+        let back: PolicyDecision = serde_json::from_str(&json)?;
         assert_eq!(decision, back);
+        Ok(())
     }
 
     #[test]
@@ -384,16 +385,16 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_decision_unknown() {
+    fn test_parse_decision_unknown() -> Result<(), Box<dyn std::error::Error>> {
         let engine = PolicyEngine::new(vec![], TrustTier::Autonomous);
         let decision = engine.parse_decision("maybe", "bad-rule");
         assert!(decision.is_denied());
-        let msg = match decision {
-            PolicyDecision::Deny(msg) => msg,
-            _ => panic!("expected deny"),
+        let PolicyDecision::Deny(msg) = decision else {
+            return Err("expected an unknown decision string to parse as Deny".into());
         };
         assert!(msg.contains("maybe"));
         assert!(msg.contains("bad-rule"));
+        Ok(())
     }
 
     #[test]
@@ -506,13 +507,13 @@ mod tests {
     }
 
     #[test]
-    fn test_require_confirmation_decision_message() {
+    fn test_require_confirmation_decision_message() -> Result<(), Box<dyn std::error::Error>> {
         let decision = PolicyDecision::RequireConfirmation("need-approval".into());
-        let msg = match decision {
-            PolicyDecision::RequireConfirmation(msg) => msg,
-            _ => panic!("expected require confirmation"),
+        let PolicyDecision::RequireConfirmation(msg) = decision else {
+            return Err("expected a RequireConfirmation decision".into());
         };
         assert!(msg.contains("need-approval"));
+        Ok(())
     }
 
     #[test]

@@ -142,7 +142,7 @@ mod tests {
         assert_eq!(STATUS_RUNNING, "running");
         assert_eq!(STATUS_DONE, "done");
         assert_eq!(STATUS_ERROR, "error");
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -168,7 +168,7 @@ mod tests {
         assert_eq!(deserialized.shell_proc_status, info.shell_proc_status);
         assert_eq!(deserialized.tsunami_port, info.tsunami_port);
         assert_eq!(deserialized.extra.get("key1"), Some(&serde_json::json!("value1")));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -210,7 +210,7 @@ mod tests {
         store.set(info);
         store.clear();
         assert!(store.is_empty());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -242,7 +242,7 @@ mod tests {
         assert_eq!(retrieved2.shell_proc_status, Some(STATUS_INIT.to_string()));
         // The new field should be set
         assert_eq!(retrieved2.shell_proc_conn_name, Some("local".to_string()));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -278,7 +278,7 @@ mod tests {
         }
 
         assert_eq!(store.len(), 10);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -286,7 +286,7 @@ mod tests {
         let store = RTInfoStore::new();
         assert!(store.get("nonexistent").is_none());
         assert!(store.get("").is_none());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -294,7 +294,7 @@ mod tests {
         let store = RTInfoStore::new();
         let all = store.get_all();
         assert!(all.is_empty());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -307,7 +307,7 @@ mod tests {
         store.set(info);
         assert_eq!(store.len(), 1);
         assert!(!store.is_empty());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -315,7 +315,7 @@ mod tests {
         let store = RTInfoStore::new();
         store.clear();
         assert!(store.is_empty());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -328,7 +328,7 @@ mod tests {
         store.clear();
         assert!(store.is_empty());
         assert_eq!(store.len(), 0);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -336,7 +336,7 @@ mod tests {
         let store = RTInfoStore::new();
         assert!(!store.delete("nonexistent"));
         assert!(!store.delete(""));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -346,7 +346,7 @@ mod tests {
             i.shell_proc_status = Some(STATUS_RUNNING.to_string());
         });
         assert!(!result);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -372,7 +372,7 @@ mod tests {
 
         let retrieved = store.get("b1").ok_or("unexpected None")?;
         assert_eq!(retrieved.shell_proc_status, Some(STATUS_DONE.to_string()));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -397,7 +397,7 @@ mod tests {
         assert_eq!(retrieved.tsunami_port, Some(3000));
         assert_eq!(retrieved.shell_proc_conn_name, None);
         assert_eq!(store.len(), 1);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -411,7 +411,7 @@ mod tests {
         assert!(info.wave_ai_status.is_none());
         assert!(info.builder_status.is_none());
         assert!(info.extra.is_empty());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -419,7 +419,7 @@ mod tests {
         let store = RTInfoStore::default();
         assert_eq!(store.len(), 0);
         assert!(store.is_empty());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -456,7 +456,7 @@ mod tests {
         assert_eq!(retrieved.tsunami_port, Some(3000));
         assert_eq!(retrieved.wave_ai_status, Some("busy".to_string()));
         assert_eq!(retrieved.builder_status, Some("building".to_string()));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -486,7 +486,7 @@ mod tests {
         assert_eq!(retrieved.shell_proc_exit_code, Some(0));
         // Some fields get updated
         assert_eq!(retrieved.shell_proc_conn_name, Some("conn2".to_string()));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -521,7 +521,7 @@ mod tests {
         assert_eq!(retrieved.extra.get("key2"), Some(&serde_json::json!("val2")));
         // key3 added
         assert_eq!(retrieved.extra.get("key3"), Some(&serde_json::json!("val3")));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -539,7 +539,7 @@ mod tests {
         let retrieved = store.get("new_block").ok_or("unexpected None")?;
         assert_eq!(retrieved.block_id, "new_block");
         assert_eq!(retrieved.shell_proc_status, Some(STATUS_INIT.to_string()));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -560,7 +560,7 @@ mod tests {
 
         let retrieved = store.get("b1").ok_or("unexpected None")?;
         assert!(retrieved.extra.is_empty());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -582,7 +582,7 @@ mod tests {
         assert!(deserialized.shell_proc_status.is_none());
         assert!(deserialized.tsunami_port.is_none());
         assert!(deserialized.extra.is_empty());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -613,7 +613,7 @@ mod tests {
         assert_eq!(deserialized.builder_status, info.builder_status);
         assert_eq!(deserialized.extra.get("key1"), Some(&serde_json::json!("val1")));
         assert_eq!(deserialized.extra.get("key2"), Some(&serde_json::json!(42)));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -627,7 +627,7 @@ mod tests {
         assert!(json.get("builder_status").is_none());
         // block_id (no skip) should be present
         assert_eq!(json["block_id"], "b1");
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -636,7 +636,7 @@ mod tests {
 
         let json = serde_json::to_value(&info)?;
         assert!(json.get("extra").is_none());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -648,7 +648,7 @@ mod tests {
 
         let json = serde_json::to_value(&info)?;
         assert!(json.get("extra").is_some());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -668,7 +668,7 @@ mod tests {
         let mut ids: Vec<String> = all.iter().map(|i| i.block_id.clone()).collect();
         ids.sort();
         assert_eq!(ids, vec!["block_0", "block_1", "block_2", "block_3", "block_4"]);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -689,7 +689,7 @@ mod tests {
 
         let cloned = info.clone();
         assert_eq!(info, cloned);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -724,7 +724,7 @@ mod tests {
         }
 
         assert_eq!(store.len(), 20);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -748,6 +748,6 @@ mod tests {
         }
 
         assert_eq!(store.len(), 0);
-    Ok(())
+        Ok(())
     }
 }

@@ -41,7 +41,7 @@ mod tests {
     fn test_ai_error_api_display() -> Result<(), Box<dyn std::error::Error>> {
         let err = AiError::Api("bad request".to_string());
         assert_eq!(err.to_string(), "API error: bad request");
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -50,7 +50,7 @@ mod tests {
         let json = serde_json::to_string(&msg)?;
         let decoded: ChatMessage = serde_json::from_str(&json)?;
         assert_eq!(msg, decoded);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -59,14 +59,14 @@ mod tests {
         assert!(req.messages.is_empty());
         assert_eq!(req.model, "gpt");
         assert_eq!(req.max_tokens, Some(100));
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_chat_request_with_none_max_tokens() -> Result<(), Box<dyn std::error::Error>> {
         let req = ChatRequest { messages: vec![], model: "gpt".to_string(), max_tokens: None };
         assert!(req.max_tokens.is_none());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -74,6 +74,6 @@ mod tests {
         let msg = ChatMessage { role: "assistant".to_string(), content: "response".to_string() };
         let cloned = msg.clone();
         assert_eq!(msg, cloned);
-    Ok(())
+        Ok(())
     }
 }

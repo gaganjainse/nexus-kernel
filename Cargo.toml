@@ -66,11 +66,6 @@ lto = true
 strip = true
 codegen-units = 1
 
-[workspace.lints.rust]
-unwrap_used = "warn"
-expect_used = "warn"
-panic = "warn"
-
 [workspace.lints.clippy]
 unwrap_used = "warn"
 expect_used = "warn"

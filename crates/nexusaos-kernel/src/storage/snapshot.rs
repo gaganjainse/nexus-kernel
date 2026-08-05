@@ -151,8 +151,8 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_snapshot_store() {
-        let temp_dir = TempDir::new().unwrap();
+    async fn test_snapshot_store() -> Result<(), Box<dyn std::error::Error>> {
+        let temp_dir = TempDir::new()?;
         let store = SnapshotStore::new(temp_dir.path().to_path_buf());
 
         let snapshot = Snapshot {
@@ -162,35 +162,38 @@ mod tests {
             data: serde_json::json!({"key": "value"}),
         };
 
-        store.save(&snapshot).await.unwrap();
+        store.save(&snapshot).await?;
 
-        let latest = store.load_latest().await.unwrap().unwrap();
+        let latest = store.load_latest().await?.ok_or("snapshot should exist")?;
         assert_eq!(latest.snapshot_id, "snap-1");
         assert_eq!(latest.last_sequence, 10);
 
-        let ids = store.list().await.unwrap();
+        let ids = store.list().await?;
         assert_eq!(ids, vec!["snap-1".to_string()]);
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_snapshot_store_load_latest_empty() {
-        let temp_dir = TempDir::new().unwrap();
+    async fn test_snapshot_store_load_latest_empty() -> Result<(), Box<dyn std::error::Error>> {
+        let temp_dir = TempDir::new()?;
         let store = SnapshotStore::new(temp_dir.path().to_path_buf());
-        let result = store.load_latest().await.unwrap();
+        let result = store.load_latest().await?;
         assert!(result.is_none());
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_snapshot_store_list_empty() {
-        let temp_dir = TempDir::new().unwrap();
+    async fn test_snapshot_store_list_empty() -> Result<(), Box<dyn std::error::Error>> {
+        let temp_dir = TempDir::new()?;
         let store = SnapshotStore::new(temp_dir.path().to_path_buf());
-        let ids = store.list().await.unwrap();
+        let ids = store.list().await?;
         assert!(ids.is_empty());
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_snapshot_store_multiple_snapshots() {
-        let temp_dir = TempDir::new().unwrap();
+    async fn test_snapshot_store_multiple_snapshots() -> Result<(), Box<dyn std::error::Error>> {
+        let temp_dir = TempDir::new()?;
         let store = SnapshotStore::new(temp_dir.path().to_path_buf());
 
         let snap1 = Snapshot {
@@ -207,18 +210,19 @@ mod tests {
             data: serde_json::json!({"v": 2}),
         };
 
-        store.save(&snap1).await.unwrap();
-        store.save(&snap2).await.unwrap();
+        store.save(&snap1).await?;
+        store.save(&snap2).await?;
 
-        let ids = store.list().await.unwrap();
+        let ids = store.list().await?;
         assert_eq!(ids.len(), 2);
         assert!(ids.contains(&"snap-1".to_string()));
         assert!(ids.contains(&"snap-2".to_string()));
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_snapshot_store_creates_directory() {
-        let temp_dir = TempDir::new().unwrap();
+    async fn test_snapshot_store_creates_directory() -> Result<(), Box<dyn std::error::Error>> {
+        let temp_dir = TempDir::new()?;
         let new_path = temp_dir.path().join("nested").join("dir");
         let store = SnapshotStore::new(new_path.clone());
 
@@ -229,39 +233,44 @@ mod tests {
             data: serde_json::json!({}),
         };
 
-        store.save(&snapshot).await.unwrap();
+        store.save(&snapshot).await?;
         assert!(new_path.exists());
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_snapshot_store_ignores_non_snapshot_files() {
-        let temp_dir = TempDir::new().unwrap();
+    async fn test_snapshot_store_ignores_non_snapshot_files(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let temp_dir = TempDir::new()?;
         let store = SnapshotStore::new(temp_dir.path().to_path_buf());
 
         // Create a non-snapshot file
         let other_file = temp_dir.path().join("other.txt");
-        tokio::fs::write(&other_file, "not a snapshot").await.unwrap();
+        tokio::fs::write(&other_file, "not a snapshot").await?;
 
-        let result = store.list().await.unwrap();
+        let result = store.list().await?;
         assert!(result.is_empty());
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_snapshot_store_invalid_json_ignored_in_list() {
-        let temp_dir = TempDir::new().unwrap();
+    async fn test_snapshot_store_invalid_json_ignored_in_list(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let temp_dir = TempDir::new()?;
         let store = SnapshotStore::new(temp_dir.path().to_path_buf());
 
         // Create a file that looks like a snapshot but has invalid JSON
         let bad_snapshot = temp_dir.path().join("snapshot_9999999999.json");
-        tokio::fs::write(&bad_snapshot, "not json {{{").await.unwrap();
+        tokio::fs::write(&bad_snapshot, "not json {{{").await?;
 
-        let ids = store.list().await.unwrap();
+        let ids = store.list().await?;
         assert!(ids.is_empty());
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_snapshot_store_roundtrip_data() {
-        let temp_dir = TempDir::new().unwrap();
+    async fn test_snapshot_store_roundtrip_data() -> Result<(), Box<dyn std::error::Error>> {
+        let temp_dir = TempDir::new()?;
         let store = SnapshotStore::new(temp_dir.path().to_path_buf());
 
         let original_data = serde_json::json!({
@@ -278,16 +287,18 @@ mod tests {
             data: original_data.clone(),
         };
 
-        store.save(&snapshot).await.unwrap();
-        let loaded = store.load_latest().await.unwrap().unwrap();
+        store.save(&snapshot).await?;
+        let loaded = store.load_latest().await?.ok_or("snapshot should exist")?;
         assert_eq!(loaded.data, original_data);
         assert_eq!(loaded.snapshot_id, "roundtrip");
         assert_eq!(loaded.last_sequence, 42);
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_snapshot_store_load_latest_picks_newest() {
-        let temp_dir = TempDir::new().unwrap();
+    async fn test_snapshot_store_load_latest_picks_newest() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let temp_dir = TempDir::new()?;
         let store = SnapshotStore::new(temp_dir.path().to_path_buf());
 
         let old_snap = Snapshot {
@@ -303,10 +314,11 @@ mod tests {
             data: serde_json::json!({"new": true}),
         };
 
-        store.save(&old_snap).await.unwrap();
-        store.save(&new_snap).await.unwrap();
+        store.save(&old_snap).await?;
+        store.save(&new_snap).await?;
 
-        let latest = store.load_latest().await.unwrap().unwrap();
+        let latest = store.load_latest().await?.ok_or("snapshot should exist")?;
         assert_eq!(latest.snapshot_id, "new");
+        Ok(())
     }
 }

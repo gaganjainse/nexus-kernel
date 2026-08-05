@@ -93,7 +93,7 @@ mod tests {
 
         let ev3 = ev2.with_persist(5);
         assert_eq!(ev3.persist, 5);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -104,7 +104,7 @@ mod tests {
         assert_eq!(ev.persist, 0);
         assert!(!ev.event_id.is_nil());
         assert!(ev.timestamp <= Utc::now());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -112,7 +112,7 @@ mod tests {
         let scopes = vec!["scope1".into(), "scope2".into(), "scope3".into()];
         let ev = WaveEvent::new("topic", scopes.clone(), json!({}));
         assert_eq!(ev.scopes, scopes);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -122,21 +122,21 @@ mod tests {
         assert_eq!(ev.topic, "topic");
         assert_eq!(ev.data["key"], "value");
         assert_eq!(ev.persist, 0);
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_wave_event_with_persist_zero() -> Result<(), Box<dyn std::error::Error>> {
         let ev = WaveEvent::new("topic", vec![], json!(1)).with_persist(0);
         assert_eq!(ev.persist, 0);
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_wave_event_with_persist_max_u32() -> Result<(), Box<dyn std::error::Error>> {
         let ev = WaveEvent::new("topic", vec![], json!(1)).with_persist(u32::MAX);
         assert_eq!(ev.persist, u32::MAX);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -146,7 +146,7 @@ mod tests {
             .with_persist(2)
             .with_persist(3);
         assert_eq!(ev.persist, 3);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -160,7 +160,7 @@ mod tests {
         assert_eq!(decoded.data, ev.data);
         assert_eq!(decoded.persist, 42);
         assert_eq!(decoded.event_id, ev.event_id);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -168,7 +168,7 @@ mod tests {
         let ev1 = WaveEvent::new("topic", vec![], json!(1));
         let ev2 = WaveEvent::new("topic", vec![], json!(1));
         assert_ne!(ev1.event_id, ev2.event_id);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -176,7 +176,7 @@ mod tests {
         let ev1 = WaveEvent::new("topic", vec![], json!(1));
         let ev2 = WaveEvent::new("topic", vec![], json!(1));
         assert!(ev2.timestamp >= ev1.timestamp);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -191,7 +191,7 @@ mod tests {
         assert!(!s.contains("data64"));
         let d2: FileEventData = serde_json::from_str(&s)?;
         assert!(d2.data64.is_none());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -208,7 +208,7 @@ mod tests {
             let d2: FileEventData = serde_json::from_str(&s)?;
             assert_eq!(d2.file_op, op);
         }
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -225,7 +225,7 @@ mod tests {
         assert_eq!(d2.file_name, "file.txt");
         assert_eq!(d2.file_op, FILE_OP_TRUNCATE);
         assert_eq!(d2.data64.ok_or("data64 should be Some")?, "SGVsbG8=");
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -236,14 +236,14 @@ mod tests {
         };
         assert_eq!(req.topic, "test");
         assert_eq!(req.scopes.len(), 2);
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_subscription_request_empty_scopes() -> Result<(), Box<dyn std::error::Error>> {
         let req = SubscriptionRequest { topic: "test".to_string(), scopes: vec![] };
         assert!(req.scopes.is_empty());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -259,7 +259,7 @@ mod tests {
         assert_eq!(d.file_name, d2.file_name);
         assert_eq!(d.file_op, d2.file_op);
         assert_eq!(d.data64, d2.data64);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -271,6 +271,6 @@ mod tests {
         assert_eq!(ev.data, ev2.data);
         assert_eq!(ev.persist, ev2.persist);
         assert_eq!(ev.event_id, ev2.event_id);
-    Ok(())
+        Ok(())
     }
 }

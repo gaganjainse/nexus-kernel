@@ -1,0 +1,67 @@
+# NexusAOS simulation configuration
+# Points model providers at the local Ollama OpenAI-compatible endpoint
+# (ollama serve on :11434) so the full kernel pipeline can be exercised
+# end-to-end without the LM Studio server.
+
+[general]
+data_dir = "~/.nexusaos/data"
+log_level = "info"
+
+[resource_limits]
+max_ram_mb = 12288
+max_vram_mb = 5632
+max_context_tokens = 65536
+max_queue_depth = 32
+min_disk_free_gb = 5
+
+[policy]
+confirm_destructive = true
+confirm_writes = true
+confirm_git_commits = true
+confirm_terminal = true
+dedup_window_secs = 5
+
+[context]
+simple_question = 8192
+code_edit = 16384
+feature_work = 32768
+architecture = 65536
+ram_headroom_mb = 2048
+vram_headroom_mb = 1024
+
+[[model_providers]]
+name = "ollama-planner"
+role = "planner"
+base_url = "http://127.0.0.1:11434"
+model_id = "qwen3:4b"
+max_context = 32768
+
+[[model_providers]]
+name = "ollama-coder"
+role = "coder"
+base_url = "http://127.0.0.1:11434"
+model_id = "qwen3:4b"
+max_context = 65536
+
+[[model_providers]]
+name = "ollama-vision"
+role = "vision"
+base_url = "http://127.0.0.1:11434"
+model_id = "phi4-mini"
+max_context = 16384
+supports_vision = true
+
+[tools.filesystem]
+allowed_paths = ["."]
+denied_patterns = ["**/.git/objects/**", "**/node_modules/**", "**/target/**"]
+
+[tools.git]
+enabled = true
+
+[tools.terminal]
+timeout_secs = 30
+allowed_prefixes = []
+denied_prefixes = ["rm -rf /", "sudo rm", "mkfs", "dd if="]
+
+[shutdown]
+drain_timeout_secs = 10

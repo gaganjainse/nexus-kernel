@@ -199,8 +199,7 @@ mod tests {
             "http://localhost:8000".to_string(),
             "test-key".to_string(),
             32768,
-        )
-        ?;
+        )?;
         assert!(provider.name().starts_with("qwen-vision-"));
         Ok(())
     }

@@ -148,7 +148,7 @@ mod tests {
         assert_eq!(history.len(), 2);
         assert_eq!(history[0].role, "user");
         assert_eq!(history[1].content, "Hello World");
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -164,7 +164,7 @@ mod tests {
             chunks.push(chunk?);
         }
         assert_eq!(chunks, vec!["Hello ", "World"]);
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -180,7 +180,7 @@ mod tests {
         assert_eq!(history.len(), 4);
         assert_eq!(history[0].content, "First");
         assert_eq!(history[2].content, "Second");
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -196,11 +196,12 @@ mod tests {
         tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
         let result = handle.try_recv();
         assert!(result.is_some() || result.is_none()); // just verify it doesn't panic
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_chat_session_history_preserved_after_stream() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_chat_session_history_preserved_after_stream(
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let provider = Arc::new(MockProvider);
         let settings = Arc::new(Mutex::new(GlobalSettings::default()));
         let broker = Broker::new(10);
@@ -214,7 +215,7 @@ mod tests {
         assert_eq!(history.len(), 2);
         assert_eq!(history[1].role, "assistant");
         assert_eq!(history[1].content, "Hello World");
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -227,6 +228,6 @@ mod tests {
         assert!(result.is_err());
         assert!(matches!(result, Err(TryRecvError::Empty)), "expected TryRecvError::Empty");
         drop(tx);
-    Ok(())
+        Ok(())
     }
 }

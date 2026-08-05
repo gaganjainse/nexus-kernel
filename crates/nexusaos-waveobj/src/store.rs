@@ -301,7 +301,7 @@ mod tests {
     fn test_open_in_memory() -> Result<(), Box<dyn std::error::Error>> {
         let store = WaveStore::open_in_memory()?;
         assert!(store.ensure_tables().is_ok());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -323,7 +323,7 @@ mod tests {
         let fetched: Block = store.db_get(&block.oid)?.ok_or("unexpected None")?;
         assert_eq!(fetched.oid, block.oid);
         assert_eq!(fetched.version, 1);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -343,7 +343,7 @@ mod tests {
 
         let fetched: Workspace = store.db_get(&workspace.oid)?.ok_or("unexpected None")?;
         assert_eq!(fetched.tab_ids, vec!["tab1".to_string()]);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -368,7 +368,7 @@ mod tests {
         let fetched: Block = store.db_get(&block.oid)?.ok_or("unexpected None")?;
         assert_eq!(fetched.version, 2);
         assert_eq!(fetched.sub_block_ids, vec!["sub1".to_string()]);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -394,7 +394,7 @@ mod tests {
 
         let deleted_again = store.db_delete("block", &block.oid)?;
         assert!(!deleted_again);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -402,7 +402,7 @@ mod tests {
         let store = WaveStore::open_in_memory()?;
         let result = store.db_must_get::<Block>(&Uuid::new_v4());
         assert!(matches!(result, Err(StoreError::NotFound(_))));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -433,7 +433,7 @@ mod tests {
 
         let all: Vec<Block> = store.db_get_all()?;
         assert_eq!(all.len(), 2);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -454,7 +454,7 @@ mod tests {
 
         let fetched = store.find_workspace_for_tab(&tab_oid)?.ok_or("unexpected None")?;
         assert_eq!(fetched.oid, workspace.oid);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -475,7 +475,7 @@ mod tests {
 
         let fetched = store.find_window_for_workspace(&workspace_oid)?.ok_or("unexpected None")?;
         assert_eq!(fetched.oid, window.oid);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -500,7 +500,7 @@ mod tests {
         let fetched: Block = store.db_get(&block.oid)?.ok_or("unexpected None")?;
         assert_eq!(fetched.version, 2);
         assert_eq!(fetched.meta.get_string("test_key").ok_or("unexpected None")?, "test_val");
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -516,7 +516,7 @@ mod tests {
 
         let fetched: Option<Block> = store.db_get(&block_oid)?;
         assert!(fetched.is_none());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -534,18 +534,16 @@ mod tests {
             job_id: None,
         };
 
-        store
-            .with_tx(|tx| {
-                let data = serde_json::to_string(&block)?;
-                let sql = "INSERT INTO db_block (oid, version, data) VALUES (?1, 1, ?2)";
-                tx.execute(sql, rusqlite::params![block_oid.to_string(), data])?;
-                Ok::<(), StoreError>(())
-            })
-            ?;
+        store.with_tx(|tx| {
+            let data = serde_json::to_string(&block)?;
+            let sql = "INSERT INTO db_block (oid, version, data) VALUES (?1, 1, ?2)";
+            tx.execute(sql, rusqlite::params![block_oid.to_string(), data])?;
+            Ok::<(), StoreError>(())
+        })?;
 
         let fetched: Option<Block> = store.db_get(&block_oid)?;
         assert!(fetched.is_some());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -623,8 +621,9 @@ mod tests {
         let found_workspace = store.find_workspace_for_tab(&tab_oid)?.ok_or("unexpected None")?;
         assert_eq!(found_workspace.oid, workspace_oid);
 
-        let found_window = store.find_window_for_workspace(&workspace_oid)?.ok_or("unexpected None")?;
+        let found_window =
+            store.find_window_for_workspace(&workspace_oid)?.ok_or("unexpected None")?;
         assert_eq!(found_window.oid, window_oid);
-    Ok(())
+        Ok(())
     }
 }

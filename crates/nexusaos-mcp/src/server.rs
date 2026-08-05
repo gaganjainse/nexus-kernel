@@ -278,8 +278,11 @@ mod tests {
         let policy = PolicyEngine::deny_all();
         let caps = CapabilitySet::new();
         let resp = handle_request(&req, &broker, &policy, &caps).await;
-        assert_eq!(resp.result.ok_or("ping response should have result")?, serde_json::json!({"pong": true}));
-    Ok(())
+        assert_eq!(
+            resp.result.ok_or("ping response should have result")?,
+            serde_json::json!({"pong": true})
+        );
+        Ok(())
     }
 
     #[tokio::test]
@@ -295,7 +298,7 @@ mod tests {
         let caps = CapabilitySet::new();
         let resp = handle_request(&req, &broker, &policy, &caps).await;
         assert!(resp.result.is_some());
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -311,7 +314,7 @@ mod tests {
         let caps = CapabilitySet::new();
         let resp = handle_request(&req, &broker, &policy, &caps).await;
         assert!(resp.error.is_some());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -322,6 +325,6 @@ mod tests {
         let config = McpServerConfig::default();
         let server = McpServer::new(config, broker, policy, caps);
         assert_eq!(server.config.socket_path, "/tmp/nexusaos-mcp.sock");
-    Ok(())
+        Ok(())
     }
 }

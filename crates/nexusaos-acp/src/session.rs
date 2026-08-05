@@ -233,7 +233,7 @@ mod tests {
         let session = manager.create_session(agent).await?;
         assert_eq!(session.state, AcpSessionState::Active);
         assert!(session.is_active());
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -250,7 +250,7 @@ mod tests {
         };
         let lease = session.grant_capability(cap, "admin".to_string(), None).await?;
         assert!(!lease.revoked);
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -264,7 +264,7 @@ mod tests {
         manager.terminate_session(&session_id).await?;
         let updated = manager.get_session(&session_id).await.ok_or("session not found")?;
         assert_eq!(updated.state, AcpSessionState::Terminated);
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -292,7 +292,7 @@ mod tests {
         manager.create_session(agent2).await?;
         let result = manager.create_session(agent3).await;
         assert!(result.is_err());
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -302,6 +302,6 @@ mod tests {
         let agent = test_agent();
         let session = manager.create_session(agent).await?;
         assert!(session.is_active());
-    Ok(())
+        Ok(())
     }
 }

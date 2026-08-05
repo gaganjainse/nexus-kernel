@@ -34,10 +34,7 @@ impl Default for McpServerConfig {
 }
 
 /// Validates an MCP request through the policy engine before tool execution.
-pub async fn validate_mcp_request(
-    policy: &PolicyEngine,
-    tool_name: &str,
-) -> PolicyDecision {
+pub async fn validate_mcp_request(policy: &PolicyEngine, tool_name: &str) -> PolicyDecision {
     let action = format!("mcp.{}.execute", tool_name);
     let decision = policy.evaluate(&action);
     info!(tool = %tool_name, decision = ?decision, "MCP request validated through policy");

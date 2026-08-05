@@ -266,9 +266,7 @@ mod tests {
     #[test]
     fn test_simple_budget() -> Result<(), Box<dyn std::error::Error>> {
         let mgr = ContextManager::new(test_config());
-        let budget = mgr
-            .estimate_budget(TaskComplexity::Simple, &normal_pressure(), 65536)
-            ?;
+        let budget = mgr.estimate_budget(TaskComplexity::Simple, &normal_pressure(), 65536)?;
         assert_eq!(budget.max_tokens, 8192);
         assert!(!budget.was_clamped);
         Ok(())
@@ -277,9 +275,8 @@ mod tests {
     #[test]
     fn test_architecture_budget() -> Result<(), Box<dyn std::error::Error>> {
         let mgr = ContextManager::new(test_config());
-        let budget = mgr
-            .estimate_budget(TaskComplexity::Architecture, &normal_pressure(), 65536)
-            ?;
+        let budget =
+            mgr.estimate_budget(TaskComplexity::Architecture, &normal_pressure(), 65536)?;
         assert_eq!(budget.max_tokens, 65536);
         Ok(())
     }
@@ -287,9 +284,8 @@ mod tests {
     #[test]
     fn test_clamp_to_model_max() -> Result<(), Box<dyn std::error::Error>> {
         let mgr = ContextManager::new(test_config());
-        let budget = mgr
-            .estimate_budget(TaskComplexity::Architecture, &normal_pressure(), 32768)
-            ?;
+        let budget =
+            mgr.estimate_budget(TaskComplexity::Architecture, &normal_pressure(), 32768)?;
         assert_eq!(budget.max_tokens, 32768);
         assert!(budget.was_clamped);
         Ok(())
@@ -298,9 +294,7 @@ mod tests {
     #[test]
     fn test_memory_pressure_halves_budget() -> Result<(), Box<dyn std::error::Error>> {
         let mgr = ContextManager::new(test_config());
-        let budget = mgr
-            .estimate_budget(TaskComplexity::Feature, &high_pressure(), 65536)
-            ?;
+        let budget = mgr.estimate_budget(TaskComplexity::Feature, &high_pressure(), 65536)?;
         assert_eq!(budget.max_tokens, 16384); // 32768 / 2
         assert!(budget.was_clamped);
         Ok(())
@@ -473,8 +467,7 @@ mod tests {
     #[test]
     fn test_context_budget_complexity_field() -> Result<(), Box<dyn std::error::Error>> {
         let mgr = ContextManager::new(test_config());
-        let budget =
-            mgr.estimate_budget(TaskComplexity::CodeEdit, &normal_pressure(), 65536)?;
+        let budget = mgr.estimate_budget(TaskComplexity::CodeEdit, &normal_pressure(), 65536)?;
         assert_eq!(budget.complexity, TaskComplexity::CodeEdit);
         Ok(())
     }

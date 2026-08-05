@@ -293,8 +293,11 @@ mod tests {
             id: Some("1".to_string()),
         };
         let resp = handle_request(&req, &manager).await;
-        assert_eq!(resp.result.ok_or("response result was None")?, serde_json::json!({"pong": true}));
-    Ok(())
+        assert_eq!(
+            resp.result.ok_or("response result was None")?,
+            serde_json::json!({"pong": true})
+        );
+        Ok(())
     }
 
     #[tokio::test]
@@ -309,6 +312,6 @@ mod tests {
         };
         let resp = handle_request(&req, &manager).await;
         assert!(resp.error.is_some());
-    Ok(())
+        Ok(())
     }
 }

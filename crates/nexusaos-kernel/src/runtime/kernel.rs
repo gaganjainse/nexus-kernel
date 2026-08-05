@@ -167,9 +167,16 @@ impl Kernel {
             artifact_store,
         } = config;
 
+        // Rebuild the task projection from the persisted event log so that
+        // task state, recovery, and execution are consistent across restarts
+        // (event sourcing). Without this the projection starts empty and any
+        // task referenced from prior sessions becomes unfindable.
+        let events = event_store.get_all_events().await?;
+        let projection = Arc::new(RwLock::new(TaskProjection::rebuild(&events)));
+
         let kernel = Self {
             event_store,
-            projection: Arc::new(RwLock::new(TaskProjection::new())),
+            projection,
             policy,
             provider_registry,
             tool_broker,
@@ -533,11 +540,12 @@ impl Kernel {
         let mut final_output = plan_resp.content;
 
         if requires_coder {
-            let coder = self.provider_registry.get(&crate::state::ModelRole::Coder).ok_or_else(|| {
-                NexusError::Provider(crate::error::ProviderError::Unavailable {
-                    name: "Coder".into(),
-                })
-            })?;
+            let coder =
+                self.provider_registry.get(&crate::state::ModelRole::Coder).ok_or_else(|| {
+                    NexusError::Provider(crate::error::ProviderError::Unavailable {
+                        name: "Coder".into(),
+                    })
+                })?;
             self.transition_task(task_id, TaskState::Executing).await?;
 
             self.check_model_pressure(&crate::state::ModelRole::Coder).await?;
@@ -1060,7 +1068,10 @@ impl Kernel {
             },
         )?;
         let resp = provider.complete(req).await.map_err(|e| {
-            crate::error::ProviderError::InferenceFailed(format!("{} failed: {}", ctx.role_label, e))
+            crate::error::ProviderError::InferenceFailed(format!(
+                "{} failed: {}",
+                ctx.role_label, e
+            ))
         })?;
         self.emit_model_responded(
             ctx.task_id,
@@ -1114,7 +1125,8 @@ impl Kernel {
                 }
             }
         }
-    }    /// Confirm a task that is awaiting confirmation and resume execution.
+    }
+    /// Confirm a task that is awaiting confirmation and resume execution.
     pub async fn confirm_task(&self, task_id: &TaskId) -> Result<TaskOutcome, NexusError> {
         let current_state = self.task_state(task_id).await?;
         if current_state != TaskState::AwaitingConfirmation {
@@ -1132,18 +1144,17 @@ impl Kernel {
     /// Scans for tasks that are in non-terminal states and attempts to
     /// restore them or mark them as failed.
     pub async fn recover_incomplete_tasks(&self) -> Result<Vec<TaskId>, NexusError> {
-        let events = self.event_store.get_all_events().await?;
+        // Use the projection rebuilt from the event log at startup to read each
+        // task's *current* state. A task is incomplete only when its latest
+        // known state is non-terminal; scanning raw StateChanged events would
+        // wrongly flag tasks that merely passed through an intermediate state
+        // (e.g. Planned/Executing) before reaching a terminal state.
         let mut incomplete = Vec::new();
-
-        for event in &events {
-            if let EventPayload::StateChanged { to, .. } = &event.payload {
-                if matches!(
-                    to.as_str(),
-                    "Executing" | "AwaitingConfirmation" | "Blocked" | "Planned"
-                ) {
-                    if let Some(task_id) = event.task_id {
-                        incomplete.push(task_id);
-                    }
+        {
+            let proj = self.projection.read().await;
+            for (id, record) in &proj.tasks {
+                if !record.current_state.is_terminal() {
+                    incomplete.push(*id);
                 }
             }
         }
@@ -1521,11 +1532,12 @@ mod tests {
         .await?;
 
         let fake_id = TaskId::new();
-        let result = kernel.task_state(&fake_id).await;
-        assert!(result.is_err());
-        match result.unwrap_err() {
+        let Err(err) = kernel.task_state(&fake_id).await else {
+            return Err("expected task_state of an unknown task to fail".into());
+        };
+        match err {
             NexusError::Task(TaskError::NotFound { .. }) => {}
-            _ => panic!("Expected TaskNotFound"),
+            other => return Err(format!("expected Task NotFound, got {other:?}").into()),
         }
         Ok(())
     }
@@ -1678,11 +1690,12 @@ mod tests {
         .await?;
 
         let id = kernel.submit_task(TaskInput::Text("do something".into())).await?;
-        let result = kernel.execute_task(&id).await;
-        assert!(result.is_err());
-        match result.unwrap_err() {
+        let Err(err) = kernel.execute_task(&id).await else {
+            return Err("expected execute_task without a provider to fail".into());
+        };
+        match err {
             NexusError::Provider(crate::error::ProviderError::Unavailable { .. }) => {}
-            _ => panic!("Expected Provider Unavailable"),
+            other => return Err(format!("expected Provider Unavailable, got {other:?}").into()),
         }
         Ok(())
     }
@@ -1947,7 +1960,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_submit_task_creates_record_with_correct_state_history() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_submit_task_creates_record_with_correct_state_history(
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(MockEventStore::new());
         let rule = crate::policy::PolicyRule {
             name: "allow".into(),
@@ -2023,7 +2037,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_v1_router_chooses_specialists_consistently() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_v1_router_chooses_specialists_consistently(
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let decision = TaskRouter::route("write a function to sort an array", false);
         assert_eq!(decision.primary_role, ModelRole::Coder);
 
@@ -2036,7 +2051,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_v1_checkpoint_created_before_tool_execution() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_v1_checkpoint_created_before_tool_execution(
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let store = Arc::new(MockEventStore::new());
         let rule = crate::policy::PolicyRule {
             name: "allow".into(),
@@ -2079,7 +2095,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_v1_performance_monitor_detects_bottlenecks() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_v1_performance_monitor_detects_bottlenecks(
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let monitor = crate::runtime::kernel::PerformanceMonitor::new();
 
         // Simulate a slow model load

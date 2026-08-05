@@ -280,10 +280,12 @@ mod tests {
 
         let req =
             ToolRequest { tool_name: "git".to_string(), arguments: json!({ "action": "push" }) };
-        let err = tool.execute(&req).await.unwrap_err();
+        let Err(err) = tool.execute(&req).await else {
+            return Err("expected the git tool to fail".into());
+        };
         match err {
             ToolError::ExecutionFailed { reason, .. } => assert!(reason.contains("Unknown action")),
-            _ => unreachable!("Expected ExecutionFailed"),
+            other => return Err(format!("expected ExecutionFailed, got {other:?}").into()),
         }
         Ok(())
     }
@@ -295,12 +297,14 @@ mod tests {
 
         let req =
             ToolRequest { tool_name: "git".to_string(), arguments: json!({ "action": "commit" }) };
-        let err = tool.execute(&req).await.unwrap_err();
+        let Err(err) = tool.execute(&req).await else {
+            return Err("expected the git tool to fail".into());
+        };
         match err {
             ToolError::ExecutionFailed { reason, .. } => {
                 assert!(reason.contains("Missing 'message' argument"))
             }
-            _ => unreachable!("Expected ExecutionFailed"),
+            other => return Err(format!("expected ExecutionFailed, got {other:?}").into()),
         }
         Ok(())
     }

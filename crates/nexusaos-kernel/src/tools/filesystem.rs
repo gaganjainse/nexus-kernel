@@ -203,7 +203,7 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "write_file",
-                "path": temp_dir.path().join("test.txt").to_str().expect("valid UTF-8 path"),
+                "path": temp_dir.path().join("test.txt").to_string_lossy(),
                 "content": "hello world"
             }),
         };
@@ -214,7 +214,7 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "read_file",
-                "path": temp_dir.path().join("test.txt").to_str().expect("valid UTF-8 path")
+                "path": temp_dir.path().join("test.txt").to_string_lossy()
             }),
         };
         let read_res = tool.execute(&read_req).await?;
@@ -225,7 +225,7 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "read_file",
-                "path": temp_dir.path().join(".env").to_str().expect("valid UTF-8 path")
+                "path": temp_dir.path().join(".env").to_string_lossy()
             }),
         };
         assert!(tool.execute(&deny_req).await.is_err());
@@ -245,7 +245,7 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "list_dir",
-                "path": temp_dir.path().to_str().expect("valid UTF-8 path")
+                "path": temp_dir.path().to_string_lossy()
             }),
         };
         let res = tool.execute(&req).await?;
@@ -267,7 +267,7 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "delete_file",
-                "path": file_path.to_str().expect("valid UTF-8 path")
+                "path": file_path.to_string_lossy()
             }),
         };
         let res = tool.execute(&req).await?;
@@ -288,10 +288,12 @@ mod tests {
                 "path": "/tmp/test"
             }),
         };
-        let err = tool.execute(&req).await.unwrap_err();
+        let Err(err) = tool.execute(&req).await else {
+            return Err("expected the filesystem tool to fail".into());
+        };
         match err {
             ToolError::ExecutionFailed { reason, .. } => assert!(reason.contains("Unknown action")),
-            _ => unreachable!("Expected ExecutionFailed"),
+            other => return Err(format!("expected ExecutionFailed, got {other:?}").into()),
         }
         Ok(())
     }
@@ -308,12 +310,14 @@ mod tests {
                 // missing path
             }),
         };
-        let err = tool.execute(&req).await.unwrap_err();
+        let Err(err) = tool.execute(&req).await else {
+            return Err("expected the filesystem tool to fail".into());
+        };
         match err {
             ToolError::ExecutionFailed { reason, .. } => {
                 assert!(reason.contains("Missing 'path' argument"))
             }
-            _ => unreachable!("Expected ExecutionFailed"),
+            other => return Err(format!("expected ExecutionFailed, got {other:?}").into()),
         }
         Ok(())
     }
@@ -327,16 +331,18 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "write_file",
-                "path": temp_dir.path().join("test.txt").to_str().expect("valid UTF-8 path")
+                "path": temp_dir.path().join("test.txt").to_string_lossy()
                 // missing content
             }),
         };
-        let err = tool.execute(&req).await.unwrap_err();
+        let Err(err) = tool.execute(&req).await else {
+            return Err("expected the filesystem tool to fail".into());
+        };
         match err {
             ToolError::ExecutionFailed { reason, .. } => {
                 assert!(reason.contains("Missing 'content' argument"))
             }
-            _ => unreachable!("Expected ExecutionFailed"),
+            other => return Err(format!("expected ExecutionFailed, got {other:?}").into()),
         }
         Ok(())
     }
@@ -351,14 +357,16 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "write_file",
-                "path": temp_dir.path().join("test.txt").to_str().expect("valid UTF-8 path"),
+                "path": temp_dir.path().join("test.txt").to_string_lossy(),
                 "content": "data"
             }),
         };
-        let err = tool.execute(&req).await.unwrap_err();
+        let Err(err) = tool.execute(&req).await else {
+            return Err("expected the filesystem tool to fail".into());
+        };
         match err {
             ToolError::PathDenied { .. } => {}
-            _ => unreachable!("Expected PathDenied"),
+            other => return Err(format!("expected PathDenied, got {other:?}").into()),
         }
         Ok(())
     }
@@ -373,10 +381,12 @@ mod tests {
                 "path": "/tmp"
             }),
         };
-        let err = tool.execute(&req).await.unwrap_err();
+        let Err(err) = tool.execute(&req).await else {
+            return Err("expected the filesystem tool to fail".into());
+        };
         match err {
             ToolError::PathDenied { .. } => {}
-            _ => unreachable!("Expected PathDenied"),
+            other => return Err(format!("expected PathDenied, got {other:?}").into()),
         }
         Ok(())
     }
@@ -395,13 +405,15 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "read_file",
-                "path": env_path.to_str().expect("valid UTF-8 path")
+                "path": env_path.to_string_lossy()
             }),
         };
-        let err = tool.execute(&req).await.unwrap_err();
+        let Err(err) = tool.execute(&req).await else {
+            return Err("expected the filesystem tool to fail".into());
+        };
         match err {
             ToolError::PathDenied { .. } => {}
-            _ => unreachable!("Expected PathDenied"),
+            other => return Err(format!("expected PathDenied, got {other:?}").into()),
         }
         Ok(())
     }
@@ -415,13 +427,15 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "read_file",
-                "path": temp_dir.path().join("nonexistent.txt").to_str().expect("valid UTF-8 path")
+                "path": temp_dir.path().join("nonexistent.txt").to_string_lossy()
             }),
         };
-        let err = tool.execute(&req).await.unwrap_err();
+        let Err(err) = tool.execute(&req).await else {
+            return Err("expected the filesystem tool to fail".into());
+        };
         match err {
             ToolError::Io(_) => {}
-            _ => unreachable!("Expected Io error"),
+            other => return Err(format!("expected Io error, got {other:?}").into()),
         }
         Ok(())
     }
@@ -438,7 +452,7 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "read_file",
-                "path": file_path.to_str().expect("valid UTF-8 path")
+                "path": file_path.to_string_lossy()
             }),
         };
         let res = tool.execute(&req).await?;
@@ -456,13 +470,15 @@ mod tests {
             tool_name: "filesystem".to_string(),
             arguments: json!({
                 "action": "delete_file",
-                "path": temp_dir.path().join("nonexistent.txt").to_str().expect("valid UTF-8 path")
+                "path": temp_dir.path().join("nonexistent.txt").to_string_lossy()
             }),
         };
-        let err = tool.execute(&req).await.unwrap_err();
+        let Err(err) = tool.execute(&req).await else {
+            return Err("expected the filesystem tool to fail".into());
+        };
         match err {
             ToolError::Io(_) => {}
-            _ => unreachable!("Expected Io error"),
+            other => return Err(format!("expected Io error, got {other:?}").into()),
         }
         Ok(())
     }

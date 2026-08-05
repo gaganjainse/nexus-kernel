@@ -29,6 +29,5 @@ impl ApprovalModal {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn test_modal_struct_exists() {
-    }
+    fn test_modal_struct_exists() {}
 }

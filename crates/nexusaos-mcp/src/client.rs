@@ -175,7 +175,7 @@ mod tests {
         let json = serde_json::to_string(&req)?;
         let back: McpRequest = serde_json::from_str(&json)?;
         assert_eq!(back.method, "tools/list");
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -189,13 +189,13 @@ mod tests {
         let json = serde_json::to_string(&resp)?;
         let back: McpResponse = serde_json::from_str(&json)?;
         assert!(back.result.is_some());
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_mcp_client_new() -> Result<(), Box<dyn std::error::Error>> {
         let client = McpClient::new("/tmp/test.sock");
         assert_eq!(client.socket_path, "/tmp/test.sock");
-    Ok(())
+        Ok(())
     }
 }

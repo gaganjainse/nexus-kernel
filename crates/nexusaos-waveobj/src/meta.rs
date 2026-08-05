@@ -132,7 +132,7 @@ mod tests {
         meta.set("test", "value");
         assert!(!meta.is_empty());
         assert_eq!(meta.len(), 1);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -166,7 +166,7 @@ mod tests {
         expected_map.insert("key".to_string(), "value".to_string());
         assert_eq!(meta.get_string_map("map"), Some(expected_map));
         assert_eq!(meta.get_string_map("str"), None);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -181,7 +181,7 @@ mod tests {
         merge_meta(&mut base, &updates);
         assert_eq!(base.get_string("a").ok_or("unexpected None")?, "2");
         assert_eq!(base.get_string("b").ok_or("unexpected None")?, "3");
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -196,7 +196,7 @@ mod tests {
         merge_meta(&mut base, &updates);
         assert!(!base.contains_key("a"));
         assert!(base.contains_key("b"));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -213,7 +213,7 @@ mod tests {
         assert!(!base.contains_key("ai:model"));
         assert!(!base.contains_key("ai:maxtokens"));
         assert!(base.contains_key("bg"));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -235,7 +235,7 @@ mod tests {
         assert!(!base.contains_key("term:theme"));
         assert!(base.contains_key("keep"));
         assert_eq!(base.get_string("new_key"), Some("hello".to_string()));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -247,7 +247,7 @@ mod tests {
 
         let deserialized: MetaMap = serde_json::from_str(&serialized)?;
         assert_eq!(deserialized, meta);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -266,7 +266,7 @@ mod tests {
         meta.remove("nonexistent");
         assert_eq!(meta.len(), 1);
         assert!(meta.contains_key("b"));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -279,14 +279,14 @@ mod tests {
         let mut keys: Vec<&String> = meta.keys().collect();
         keys.sort();
         assert_eq!(keys, vec!["alpha", "beta", "gamma"]);
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_keys_empty() -> Result<(), Box<dyn std::error::Error>> {
         let meta = MetaMap::new();
         assert_eq!(meta.keys().count(), 0);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -295,7 +295,7 @@ mod tests {
         meta.set("present", "yes");
         assert!(meta.contains_key("present"));
         assert!(!meta.contains_key("absent"));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -303,7 +303,7 @@ mod tests {
         let meta = MetaMap::default();
         assert!(meta.is_empty());
         assert_eq!(meta.len(), 0);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -319,7 +319,7 @@ mod tests {
         cloned.remove("key");
         assert!(original.contains_key("key"));
         assert!(!cloned.contains_key("key"));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -327,7 +327,7 @@ mod tests {
         let mut meta = MetaMap::new();
         meta.set("neg", -99);
         meta.set("zero", 0);
-        meta.set("float", 3.14);
+        meta.set("float", 2.5);
         meta.set("bool", true);
 
         assert_eq!(meta.get_int("neg"), Some(-99));
@@ -335,19 +335,19 @@ mod tests {
         // Floats are NOT valid integers
         assert_eq!(meta.get_int("float"), None);
         assert_eq!(meta.get_int("bool"), None);
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_get_float_from_int() -> Result<(), Box<dyn std::error::Error>> {
         let mut meta = MetaMap::new();
         meta.set("int_val", 42);
-        meta.set("float_val", -3.14);
+        meta.set("float_val", -2.5);
 
         // Integer stored as JSON should be retrievable as f64
         assert_eq!(meta.get_float("int_val"), Some(42.0));
-        assert_eq!(meta.get_float("float_val"), Some(-3.14));
-    Ok(())
+        assert_eq!(meta.get_float("float_val"), Some(-2.5));
+        Ok(())
     }
 
     #[test]
@@ -359,7 +359,7 @@ mod tests {
 
         assert_eq!(meta.get_bool("true_val"), Some(true));
         assert_eq!(meta.get_bool("false_val"), Some(false));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -368,7 +368,7 @@ mod tests {
         meta.set("empty_list", json!([]));
 
         assert_eq!(meta.get_string_list("empty_list"), Some(vec![]));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -378,7 +378,7 @@ mod tests {
         meta.set("mixed", json!(["a", 42, "b"]));
 
         assert_eq!(meta.get_string_list("mixed"), None);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -387,7 +387,7 @@ mod tests {
         meta.set("ints", json!([1, 2, 3]));
 
         assert_eq!(meta.get_string_list("ints"), None);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -396,7 +396,7 @@ mod tests {
         meta.set("null_key", serde_json::Value::Null);
 
         assert_eq!(meta.get_string_list("null_key"), None);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -405,7 +405,7 @@ mod tests {
         meta.set("empty_map", json!({}));
 
         assert_eq!(meta.get_string_map("empty_map"), Some(HashMap::new()));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -415,7 +415,7 @@ mod tests {
         meta.set("mixed_map", json!({"key": 42}));
 
         assert_eq!(meta.get_string_map("mixed_map"), None);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -424,7 +424,7 @@ mod tests {
         meta.set("partial_mixed", json!({"a": "ok", "b": 42}));
 
         assert_eq!(meta.get_string_map("partial_mixed"), None);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -437,7 +437,7 @@ mod tests {
         assert_eq!(meta.get_string_list("missing"), None);
         assert_eq!(meta.get_string_map("missing"), None);
         assert_eq!(meta.get_string("empty"), None);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -454,7 +454,7 @@ mod tests {
         assert_eq!(meta.get_bool("str_val"), None);
         assert_eq!(meta.get_string_map("arr"), None);
         assert_eq!(meta.get_string_list("obj"), None);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -466,7 +466,7 @@ mod tests {
         meta.set("key", "second");
         assert_eq!(meta.get_string("key"), Some("second".to_string()));
         assert_eq!(meta.len(), 1);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -485,7 +485,7 @@ mod tests {
         assert_eq!(meta.get_float("f64"), Some(std::f64::consts::PI));
         assert_eq!(meta.get_bool("bool"), Some(true));
         assert_eq!(meta.get_string_list("array"), None); // mixed types → None
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -501,7 +501,7 @@ mod tests {
         assert_eq!(base.len(), 2);
         assert_eq!(base.get_string("a"), Some("1".to_string()));
         assert_eq!(base.get_string("b"), Some("2".to_string()));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -517,7 +517,7 @@ mod tests {
         assert_eq!(base.len(), 2);
         assert_eq!(base.get_string("new"), Some("value".to_string()));
         assert_eq!(base.get_int("num"), Some(42));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -533,7 +533,7 @@ mod tests {
 
         assert!(!base.contains_key("to_delete"));
         assert!(base.contains_key("to_keep"));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -550,7 +550,7 @@ mod tests {
         assert_eq!(base.get_string("ai:*"), Some("overwritten".to_string()));
         // The actual key "ai:model" should NOT be deleted since the value was not null
         assert_eq!(base.get_string("ai:model"), Some("gpt-4".to_string()));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -568,7 +568,7 @@ mod tests {
         assert_eq!(base.len(), 2);
         assert!(base.contains_key("other:key"));
         assert!(base.contains_key("foo:bar"));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -587,7 +587,7 @@ mod tests {
         assert!(!base.contains_key("ai:temp"));
         // "aide:val" should NOT be deleted because it doesn't start with "ai:"
         assert!(base.contains_key("aide:val"));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -604,7 +604,7 @@ mod tests {
 
         assert_eq!(base.get_string("a"), Some("new".to_string()));
         assert_eq!(base.get_int("b"), Some(2));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -618,7 +618,7 @@ mod tests {
         merge_meta(&mut base, &updates);
 
         assert!(!base.contains_key(""));
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -630,7 +630,7 @@ mod tests {
         let deserialized: MetaMap = serde_json::from_str(&serialized)?;
         assert_eq!(deserialized, meta);
         assert!(deserialized.is_empty());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -642,14 +642,14 @@ mod tests {
         let serialized = serde_json::to_string(&meta)?;
         let deserialized: MetaMap = serde_json::from_str(&serialized)?;
         assert_eq!(deserialized, meta);
-    Ok(())
+        Ok(())
     }
 
     #[test]
     fn test_serde_invalid_json_fails() -> Result<(), Box<dyn std::error::Error>> {
         let result: Result<MetaMap, _> = serde_json::from_str("not valid json");
         assert!(result.is_err());
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -661,7 +661,7 @@ mod tests {
         m2.set("key", "val2");
 
         assert_ne!(m1, m2);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -674,7 +674,7 @@ mod tests {
         m2.set("extra", "val2");
 
         assert_ne!(m1, m2);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -695,7 +695,7 @@ mod tests {
         assert!(!base.contains_key("y"));
         assert_eq!(base.get_int("z"), Some(30));
         assert_eq!(base.len(), 2);
-    Ok(())
+        Ok(())
     }
 
     #[test]
@@ -717,6 +717,6 @@ mod tests {
         assert!(base.contains_key("term:theme"));
         assert_eq!(base.get_string("new"), Some("added".to_string()));
         assert_eq!(base.len(), 4);
-    Ok(())
+        Ok(())
     }
 }

@@ -48,7 +48,7 @@ mod tests {
         let server = RpcServer::new(handler, PathBuf::from("/tmp/test_server.sock"));
         let socket_str = server.socket_path.to_str().ok_or("socket path should be valid UTF-8")?;
         assert_eq!(socket_str, "/tmp/test_server.sock");
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -58,7 +58,7 @@ mod tests {
         let handler = Arc::new(RpcHandler::new(broker, store));
         let server = RpcServer::new(handler, PathBuf::from("relative/path.sock"));
         assert_eq!(server.socket_path, PathBuf::from("relative/path.sock"));
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -68,7 +68,7 @@ mod tests {
         let handler = Arc::new(RpcHandler::new(broker, store));
         let server = RpcServer::new(handler, PathBuf::from(""));
         assert_eq!(server.socket_path, PathBuf::from(""));
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -79,7 +79,7 @@ mod tests {
         let path = PathBuf::from("/var/run/nexusaos/rpc.sock");
         let server = RpcServer::new(handler, path.clone());
         assert_eq!(server.socket_path, path);
-    Ok(())
+        Ok(())
     }
 
     #[tokio::test]
@@ -102,6 +102,6 @@ mod tests {
 
         server_handle.abort();
         let _ = tokio::fs::remove_file(&socket_path).await;
-    Ok(())
+        Ok(())
     }
 }

@@ -437,18 +437,14 @@ mod tests {
         let config = WorkerConfig::default();
         let pool = WorkerPool::new(config);
         let idle_idx = pool.find_idle_worker().await;
-        assert_eq!(idle_idx.ok_or_else(|| "no idle worker")?, 0);
+        assert_eq!(idle_idx.ok_or("no idle worker")?, 0);
         Ok(())
     }
 
     #[test]
     fn test_worker_state_transitions() {
-        let states = [
-            WorkerState::Idle,
-            WorkerState::Busy,
-            WorkerState::Failed,
-            WorkerState::Terminated,
-        ];
+        let states =
+            [WorkerState::Idle, WorkerState::Busy, WorkerState::Failed, WorkerState::Terminated];
         assert_eq!(states.len(), 4);
     }
 
