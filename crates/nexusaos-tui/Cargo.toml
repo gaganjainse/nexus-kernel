@@ -20,6 +20,7 @@ nexusaos-waveobj.workspace = true
 nexusaos-wps.workspace = true
 nexusaos-blockctl.workspace = true
 nexusaos-wconfig.workspace = true
+anyhow = "1"
 
 [dev-dependencies]
 tempfile = "3"

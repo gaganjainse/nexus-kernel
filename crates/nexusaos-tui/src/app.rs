@@ -112,7 +112,7 @@ impl App {
     }
 
     /// Create a minimal App for CLI interactive mode (without full broker/store/registry).
-    pub fn new_cli() -> Self {
+    pub fn new_cli() -> anyhow::Result<Self> {
         use std::sync::Arc;
 
         use nexusaos_blockctl::controller::ControllerRegistry;
@@ -120,11 +120,10 @@ impl App {
         use nexusaos_wps::broker::Broker;
 
         let broker = Broker::new(100);
-        let store =
-            Arc::new(WaveStore::open_in_memory().expect("Failed to create in-memory store"));
+        let store = Arc::new(WaveStore::open_in_memory()?);
         let registry = Arc::new(ControllerRegistry::new());
 
-        Self::new(broker, store, registry)
+        Ok(Self::new(broker, store, registry))
     }
 
     pub async fn run<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> std::io::Result<()> {

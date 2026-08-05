@@ -157,7 +157,7 @@ fn run_interactive_tui() -> anyhow::Result<()> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let mut app = nexusaos_tui::App::new_cli();
+    let mut app = nexusaos_tui::App::new_cli()?;
 
     while app.running {
         terminal.draw(|f| nexusaos_tui::render_ui(f, &app))?;

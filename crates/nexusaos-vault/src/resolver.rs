@@ -3,6 +3,7 @@
 use std::collections::HashMap;
 
 use regex::Regex;
+use std::sync::OnceLock;
 
 /// Parameter resolver for placeholder substitution in command templates.
 pub struct ParameterResolver;
@@ -10,7 +11,8 @@ pub struct ParameterResolver;
 impl ParameterResolver {
     /// Extract all placeholder parameters (e.g. `<container>`, `<port>`) from a template.
     pub fn extract_placeholders(template: &str) -> Vec<String> {
-        let re = Regex::new(r"<([a-zA-Z0-9_]+)>").unwrap();
+        static RE: OnceLock<Regex> = OnceLock::new();
+        let re = RE.get_or_init(|| Regex::new(r"<([a-zA-Z0-9_]+)>").expect("valid regex"));
         re.captures_iter(template)
             .filter_map(|cap| cap.get(1).map(|m| m.as_str().to_string()))
             .collect()

@@ -77,12 +77,19 @@ impl PtyManager {
     }
 
     /// Spawn an async background task that reads PTY output and sends it through a channel.
-    pub fn spawn_reader_task(&mut self, capacity: usize) -> mpsc::Receiver<Vec<u8>> {
+    pub fn spawn_reader_task(
+        &mut self,
+        capacity: usize,
+    ) -> Result<mpsc::Receiver<Vec<u8>>, std::io::Error> {
         let (tx, rx) = mpsc::channel(capacity);
         let tx_clone = tx.clone();
         self.output_tx = Some(tx);
         let shutdown = self.shutdown.clone();
-        let mut reader = self.pair.master.try_clone_reader().expect("Failed to clone PTY reader");
+        let mut reader = self
+            .pair
+            .master
+            .try_clone_reader()
+            .map_err(|e| std::io::Error::other(e.to_string()))?;
 
         tokio::spawn(async move {
             let mut buf = vec![0u8; PTY_READ_CHUNK];
@@ -104,7 +111,7 @@ impl PtyManager {
             }
         });
 
-        rx
+        Ok(rx)
     }
 
     /// Signal the reader task to stop.
