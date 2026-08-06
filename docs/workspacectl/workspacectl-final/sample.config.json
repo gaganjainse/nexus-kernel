@@ -1,0 +1,9 @@
+{
+  "workspace_root": "~/Workspace",
+  "watch_paths": [
+    "~/Downloads",
+    "~/Desktop"
+  ],
+  "dry_run": true,
+  "journal_dir": "~/.local/share/workspacectl"
+}
