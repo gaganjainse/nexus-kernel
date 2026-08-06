@@ -279,20 +279,48 @@ directories() {
     local user_home
     user_home="$(eval echo ~${LOCAL_USER})"
 
+    # Core directories (clean separation)
     local dirs=(
+        # Development
         "${user_home}/Workspace"
-        "${user_home}/Projects"
+        "${user_home}/Projects/personal"
+        "${user_home}/Projects/work"
+        "${user_home}/Projects/archived"
+        "${user_home}/bin"
+
+        # AI/ML
         "${user_home}/Models/ollama"
         "${user_home}/Models/huggingface"
         "${user_home}/Models/checkpoints"
+        "${user_home}/Models/embeddings"
         "${user_home}/Datasets/raw"
         "${user_home}/Datasets/processed"
         "${user_home}/Datasets/experiments"
+        "${user_home}/Datasets/external"
+
+        # Personal
         "${user_home}/Documents"
-        "${user_home}/Downloads"
+        "${user_home}/Documents/Financial"
+        "${user_home}/Documents/Medical"
+        "${user_home}/Documents/Legal"
+        "${user_home}/Documents/Education"
+        "${user_home}/Documents/Archives"
         "${user_home}/Pictures"
+        "${user_home}/Pictures/Wallpapers"
+        "${user_home}/Pictures/Screenshots"
+        "${user_home}/Pictures/Camera"
         "${user_home}/Videos"
+        "${user_home}/Videos/Movies"
+        "${user_home}/Videos/ScreenRecordings"
+        "${user_home}/Videos/Tutorials"
         "${user_home}/Music"
+        "${user_home}/Music/Playlists"
+        "${user_home}/Music/Podcasts"
+
+        # Staging/cleanup
+        "${user_home}/Downloads"
+        "${user_home}/Archives"
+        "${user_home}/.trash"
     )
 
     for d in "${dirs[@]}"; do
@@ -300,19 +328,68 @@ directories() {
         chown "${LOCAL_USER}:${LOCAL_USER}" "${d}"
     done
 
+    # Symlink Ollama models
     if [[ -d "${user_home}/.ollama" && ! -e "${user_home}/Models/ollama" ]]; then
         ln -s "${user_home}/.ollama" "${user_home}/Models/ollama"
         chown -h "${LOCAL_USER}:${LOCAL_USER}" "${user_home}/Models/ollama"
     fi
 
-    log_ok "Directory structure created"
+    # Symlink bin to user-local PATH if not already
+    if ! grep -q 'export PATH="$HOME/bin:$PATH"' "${user_home}/.bashrc" 2>/dev/null; then
+        echo 'export PATH="$HOME/bin:$PATH"' >> "${user_home}/.bashrc"
+    fi
+
+    log_ok "Directory structure created with clean separation"
 }
 
 # =============================================================================
-# 8. SSH restore
+# 8. Auto-cleanup rules (Downloads weekly, Trash monthly)
+# =============================================================================
+auto_cleanup() {
+    log_info "=== 8. Auto-Cleanup Rules ==="
+
+    local user_home
+    user_home="$(eval echo ~${LOCAL_USER})"
+
+    # Add cron jobs for automatic cleanup
+    local cron_file="/tmp/cachyos-cleanup-${LOCAL_USER}.cron"
+    cat > "${cron_file}" <<'EOF'
+# Clean Downloads weekly (Sunday 3 AM) — delete files older than 7 days
+0 3 * * 0 find /home/gagan/Downloads -type f -mtime +7 -delete 2>/dev/null || true
+# Purge trash monthly (1st of month, 4 AM) — delete files older than 30 days
+0 4 1 * * find /home/gagan/.trash -type f -mtime +30 -delete 2>/dev/null || true
+EOF
+
+    # Install cron jobs
+    crontab -u "${LOCAL_USER}" "${cron_file}" 2>/dev/null || true
+    rm -f "${cron_file}"
+
+    # Create trash directory
+    mkdir -p "${user_home}/.trash"
+    chown "${LOCAL_USER}:${LOCAL_USER}" "${user_home}/.trash"
+
+    # Add trash alias to bashrc
+    if ! grep -q 'alias clean-trash' "${user_home}/.bashrc" 2>/dev/null; then
+        cat >> "${user_home}/.bashrc" <<'EOF'
+
+# Auto-cleanup aliases
+alias clean-downloads='find ~/Downloads -type f -mtime +7 -delete 2>/dev/null && find ~/Downloads -type d -empty -delete 2>/dev/null || true'
+alias clean-trash='find ~/.trash -type f -mtime +30 -delete 2>/dev/null || true'
+alias projects='cd ~/Projects'
+alias models='cd ~/Models'
+alias datasets='cd ~/Datasets'
+alias work='cd ~/Workspace'
+EOF
+    fi
+
+    log_ok "Auto-cleanup rules configured"
+}
+
+# =============================================================================
+# 9. SSH restore
 # =============================================================================
 ssh_restore() {
-    log_info "=== 8. SSH Keys Restore ==="
+    log_info "=== 9. SSH Keys Restore ==="
 
     local user_home
     user_home="$(eval echo ~${LOCAL_USER})"
@@ -332,10 +409,10 @@ ssh_restore() {
 }
 
 # =============================================================================
-# 9. GitHub repos
+# 10. GitHub repos
 # =============================================================================
 git_clone() {
-    log_info "=== 9. GitHub Repos ==="
+    log_info "=== 10. GitHub Repos ==="
 
     local user_home
     user_home="$(eval echo ~${LOCAL_USER})"
@@ -510,6 +587,7 @@ main() {
     hyprland_mux_config
     ai_stack
     directories
+    auto_cleanup
     ssh_restore
     git_clone
     power_management
