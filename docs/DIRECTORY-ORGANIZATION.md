@@ -42,9 +42,8 @@ Every file type has a canonical directory. Downloads go to a staging area, not a
 │   ├── Playlists/
 │   └── Podcasts/
 │
-├── Downloads/                  # TEMPORARY ONLY — auto-cleaned weekly
-│   ├── .keep                   # Empty marker
-│   └── [auto-cleaned weekly]
+├── Downloads/                  # Staging area — auto-sorted by smart-sort
+│   └── [watched and sorted automatically]
 │
 ├── Projects/                   # ALL development work
 │   ├── personal/               # Personal projects (not on GitHub)
@@ -97,33 +96,28 @@ Every file type has a canonical directory. Downloads go to a staging area, not a
 | Photos/screenshots | `~/Pictures/` | Manual |
 | Videos | `~/Videos/` | Manual |
 | Music | `~/Music/` | Manual |
-| Downloads | `~/Downloads/` | Auto-clean weekly |
+| Downloads | `~/Downloads/` | Auto-sorted by smart-sort |
 | Archives/old files | `~/Archives/` | Manual |
 | Trash | `~/.trash/` | Auto-purge monthly |
 | Scripts | `~/bin/` | Manual |
 
 ---
 
-## Automatic Cleanup Rules
+## Automatic Organization
 
-### Downloads — weekly auto-clean
-```bash
-# Delete files older than 7 days
-find ~/Downloads -type f -mtime +7 -delete
-find ~/Downloads -type d -empty -delete
-```
+### smart-sort service
+Downloads are automatically sorted by file type using `smart-sort`:
+- Videos → `~/Videos/Movies/`
+- Images → `~/Pictures/`
+- Documents → `~/Documents/`
+- Archives/ISOs → `~/Archives/`
+- Music → `~/Music/`
+- Installers → `~/Archives/Installers/`
+- Torrents → `~/Downloads/torrents/`
+- Code/projects → `~/Projects/`
+- AI models → `~/Models/`
 
-### Trash — monthly auto-purge
-```bash
-# Delete files older than 30 days
-find ~/.trash -type f -mtime +30 -delete
-```
-
-### Archives — yearly compression
-```bash
-# Compress files older than 1 year
-find ~/Archives -type f -mtime +365 -exec gzip {} \;
-```
+Runs as a systemd user service. Watches Downloads for new files and moves them automatically.
 
 ---
 
@@ -202,19 +196,26 @@ UUID=<your-btrfs-uuid> /home/gagan/Datasets btrfs noatime,compress=zstd:1,subvol
 
 ---
 
-## Cron Jobs (Auto-Maintenance)
+## smart-sort Service
 
-Add to crontab (`crontab -e`):
-
+Installed as a systemd user service:
 ```bash
-# Clean Downloads weekly (Sunday 3 AM)
-0 3 * * 0 find /home/gagan/Downloads -type f -mtime +7 -delete 2>/dev/null || true
+systemctl --user status smart-sort.service
+```
 
-# Purge trash monthly (1st of month, 4 AM)
-0 4 1 * * find /home/gagan/.trash -type f -mtime +30 -delete 2>/dev/null || true
+Logs:
+```bash
+journalctl --user -u smart-sort -f
+```
 
-# Compress old archives yearly (Jan 1, 5 AM)
-0 5 1 1 * find /home/gagan/Archives -type f -mtime +365 -exec gzip {} \; 2>/dev/null || true
+Manual trigger:
+```bash
+~/bin/smart-sort --once
+```
+
+Dry run:
+```bash
+~/bin/smart-sort --dry-run
 ```
 
 ---
@@ -223,33 +224,35 @@ Add to crontab (`crontab -e`):
 
 ### Bashrc aliases
 ```bash
-# Add to ~/.bashrc
-alias downloads='cd ~/Downloads && ls -lt | head -20'
 alias projects='cd ~/Projects'
 alias models='cd ~/Models'
 alias datasets='cd ~/Datasets'
 alias work='cd ~/Workspace'
-alias clean-downloads='find ~/Downloads -type f -mtime +7 -delete && find ~/Downloads -type d -empty -delete'
-```
-
-### Starship prompt — show current directory context
-```toml
-[directory]
-truncation_length = 4
-style = "bold cyan"
+alias sort-downloads='~/bin/smart-sort --once'
 ```
 
 ---
 
 ## Anti-Clutter Rules
 
-1. **Downloads is temporary** — if you haven't moved it in 7 days, it gets deleted automatically
+1. **Downloads is staging, not storage** — smart-sort moves files automatically within seconds
 2. **No project files in Downloads** — create project directory first, then download there
 3. **Documents go to Documents** — not Downloads, not Desktop
 4. **Models go to Models** — not Downloads, not home
 5. **Datasets go to Datasets** — not Downloads
 6. **Archives go to Archives** — not cluttering active directories
-7. **Trash goes to .trash** — auto-purged, not in Downloads
+7. **Trash goes to .trash** — not in Downloads
+
+## Enforcement
+
+### Bashrc aliases
+```bash
+alias projects='cd ~/Projects'
+alias models='cd ~/Models'
+alias datasets='cd ~/Datasets'
+alias work='cd ~/Workspace'
+alias sort-downloads='~/bin/smart-sort --once'
+```
 
 ---
 
@@ -258,8 +261,9 @@ style = "bold cyan"
 - **Clean home** — only dotfiles and top-level directories
 - **Easy backup** — snapshot `~/Workspace`, `~/Models`, `~/Datasets` separately
 - **Fast search** — `find ~/Documents` instead of `find ~`
-- **No clutter** — Downloads auto-cleans, Trash auto-purges
+- **No clutter** — Downloads auto-sorts, nothing gets deleted
 - **Clear separation** — personal vs work vs AI vs archives
+- **Zero manual sorting** — smart-sort handles everything automatically
 
 ---
 

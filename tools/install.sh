@@ -339,42 +339,12 @@ directories() {
         echo 'export PATH="$HOME/bin:$PATH"' >> "${user_home}/.bashrc"
     fi
 
-    log_ok "Directory structure created with clean separation"
-}
-
-# =============================================================================
-# 8. Auto-cleanup rules (Downloads weekly, Trash monthly)
-# =============================================================================
-auto_cleanup() {
-    log_info "=== 8. Auto-Cleanup Rules ==="
-
-    local user_home
-    user_home="$(eval echo ~${LOCAL_USER})"
-
-    # Add cron jobs for automatic cleanup
-    local cron_file="/tmp/cachyos-cleanup-${LOCAL_USER}.cron"
-    cat > "${cron_file}" <<'EOF'
-# Clean Downloads weekly (Sunday 3 AM) — delete files older than 7 days
-0 3 * * 0 find /home/gagan/Downloads -type f -mtime +7 -delete 2>/dev/null || true
-# Purge trash monthly (1st of month, 4 AM) — delete files older than 30 days
-0 4 1 * * find /home/gagan/.trash -type f -mtime +30 -delete 2>/dev/null || true
-EOF
-
-    # Install cron jobs
-    crontab -u "${LOCAL_USER}" "${cron_file}" 2>/dev/null || true
-    rm -f "${cron_file}"
-
-    # Create trash directory
-    mkdir -p "${user_home}/.trash"
-    chown "${LOCAL_USER}:${LOCAL_USER}" "${user_home}/.trash"
-
-    # Add trash alias to bashrc
-    if ! grep -q 'alias clean-trash' "${user_home}/.bashrc" 2>/dev/null; then
+    # Add smart-sort aliases
+    if ! grep -q 'alias sort-downloads' "${user_home}/.bashrc" 2>/dev/null; then
         cat >> "${user_home}/.bashrc" <<'EOF'
 
-# Auto-cleanup aliases
-alias clean-downloads='find ~/Downloads -type f -mtime +7 -delete 2>/dev/null && find ~/Downloads -type d -empty -delete 2>/dev/null || true'
-alias clean-trash='find ~/.trash -type f -mtime +30 -delete 2>/dev/null || true'
+# Smart sort aliases
+alias sort-downloads='~/bin/smart-sort --once'
 alias projects='cd ~/Projects'
 alias models='cd ~/Models'
 alias datasets='cd ~/Datasets'
@@ -382,7 +352,76 @@ alias work='cd ~/Workspace'
 EOF
     fi
 
-    log_ok "Auto-cleanup rules configured"
+    log_ok "Directory structure created with clean separation"
+}
+
+# =============================================================================
+# 8. Smart Downloads Sorter (automatic organization, no deletion)
+# =============================================================================
+smart_sort() {
+    log_info "=== 8. Smart Downloads Sorter ==="
+
+    local user_home
+    user_home="$(eval echo ~${LOCAL_USER})"
+    
+    # Create directories for sorted files
+    local dirs=(
+        "${user_home}/Videos/Movies"
+        "${user_home}/Videos/ScreenRecordings"
+        "${user_home}/Pictures"
+        "${user_home}/Documents"
+        "${user_home}/Archives"
+        "${user_home}/Archives/ISOs"
+        "${user_home}/Archives/Installers"
+        "${user_home}/Music"
+        "${user_home}/Projects"
+        "${user_home}/Models"
+        "${user_home}/Datasets"
+        "${user_home}/Downloads/torrents"
+    )
+    
+    for d in "${dirs[@]}"; do
+        mkdir -p "${d}"
+        chown "${LOCAL_USER}:${LOCAL_USER}" "${d}"
+    done
+
+    # Install inotify-tools for file watching
+    pacman -S --noconfirm --needed inotify-tools
+
+    # Install smart-sort service
+    local service_file="/etc/systemd/user/smart-sort.service"
+    sudo mkdir -p /etc/systemd/user
+    
+    sudo tee "$service_file" > /dev/null <<EOF
+[Unit]
+Description=Smart Downloads Sorter
+After=default.target
+
+[Service]
+Type=simple
+ExecStart=${user_home}/bin/smart-sort --watch
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+EOF
+
+    # Copy script to ~/bin
+    mkdir -p "${user_home}/bin"
+    cp "${SCRIPT_DIR}/smart-sort.sh" "${user_home}/bin/smart-sort"
+    chmod +x "${user_home}/bin/smart-sort"
+    chown "${LOCAL_USER}:${LOCAL_USER}" "${user_home}/bin/smart-sort"
+
+    # Enable service
+    systemctl --user daemon-reload
+    systemctl --user enable --now smart-sort.service
+    
+    # Create trash directory
+    mkdir -p "${user_home}/.trash"
+    chown "${LOCAL_USER}:${LOCAL_USER}" "${user_home}/.trash"
+
+    log_ok "Smart sorter installed and running as systemd service"
 }
 
 # =============================================================================
@@ -556,6 +595,12 @@ verify() {
         log_warn "Ollama service not running"
     fi
 
+    if systemctl --user is-active --quiet smart-sort.service; then
+        log_ok "smart-sort service running"
+    else
+        log_warn "smart-sort service not running"
+    fi
+
     sudo -u "${LOCAL_USER}" bash -lc \
         "python -c 'import torch; print(\"PyTorch CUDA:\", torch.cuda.is_available(), torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"N/A\")'" 2>/dev/null || true
 
@@ -587,7 +632,7 @@ main() {
     hyprland_mux_config
     ai_stack
     directories
-    auto_cleanup
+    smart_sort
     ssh_restore
     git_clone
     power_management
