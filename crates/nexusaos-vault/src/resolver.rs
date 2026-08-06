@@ -38,58 +38,66 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_extract_placeholders() {
+    fn test_extract_placeholders() -> Result<(), regex::Error> {
         let template = "docker exec -it <container_id> ffmpeg -i <input_file> -p <port>";
-        let params = ParameterResolver::extract_placeholders(template).unwrap();
+        let params = ParameterResolver::extract_placeholders(template)?;
         assert_eq!(params, vec!["container_id", "input_file", "port"]);
+        Ok(())
     }
 
     #[test]
-    fn test_extract_placeholders_empty_template() {
-        let params = ParameterResolver::extract_placeholders("").unwrap();
+    fn test_extract_placeholders_empty_template() -> Result<(), regex::Error> {
+        let params = ParameterResolver::extract_placeholders("")?;
         assert!(params.is_empty());
+        Ok(())
     }
 
     #[test]
-    fn test_extract_placeholders_no_placeholders() {
+    fn test_extract_placeholders_no_placeholders() -> Result<(), regex::Error> {
         let template = "docker exec -it mycontainer ffmpeg -i input.mp4";
-        let params = ParameterResolver::extract_placeholders(template).unwrap();
+        let params = ParameterResolver::extract_placeholders(template)?;
         assert!(params.is_empty());
+        Ok(())
     }
 
     #[test]
-    fn test_extract_placeholders_single_placeholder() {
+    fn test_extract_placeholders_single_placeholder() -> Result<(), regex::Error> {
         let template = "echo <message>";
-        let params = ParameterResolver::extract_placeholders(template).unwrap();
+        let params = ParameterResolver::extract_placeholders(template)?;
         assert_eq!(params, vec!["message"]);
+        Ok(())
     }
 
     #[test]
-    fn test_extract_placeholders_repeated_names() {
+    fn test_extract_placeholders_repeated_names() -> Result<(), regex::Error> {
         let template = "<x> and <x> and <y>";
-        let params = ParameterResolver::extract_placeholders(template).unwrap();
+        let params = ParameterResolver::extract_placeholders(template)?;
         assert_eq!(params, vec!["x", "x", "y"]);
+        Ok(())
     }
 
     #[test]
-    fn test_extract_placeholders_with_numbers() {
+    fn test_extract_placeholders_with_numbers() -> Result<(), regex::Error> {
         let template = "arg1 <arg_1> arg2 <arg_2>";
-        let params = ParameterResolver::extract_placeholders(template).unwrap();
+        let params = ParameterResolver::extract_placeholders(template)?;
         assert_eq!(params, vec!["arg_1", "arg_2"]);
+        Ok(())
     }
 
     #[test]
-    fn test_extract_placeholders_with_underscores() {
+    fn test_extract_placeholders_with_underscores() -> Result<(), regex::Error> {
         let template = "process <my_var> with <other_var>";
-        let params = ParameterResolver::extract_placeholders(template).unwrap();
+        let params = ParameterResolver::extract_placeholders(template)?;
         assert_eq!(params, vec!["my_var", "other_var"]);
+        Ok(())
     }
 
     #[test]
-    fn test_extract_placeholders_adjacent() {
+    fn test_extract_placeholders_adjacent() -> Result<(), regex::Error> {
         let template = "<a><b><c>";
-        let params = ParameterResolver::extract_placeholders(template).unwrap();
+        let params = ParameterResolver::extract_placeholders(template)?;
         assert_eq!(params, vec!["a", "b", "c"]);
+        Ok(())
     }
 
     #[test]
@@ -170,9 +178,9 @@ mod tests {
     }
 
     #[test]
-    fn test_extract_and_resolve_roundtrip() {
+    fn test_extract_and_resolve_roundtrip() -> Result<(), regex::Error> {
         let template = "cmd <arg1> <arg2> --flag";
-        let params = ParameterResolver::extract_placeholders(template).unwrap();
+        let params = ParameterResolver::extract_placeholders(template)?;
         let mut map = HashMap::new();
         for (i, p) in params.iter().enumerate() {
             map.insert(p.clone(), format!("val{}", i));
@@ -181,5 +189,6 @@ mod tests {
         assert!(resolved.contains("val0"));
         assert!(resolved.contains("val1"));
         assert!(resolved.contains("--flag"));
+        Ok(())
     }
 }
