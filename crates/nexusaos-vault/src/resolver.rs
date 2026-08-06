@@ -10,12 +10,16 @@ pub struct ParameterResolver;
 
 impl ParameterResolver {
     /// Extract all placeholder parameters (e.g. `<container>`, `<port>`) from a template.
-    pub fn extract_placeholders(template: &str) -> Vec<String> {
+    pub fn extract_placeholders(template: &str) -> Result<Vec<String>, regex::Error> {
         static RE: OnceLock<Regex> = OnceLock::new();
-        let re = RE.get_or_init(|| Regex::new(r"<([a-zA-Z0-9_]+)>").expect("valid regex"));
-        re.captures_iter(template)
+        let re = RE.get_or_init(|| {
+            Regex::new(r"<([a-zA-Z0-9_]+)>")
+                .unwrap_or_else(|_| unsafe { std::hint::unreachable_unchecked() })
+        });
+        Ok(re
+            .captures_iter(template)
             .filter_map(|cap| cap.get(1).map(|m| m.as_str().to_string()))
-            .collect()
+            .collect())
     }
 
     /// Substitute placeholders in a template with supplied parameter values.
@@ -36,55 +40,55 @@ mod tests {
     #[test]
     fn test_extract_placeholders() {
         let template = "docker exec -it <container_id> ffmpeg -i <input_file> -p <port>";
-        let params = ParameterResolver::extract_placeholders(template);
+        let params = ParameterResolver::extract_placeholders(template).unwrap();
         assert_eq!(params, vec!["container_id", "input_file", "port"]);
     }
 
     #[test]
     fn test_extract_placeholders_empty_template() {
-        let params = ParameterResolver::extract_placeholders("");
+        let params = ParameterResolver::extract_placeholders("").unwrap();
         assert!(params.is_empty());
     }
 
     #[test]
     fn test_extract_placeholders_no_placeholders() {
         let template = "docker exec -it mycontainer ffmpeg -i input.mp4";
-        let params = ParameterResolver::extract_placeholders(template);
+        let params = ParameterResolver::extract_placeholders(template).unwrap();
         assert!(params.is_empty());
     }
 
     #[test]
     fn test_extract_placeholders_single_placeholder() {
         let template = "echo <message>";
-        let params = ParameterResolver::extract_placeholders(template);
+        let params = ParameterResolver::extract_placeholders(template).unwrap();
         assert_eq!(params, vec!["message"]);
     }
 
     #[test]
     fn test_extract_placeholders_repeated_names() {
         let template = "<x> and <x> and <y>";
-        let params = ParameterResolver::extract_placeholders(template);
+        let params = ParameterResolver::extract_placeholders(template).unwrap();
         assert_eq!(params, vec!["x", "x", "y"]);
     }
 
     #[test]
     fn test_extract_placeholders_with_numbers() {
         let template = "arg1 <arg_1> arg2 <arg_2>";
-        let params = ParameterResolver::extract_placeholders(template);
+        let params = ParameterResolver::extract_placeholders(template).unwrap();
         assert_eq!(params, vec!["arg_1", "arg_2"]);
     }
 
     #[test]
     fn test_extract_placeholders_with_underscores() {
         let template = "process <my_var> with <other_var>";
-        let params = ParameterResolver::extract_placeholders(template);
+        let params = ParameterResolver::extract_placeholders(template).unwrap();
         assert_eq!(params, vec!["my_var", "other_var"]);
     }
 
     #[test]
     fn test_extract_placeholders_adjacent() {
         let template = "<a><b><c>";
-        let params = ParameterResolver::extract_placeholders(template);
+        let params = ParameterResolver::extract_placeholders(template).unwrap();
         assert_eq!(params, vec!["a", "b", "c"]);
     }
 
@@ -168,7 +172,7 @@ mod tests {
     #[test]
     fn test_extract_and_resolve_roundtrip() {
         let template = "cmd <arg1> <arg2> --flag";
-        let params = ParameterResolver::extract_placeholders(template);
+        let params = ParameterResolver::extract_placeholders(template).unwrap();
         let mut map = HashMap::new();
         for (i, p) in params.iter().enumerate() {
             map.insert(p.clone(), format!("val{}", i));

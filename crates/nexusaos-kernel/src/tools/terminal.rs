@@ -19,6 +19,11 @@ impl TerminalTool {
         Self { timeout_secs, denied_prefixes, require_sandbox: true }
     }
 
+    pub fn without_sandbox(mut self) -> Self {
+        self.require_sandbox = false;
+        self
+    }
+
     /// Resolve the bwrap binary through PATH.
     fn resolve_bwrap() -> Option<std::path::PathBuf> {
         if let Ok(path) = std::env::var("PATH") {
@@ -129,7 +134,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_terminal_tool() -> Result<(), Box<dyn std::error::Error>> {
-        let tool = TerminalTool::new(5, vec!["rm -rf".to_string()]);
+        let tool = TerminalTool::new(5, vec!["rm -rf".to_string()]).without_sandbox();
 
         let req_denied = ToolRequest {
             tool_name: "terminal".to_string(),
@@ -157,7 +162,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_terminal_missing_command() -> Result<(), Box<dyn std::error::Error>> {
-        let tool = TerminalTool::new(5, vec![]);
+        let tool = TerminalTool::new(5, vec![]).without_sandbox();
 
         let req = ToolRequest { tool_name: "terminal".to_string(), arguments: json!({}) };
         let Err(err) = tool.execute(&req).await else {
@@ -174,7 +179,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_terminal_command_denied_prefix() -> Result<(), Box<dyn std::error::Error>> {
-        let tool = TerminalTool::new(5, vec!["sudo".to_string(), "dd".to_string()]);
+        let tool =
+            TerminalTool::new(5, vec!["sudo".to_string(), "dd".to_string()]).without_sandbox();
 
         let req = ToolRequest {
             tool_name: "terminal".to_string(),
@@ -193,7 +199,7 @@ mod tests {
     #[tokio::test]
     async fn test_terminal_command_denied_partial_match() -> Result<(), Box<dyn std::error::Error>>
     {
-        let tool = TerminalTool::new(5, vec!["rm -rf".to_string()]);
+        let tool = TerminalTool::new(5, vec!["rm -rf".to_string()]).without_sandbox();
 
         let req = ToolRequest {
             tool_name: "terminal".to_string(),
@@ -211,7 +217,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_terminal_no_denied_prefixes() -> Result<(), Box<dyn std::error::Error>> {
-        let tool = TerminalTool::new(5, vec![]);
+        let tool = TerminalTool::new(5, vec![]).without_sandbox();
 
         let req = ToolRequest {
             tool_name: "terminal".to_string(),
@@ -224,7 +230,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_terminal_timeout() -> Result<(), Box<dyn std::error::Error>> {
-        let tool = TerminalTool::new(1, vec![]);
+        let tool = TerminalTool::new(1, vec![]).without_sandbox();
 
         let req = ToolRequest {
             tool_name: "terminal".to_string(),
@@ -242,7 +248,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_terminal_command_fails_nonzero_exit() -> Result<(), Box<dyn std::error::Error>> {
-        let tool = TerminalTool::new(5, vec![]);
+        let tool = TerminalTool::new(5, vec![]).without_sandbox();
 
         let req = ToolRequest {
             tool_name: "terminal".to_string(),
@@ -255,7 +261,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_terminal_empty_output() -> Result<(), Box<dyn std::error::Error>> {
-        let tool = TerminalTool::new(5, vec![]);
+        let tool = TerminalTool::new(5, vec![]).without_sandbox();
 
         let req = ToolRequest {
             tool_name: "terminal".to_string(),
@@ -269,7 +275,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_terminal_with_stderr() -> Result<(), Box<dyn std::error::Error>> {
-        let tool = TerminalTool::new(5, vec![]);
+        let tool = TerminalTool::new(5, vec![]).without_sandbox();
 
         let req = ToolRequest {
             tool_name: "terminal".to_string(),
@@ -283,7 +289,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_terminal_no_match_denied_prefix() -> Result<(), Box<dyn std::error::Error>> {
-        let tool = TerminalTool::new(5, vec!["rm -rf /".to_string()]);
+        let tool = TerminalTool::new(5, vec!["rm -rf /".to_string()]).without_sandbox();
 
         let req = ToolRequest {
             tool_name: "terminal".to_string(),
@@ -297,7 +303,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_terminal_exact_denied_prefix() -> Result<(), Box<dyn std::error::Error>> {
-        let tool = TerminalTool::new(5, vec!["ls".to_string()]);
+        let tool = TerminalTool::new(5, vec!["ls".to_string()]).without_sandbox();
 
         let req = ToolRequest {
             tool_name: "terminal".to_string(),
