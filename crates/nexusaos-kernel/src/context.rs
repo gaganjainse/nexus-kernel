@@ -161,16 +161,18 @@ impl ContextManager {
         )?;
 
         // Check VRAM pressure — halve budget if VRAM is too tight
-        pressure_check.check(
-            pressure.vram_available_mb,
-            self.config.vram_headroom_mb,
-            "VRAM",
-            &self.config,
-            |needed, available| ResourceError::InsufficientVram {
-                needed_mb: needed,
-                available_mb: available,
-            },
-        )?;
+        if pressure.vram_total_mb > 0 {
+            pressure_check.check(
+                pressure.vram_available_mb,
+                self.config.vram_headroom_mb,
+                "VRAM",
+                &self.config,
+                |needed, available| ResourceError::InsufficientVram {
+                    needed_mb: needed,
+                    available_mb: available,
+                },
+            )?;
+        }
 
         Ok(ContextBudget { max_tokens, complexity, was_clamped, clamp_reason })
     }
