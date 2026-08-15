@@ -43,7 +43,7 @@ sysinfo = "0.32"
 async-trait = "0.1"
 futures = "0.3"
 regex = "1"
-ratatui = "0.29"
+ratatui = "0.30"
 crossterm = { version = "0.28", features = ["event-stream"] }
 portable-pty = "0.8"
 sha2 = "0.10"
