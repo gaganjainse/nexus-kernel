@@ -1,6 +1,8 @@
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
+# MSRV floor: builds are verified against this and CI must not silently move it.
+rust-version = "1.85"
 license = "MIT"
 authors = ["gaganjainse"]
 

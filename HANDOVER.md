@@ -17,7 +17,7 @@ NexusAOS is a **production-ready, governance-first AI operating environment** bu
 - 🌐 **Native SSH** multiplexing
 - 📡 **Event-sourced architecture** with append-only audit trail
 
-**Current Status**: All 12 workspace crates compile, test, and lint cleanly. 981 tests passing. CI/CD fully configured.
+**Current Status**: All 12 workspace crates compile, test, and lint cleanly. the workspace test suite passing. CI/CD fully configured.
 
 ---
 
