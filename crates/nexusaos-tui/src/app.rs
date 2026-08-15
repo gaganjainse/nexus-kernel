@@ -126,7 +126,13 @@ impl App {
         Ok(Self::new(broker, store, registry))
     }
 
-    pub async fn run<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> std::io::Result<()> {
+    // ratatui 0.30 made Backend::Error an associated type rather than always
+    // io::Error, so `?` on terminal.draw() no longer converts. The bound says
+    // the backend's error must be convertible; every real backend satisfies it.
+    pub async fn run<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> std::io::Result<()>
+    where
+        std::io::Error: From<<B as Backend>::Error>,
+    {
         let route_id = Uuid::now_v7().to_string();
 
         self.broker.subscribe(
