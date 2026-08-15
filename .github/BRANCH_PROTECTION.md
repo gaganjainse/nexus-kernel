@@ -74,6 +74,6 @@ In case of critical production fixes:
 CI enforces:
 - PR title convention
 - No merge conflicts
-- Test count threshold (≥100 tests)
+- Test count threshold (≥the test suite)
 - Architecture artifact presence
 - No orphaned `src/` directory

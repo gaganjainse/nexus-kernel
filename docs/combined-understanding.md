@@ -8,7 +8,7 @@
 
 **NexusAOS** is a governance-first, event-sourced AI operating environment for Ubuntu Linux, written in Rust 2024. It routes tasks to specialist local AI models (planner, coder, vision), enforces policy on every action, and maintains an append-only audit trail of all state changes. It targets local-first, offline-capable operation.
 
-**Verified stats**: 16 workspace members (14 crates + 2 binaries), 1066 tests, 0 clippy warnings, version `0.1.0`.
+**Verified stats**: 16 workspace members (the workspace crates + 2 binaries), the workspace test suite, 0 clippy warnings, version `0.1.0`.
 
 **Status**: The README badge says "Production Ready" but the codebase has critical wiring gaps (worker binary exists but tool execution path is incomplete, MCP /tmp bypass is fixed but other security gaps remain). The accurate status is **Alpha**.
 
@@ -161,7 +161,7 @@ Kernel.execute_task()
 | No `[workspace.package]` in Cargo.toml | Audit 1 | Confirmed — only `[workspace.lints.clippy]` |
 | No `cargo-deny`/`cargo-audit` in CI | Audit 1 | Confirmed |
 | `vte = "0.13"` (pure Rust, no Zig FFI) | Audit 1 (claimed Zig FFI) | `terminal/Cargo.toml` confirmed |
-| 1066 tests passing | Understanding doc (~981) | `cargo test --workspace` confirmed |
+| the workspace test suite passing | Understanding doc (~981) | `cargo test --workspace` confirmed |
 | 0 clippy warnings | Understanding doc | `cargo clippy --workspace` confirmed |
 
 ### Incorrect Claims (from Audit 1)
@@ -183,8 +183,8 @@ Kernel.execute_task()
 | Claim | Reality |
 |-------|---------|
 | Version `v2.0.0` | Crate version is `0.1.0` |
-| "~981 tests" | 1066 tests passing |
-| "14 workspace crates" | 16 workspace members (14 crates + 2 binaries) |
+| "~981 tests" | the workspace test suite passing |
+| "14 workspace crates" | 16 workspace members (the workspace crates + 2 binaries) |
 | Task state machine is `Received → Classified → Planned → Executing → Completed` | Actual state machine has 10 states including `AwaitingConfirmation`, `Blocked`, `Failed`, `RolledBack`, `Archived` |
 
 ---
@@ -200,7 +200,7 @@ Kernel.execute_task()
 6. **ACP authentication depends on policy configuration** — With permissive policy, any socket peer authenticates
 
 ### High
-7. **14 crates is granular for a solo project** — Consider consolidation (e.g., MCP+ACP → protocols)
+7. **the workspace crates is granular for a solo project** — Consider consolidation (e.g., MCP+ACP → protocols)
 8. **Model stack exceeds 16GB RAM** — Gemma 4 12B + Qwen3-Coder 30B together exceed 16GB
 9. **No task deduplication** — Identical tasks create duplicate work
 10. **No ToolBroker global timeout** — Individual tools have no timeout enforcement
