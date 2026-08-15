@@ -1390,6 +1390,23 @@ fn truncate_output(output: &str, max_size: usize) -> &str {
 
 #[cfg(test)]
 mod tests {
+    /// Context config for tests.
+    ///
+    /// The default demands 2048 MB of free RAM before it will allow inference,
+    /// and it reads the real host. That makes every test using it pass or fail
+    /// with the machine's memory pressure rather than with the code under
+    /// test: on a small CI runner they fail with InsufficientRam having
+    /// exercised nothing. Tests assert on kernel behaviour, so the headroom
+    /// gate is taken out of the picture; resource.rs owns testing the gate
+    /// itself against synthetic pressure.
+    fn test_context_config() -> crate::config::ContextConfig {
+        crate::config::ContextConfig {
+            ram_headroom_mb: 0,
+            vram_headroom_mb: 0,
+            ..Default::default()
+        }
+    }
+
     use std::{path::PathBuf, sync::Mutex};
 
     use async_trait::async_trait;
@@ -1502,7 +1519,7 @@ mod tests {
             snapshot_store: None,
             resource_budget: ResourceBudget::default(),
             resource_monitor: Arc::new(ResourceMonitor),
-            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            context_manager: Arc::new(ContextManager::new(test_context_config())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
             confirm_task_ttl_secs: 30,
@@ -1533,7 +1550,7 @@ mod tests {
             snapshot_store: None,
             resource_budget: ResourceBudget::default(),
             resource_monitor: Arc::new(ResourceMonitor),
-            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            context_manager: Arc::new(ContextManager::new(test_context_config())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
             confirm_task_ttl_secs: 30,
@@ -1570,7 +1587,7 @@ mod tests {
             snapshot_store: None,
             resource_budget: ResourceBudget::default(),
             resource_monitor: Arc::new(ResourceMonitor),
-            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            context_manager: Arc::new(ContextManager::new(test_context_config())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
             confirm_task_ttl_secs: 30,
@@ -1608,7 +1625,7 @@ mod tests {
             snapshot_store: None,
             resource_budget: ResourceBudget::default(),
             resource_monitor: Arc::new(ResourceMonitor),
-            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            context_manager: Arc::new(ContextManager::new(test_context_config())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
             confirm_task_ttl_secs: 30,
@@ -1661,7 +1678,7 @@ mod tests {
             snapshot_store: None,
             resource_budget: ResourceBudget { max_vram_mb: 1_000_000, ..Default::default() },
             resource_monitor: Arc::new(ResourceMonitor),
-            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            context_manager: Arc::new(ContextManager::new(test_context_config())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
             confirm_task_ttl_secs: 30,
@@ -1707,7 +1724,7 @@ mod tests {
             snapshot_store: None,
             resource_budget: ResourceBudget::default(),
             resource_monitor: Arc::new(ResourceMonitor),
-            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            context_manager: Arc::new(ContextManager::new(test_context_config())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
             confirm_task_ttl_secs: 30,
@@ -1750,7 +1767,7 @@ mod tests {
             snapshot_store: None,
             resource_budget: ResourceBudget::default(),
             resource_monitor: Arc::new(ResourceMonitor),
-            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            context_manager: Arc::new(ContextManager::new(test_context_config())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
             confirm_task_ttl_secs: 30,
@@ -1795,7 +1812,7 @@ mod tests {
             snapshot_store: None,
             resource_budget: ResourceBudget::default(),
             resource_monitor: Arc::new(ResourceMonitor),
-            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            context_manager: Arc::new(ContextManager::new(test_context_config())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
             confirm_task_ttl_secs: 30,
@@ -1835,7 +1852,7 @@ mod tests {
             snapshot_store: None,
             resource_budget: ResourceBudget::default(),
             resource_monitor: Arc::new(ResourceMonitor),
-            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            context_manager: Arc::new(ContextManager::new(test_context_config())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
             confirm_task_ttl_secs: 30,
@@ -1873,7 +1890,7 @@ mod tests {
             snapshot_store: None,
             resource_budget: ResourceBudget::default(),
             resource_monitor: Arc::new(ResourceMonitor),
-            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            context_manager: Arc::new(ContextManager::new(test_context_config())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
             confirm_task_ttl_secs: 30,
@@ -1916,7 +1933,7 @@ mod tests {
             snapshot_store: None,
             resource_budget: ResourceBudget::default(),
             resource_monitor: Arc::new(ResourceMonitor),
-            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            context_manager: Arc::new(ContextManager::new(test_context_config())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
             confirm_task_ttl_secs: 30,
@@ -1965,7 +1982,7 @@ mod tests {
             snapshot_store: None,
             resource_budget: ResourceBudget { max_vram_mb: 1_000_000, ..Default::default() },
             resource_monitor: Arc::new(ResourceMonitor),
-            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            context_manager: Arc::new(ContextManager::new(test_context_config())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
             confirm_task_ttl_secs: 30,
@@ -2017,7 +2034,7 @@ mod tests {
             snapshot_store: None,
             resource_budget: ResourceBudget::default(),
             resource_monitor: Arc::new(ResourceMonitor),
-            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            context_manager: Arc::new(ContextManager::new(test_context_config())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
             confirm_task_ttl_secs: 30,
@@ -2052,7 +2069,7 @@ mod tests {
             snapshot_store: None,
             resource_budget: ResourceBudget::default(),
             resource_monitor: Arc::new(ResourceMonitor),
-            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            context_manager: Arc::new(ContextManager::new(test_context_config())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
             confirm_task_ttl_secs: 30,
@@ -2105,7 +2122,7 @@ mod tests {
             snapshot_store: None,
             resource_budget: ResourceBudget::default(),
             resource_monitor: Arc::new(ResourceMonitor),
-            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            context_manager: Arc::new(ContextManager::new(test_context_config())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
             confirm_task_ttl_secs: 30,
@@ -2147,7 +2164,7 @@ mod tests {
             snapshot_store: None,
             resource_budget: ResourceBudget::default(),
             resource_monitor: Arc::new(ResourceMonitor),
-            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            context_manager: Arc::new(ContextManager::new(test_context_config())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
             confirm_task_ttl_secs: 30,
@@ -2188,7 +2205,7 @@ mod tests {
             snapshot_store: None,
             resource_budget: ResourceBudget::default(),
             resource_monitor: Arc::new(ResourceMonitor),
-            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            context_manager: Arc::new(ContextManager::new(test_context_config())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
             confirm_task_ttl_secs: 30,
@@ -2230,7 +2247,7 @@ mod tests {
             snapshot_store: None,
             resource_budget: ResourceBudget::default(),
             resource_monitor: Arc::new(ResourceMonitor),
-            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            context_manager: Arc::new(ContextManager::new(test_context_config())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
             confirm_task_ttl_secs: 30,
@@ -2286,7 +2303,7 @@ mod tests {
             snapshot_store: None,
             resource_budget: ResourceBudget::default(),
             resource_monitor: Arc::new(ResourceMonitor),
-            context_manager: Arc::new(ContextManager::new(crate::config::ContextConfig::default())),
+            context_manager: Arc::new(ContextManager::new(test_context_config())),
             scheduler: Arc::new(Scheduler::new(32)),
             dedup_window_secs: 5,
             confirm_task_ttl_secs: 30,
