@@ -51,17 +51,11 @@ jobs:
           # script, so a branch name cannot inject shell.
           BASE_REF: ${{ github.base_ref }}
         run: |
-          # The checkout is shallow, so HEAD and the base may share no history
-          # in this clone. merge-tree then fails for want of a merge base and
-          # the step read that as a conflict. Deepen first, and match on the
-          # CONFLICT marker rather than an exit code that means several things.
-          git fetch --deepen=100 origin "$BASE_REF" 2>/dev/null \
-            || git fetch origin "$BASE_REF"
-          base=$(git merge-base HEAD "origin/$BASE_REF" 2>/dev/null || true)
-          if [ -z "$base" ]; then
-            echo "::notice::no common ancestor in this shallow clone; skipping"
-            exit 0
-          fi
+          # The checkout uses fetch-depth: 0, so the base ref and the merge
+          # base are always present. Match on the CONFLICT marker rather than
+          # the exit code, which also means "no merge base".
+          base=$(git merge-base HEAD "origin/$BASE_REF")
+          echo "merge base: $base"
           if git merge-tree --write-tree HEAD "origin/$BASE_REF" 2>&1 \
              | grep -q "^CONFLICT"; then
             echo "::error::PR has merge conflicts"
@@ -86,7 +80,10 @@ jobs:
 
       - name: Check test coverage
         run: |
-          TOTAL=$(cargo test --workspace 2>&1 | grep "test result:" | awk '{print $4}' | sed 's/;//g' | tr '\n' '+' | sed 's/+$//' | bc 2>/dev/null || echo "0")
+          # bc must be present; masking its absence with "0" reported a
+          # passing count of zero as success.
+          command -v bc >/dev/null || { echo "::error::bc is not installed"; exit 1; }
+          TOTAL=$(cargo test --workspace 2>&1 | grep "test result:" | awk '{print $4}' | sed 's/;//g' | tr '\n' '+' | sed 's/+$//' | bc)
           if [ "$TOTAL" -lt 100 ]; then
             echo "::warning::Test count ($TOTAL) is below threshold (100). Add more tests."
           fi
