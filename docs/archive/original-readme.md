@@ -14,10 +14,10 @@ still matches the crate names on disk.
 ** Governance-first, event-sourced AI operating environment
 for Ubuntu Linux.**
 
-[ Docs](.kilo/plans/architecture.md)
-[ Contributing](CONTRIBUTING.md)
-[ Security](SECURITY.md)
-[ Changelog](CHANGELOG.md)
+[ Docs](../../.kilo/plans/architecture.md)
+[ Contributing](../../CONTRIBUTING.md)
+[ Security](../../SECURITY.md)
+[ Changelog](../../CHANGELOG.md)
 [ Discussions](https://github.com/gaganjainse/shesh-kernel/discussions)
 
 ---
@@ -157,12 +157,12 @@ cargo build --release
 
 | Document | Purpose |
 | --------- | -------- |
-| [ Architecture](.kilo/plans/architecture.md) | System diagrams and data flows |
-| [ Contributing](CONTRIBUTING.md) | Development workflow |
-| [ Security](SECURITY.md) | Vulnerability reporting |
-| [ Changelog](CHANGELOG.md) | Version history |
-| [ Handover](HANDOVER.md) | Developer transition guide |
-| [ Code of Conduct](CODE_OF_CONDUCT.md) | Community standards |
+| [ Architecture](../../.kilo/plans/architecture.md) | System diagrams and data flows |
+| [ Contributing](../../CONTRIBUTING.md) | Development workflow |
+| [ Security](../../SECURITY.md) | Vulnerability reporting |
+| [ Changelog](../../CHANGELOG.md) | Version history |
+| [ Handover](../../HANDOVER.md) | Developer transition guide |
+| [ Code of Conduct](../../CODE_OF_CONDUCT.md) | Community standards |
 
 ### Topics
 
@@ -576,7 +576,7 @@ cargo bench -p nexusaos-kernel bench_kernel_task_submission
 
 #### Contributing
 
-The project welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md)
+The project welcome contributions! Please see [CONTRIBUTING.md](../../CONTRIBUTING.md)
 for detailed guidelines.
 
 ### Quick contribution checklist
@@ -590,13 +590,13 @@ for detailed guidelines.
 
 ### Code of conduct
 
-This project adheres to a [Code of Conduct](CODE_OF_CONDUCT.md).
+This project adheres to a [Code of Conduct](../../CODE_OF_CONDUCT.md).
 By participating, you agree to uphold a welcoming and inclusive
 environment.
 
 ### License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [MIT License](../../LICENSE).
 
 ---
 
